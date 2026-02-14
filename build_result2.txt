@@ -1,0 +1,405 @@
+﻿[36mvite v5.4.19 [32mbuilding for production...[36m[39m
+transforming...
+node.exe : Browserslist: 
+browsers data 
+(caniuse-lite) is 8 months 
+old. Please run:
+At line:1 char:1
++ & "C:\Program 
+Files\nodejs/node.exe" 
+"C:\Program 
+Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~
+    + CategoryInfo          
+    : NotSpecified: (Brows  
+  erslist: b...ld. Please   
+  run::String) [], Remot    
+eException
+    + FullyQualifiedErrorId 
+    : NativeCommandError
+ 
+  npx update-browserslist-db
+@latest
+  Why you should do it 
+regularly: https://github.co
+m/browserslist/update-db#rea
+dme
+[32mΓ£ô[39m 3376 modules transformed.
+rendering chunks...
+computing gzip size...
+[2mdist/[22m[32massets/js/card-Ds7QB2We.js.br                       [39m[1m[2m  0.37 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/tabs-0AsNatfa.js.br                       [39m[1m[2m  0.41 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/card-Ds7QB2We.js.gz                       [39m[1m[2m  0.42 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/appointmentService-De12C3Ia.js.br         [39m[1m[2m  0.47 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/table-6_yfQ0M1.js.br                      [39m[1m[2m  0.47 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/StatsCard-ygFArshZ.js.br                  [39m[1m[2m  0.50 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/tabs-0AsNatfa.js.gz                       [39m[1m[2m  0.50 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/DataTable-CXVomvCp.js.br                  [39m[1m[2m  0.53 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/appointmentService-De12C3Ia.js.gz         [39m[1m[2m  0.55 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/AdminBilling-BzYaTVM4.js.br               [39m[1m[2m  0.55 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/table-6_yfQ0M1.js.gz                      [39m[1m[2m  0.56 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/ReceptionBilling-3r6xs73L.js.br           [39m[1m[2m  0.56 kB[22m[1m[22m
+[2mdist/[22m[32mindex.html.br                                       [39m[1m[2m  0.58 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/StatsCard-ygFArshZ.js.gz                  [39m[1m[2m  0.60 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/AdminBilling-BzYaTVM4.js.gz               [39m[1m[2m  0.61 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/DataTable-CXVomvCp.js.gz                  [39m[1m[2m  0.61 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/ReceptionBilling-3r6xs73L.js.gz           [39m[1m[2m  0.61 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/StatusBadge-BVzQwkv7.js.br                [39m[1m[2m  0.65 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/staffService-COfSvtDZ.js.br               [39m[1m[2m  0.67 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/OPDReports-dbnEwOd6.js.br                 [39m[1m[2m  0.68 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/ServicesSection-Biraq-9F.js.br            [39m[1m[2m  0.73 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/dialog-Cak8XRW_.js.br                     [39m[1m[2m  0.76 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/StatusBadge-BVzQwkv7.js.gz                [39m[1m[2m  0.77 kB[22m[1m[22m
+[2mdist/[22m[32mindex.html.gz                                       [39m[1m[2m  0.80 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/staffService-COfSvtDZ.js.gz               [39m[1m[2m  0.82 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/OPDReports-dbnEwOd6.js.gz                 [39m[1m[2m  0.83 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/AppointmentDetailsDialog-4oLoS0Hc.js.br   [39m[1m[2m  0.83 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/pdfUtils-atr5Avob.js.br                   [39m[1m[2m  0.86 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/ServicesSection-Biraq-9F.js.gz            [39m[1m[2m  0.87 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/dialog-Cak8XRW_.js.gz                     [39m[1m[2m  0.88 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/PrescriptionDetailsDialog-WERs6z4S.js.br  [39m[1m[2m  0.89 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/OPDAppointments-taOiermB.js.br            [39m[1m[2m  0.90 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/AdminAppointments-Fjv2gx2Z.js.br          [39m[1m[2m  0.93 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/AppointmentDetailsDialog-4oLoS0Hc.js.gz   [39m[1m[2m  0.96 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/pdfUtils-atr5Avob.js.gz                   [39m[1m[2m  0.98 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/PrescriptionDetailsDialog-WERs6z4S.js.gz  [39m[1m[2m  1.02 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/OPDAppointments-taOiermB.js.gz            [39m[1m[2m  1.02 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/OPDBilling-BcTEwNZJ.js.br                 [39m[1m[2m  1.04 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/AdminAppointments-Fjv2gx2Z.js.gz          [39m[1m[2m  1.06 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/DoctorAppointments-DNa29Q1c.js.br         [39m[1m[2m  1.08 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/ForgotPassword-BHXAb5Dk.js.br             [39m[1m[2m  1.09 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/ApiTest-1mJ0dexD.js.br                    [39m[1m[2m  1.16 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/PatientFeedbackSection-xkLgRrPX.js.br     [39m[1m[2m  1.16 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/OPDBilling-BcTEwNZJ.js.gz                 [39m[1m[2m  1.17 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/PatientMedicalRecords-BtDFmBKp.js.br      [39m[1m[2m  1.18 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/PathologyResults-D-QdmAcj.js.br           [39m[1m[2m  1.21 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/BillDetailsDialog-DP_--7EO.js.br          [39m[1m[2m  1.21 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/ReceptionPatients-BnfH090o.js.br          [39m[1m[2m  1.22 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/DoctorAppointments-DNa29Q1c.js.gz         [39m[1m[2m  1.24 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/ForgotPassword-BHXAb5Dk.js.gz             [39m[1m[2m  1.28 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/ReceptionAppointments-B3cSNdFH.js.br      [39m[1m[2m  1.29 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/PatientMedicalRecords-BtDFmBKp.js.gz      [39m[1m[2m  1.34 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/PathologyResults-D-QdmAcj.js.gz           [39m[1m[2m  1.34 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/ServiceDetails-BIM28Xlx.js.br             [39m[1m[2m  1.35 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/ApiTest-1mJ0dexD.js.gz                    [39m[1m[2m  1.36 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/BillDetailsDialog-DP_--7EO.js.gz          [39m[1m[2m  1.37 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/ReceptionPatients-BnfH090o.js.gz          [39m[1m[2m  1.38 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/PathologyReports-Ci8knp-i.js.br           [39m[1m[2m  1.38 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/PatientFeedbackSection-xkLgRrPX.js.gz     [39m[1m[2m  1.38 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/Footer-CRqZWq89.js.br                     [39m[1m[2m  1.41 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/AddMedicineDialog-DZYPKZgu.js.br          [39m[1m[2m  1.43 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/PharmacyPendingOrders-8H3cNzXP.js.br      [39m[1m[2m  1.45 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/ReceptionAppointments-B3cSNdFH.js.gz      [39m[1m[2m  1.48 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/Departments-B7fbhEny.js.br                [39m[1m[2m  1.48 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/AboutSection-BDl74URp.js.br               [39m[1m[2m  1.50 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/PatientPrescriptions-lrqTTkBv.js.br       [39m[1m[2m  1.53 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/PathologyRequests-z44olkqe.js.br          [39m[1m[2m  1.53 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/servicesData-Dhxj_dwG.js.br               [39m[1m[2m  1.54 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/PathologyDashboard-wwXFUKdc.js.br         [39m[1m[2m  1.59 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/PathologyReports-Ci8knp-i.js.gz           [39m[1m[2m  1.60 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/ServiceDetails-BIM28Xlx.js.gz             [39m[1m[2m  1.60 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/AddMedicineDialog-DZYPKZgu.js.gz          [39m[1m[2m  1.62 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/PharmacyAlerts-C1dvWkLv.js.br             [39m[1m[2m  1.64 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/PharmacyPendingOrders-8H3cNzXP.js.gz      [39m[1m[2m  1.65 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/OPDRegistration-B0Hn7f9i.js.br            [39m[1m[2m  1.66 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/Footer-CRqZWq89.js.gz                     [39m[1m[2m  1.68 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/Departments-B7fbhEny.js.gz                [39m[1m[2m  1.68 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/PatientPrescriptions-lrqTTkBv.js.gz       [39m[1m[2m  1.68 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/LabResults-Byl-E-jH.js.br                 [39m[1m[2m  1.70 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/CreateLabOrderDialog-BtsLGXK4.js.br       [39m[1m[2m  1.71 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/PathologyRequests-z44olkqe.js.gz          [39m[1m[2m  1.73 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/AdminPharmacy-DC-oOrIh.js.br              [39m[1m[2m  1.77 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/AboutSection-BDl74URp.js.gz               [39m[1m[2m  1.81 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/PathologyDashboard-wwXFUKdc.js.gz         [39m[1m[2m  1.83 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/printInvoice-CmvXBuoo.js.br               [39m[1m[2m  1.84 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/ReceptionLabResults-iC6ZxNUG.js.br        [39m[1m[2m  1.85 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/servicesData-Dhxj_dwG.js.gz               [39m[1m[2m  1.86 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/PharmacyAlerts-C1dvWkLv.js.gz             [39m[1m[2m  1.87 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/OPDPrescriptions-CrKJf487.js.br           [39m[1m[2m  1.90 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/OPDRegistration-B0Hn7f9i.js.gz            [39m[1m[2m  1.92 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/LabResults-Byl-E-jH.js.gz                 [39m[1m[2m  1.92 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/CreateLabOrderDialog-BtsLGXK4.js.gz       [39m[1m[2m  1.93 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/LabPendingTests-_isml5TF.js.br            [39m[1m[2m  2.01 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/LabSampleCollection-DwazIo6K.js.br        [39m[1m[2m  2.01 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/AdminPharmacy-DC-oOrIh.js.gz              [39m[1m[2m  2.03 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/PatientLabResults-BWfeehPx.js.br          [39m[1m[2m  2.03 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/DoctorPatients-DhrAxb2O.js.br             [39m[1m[2m  2.07 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/LabTestCatalog-CTPdvctQ.js.br             [39m[1m[2m  2.09 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/OPDPrescriptions-CrKJf487.js.gz           [39m[1m[2m  2.13 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/ReceptionLabResults-iC6ZxNUG.js.gz        [39m[1m[2m  2.13 kB[22m[1m[22m
+[2mdist/[22m[32mindex.html                                          [39m[1m[2m  2.13 kB[22m[1m[22m[2m Γöé gzip:   0.80 kB[22m
+[2mdist/[22m[32massets/js/InvoicePage-2z843JTn.js.br                [39m[1m[2m  2.19 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/DoctorDashboard-BZPyJ7r9.js.br            [39m[1m[2m  2.22 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/PatientSettings-BveXULRW.js.br            [39m[1m[2m  2.23 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/AdminAnalytics-BIKa5wKq.js.br             [39m[1m[2m  2.24 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/PatientBilling-CBuILH9-.js.br             [39m[1m[2m  2.24 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/PatientReports-CaMWEHg-.js.br             [39m[1m[2m  2.27 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/LabResultDetailsDialog-CeoMSTbC.js.br     [39m[1m[2m  2.28 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/printInvoice-CmvXBuoo.js.gz               [39m[1m[2m  2.29 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/LabPendingTests-_isml5TF.js.gz            [39m[1m[2m  2.30 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/PatientLabResults-BWfeehPx.js.gz          [39m[1m[2m  2.33 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/DoctorSettings-DZUPcaKl.js.br             [39m[1m[2m  2.34 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/Prescriptions-Dl3AuKlg.js.br              [39m[1m[2m  2.36 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/DoctorPatients-DhrAxb2O.js.gz             [39m[1m[2m  2.36 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/PharmacyInventory-BtHaDamD.js.br          [39m[1m[2m  2.37 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/Settings-6GOzb4pr.js.br                   [39m[1m[2m  2.37 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/LabSampleCollection-DwazIo6K.js.gz        [39m[1m[2m  2.39 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/LabTestCatalog-CTPdvctQ.js.gz             [39m[1m[2m  2.40 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/OpdDashboard-CuBT49XD.js.br               [39m[1m[2m  2.47 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/PharmacySettings-D8fs7T3L.js.br           [39m[1m[2m  2.48 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/LabSettings-Cm6FAtuL.js.br                [39m[1m[2m  2.48 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/ReceptionSettings-DGI3P_ei.js.br          [39m[1m[2m  2.50 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/PatientBilling-CBuILH9-.js.gz             [39m[1m[2m  2.52 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/AdminAnalytics-BIKa5wKq.js.gz             [39m[1m[2m  2.54 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/InvoicePage-2z843JTn.js.gz                [39m[1m[2m  2.54 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/LabResultDetailsDialog-CeoMSTbC.js.gz     [39m[1m[2m  2.54 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/DoctorDashboard-BZPyJ7r9.js.gz            [39m[1m[2m  2.56 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/PatientReports-CaMWEHg-.js.gz             [39m[1m[2m  2.57 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/UnifiedBilling-BJls622f.js.br             [39m[1m[2m  2.58 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/PatientSettings-BveXULRW.js.gz            [39m[1m[2m  2.59 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/PharmacyDispensing-CEQicNDJ.js.br         [39m[1m[2m  2.59 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/Prescriptions-Dl3AuKlg.js.gz              [39m[1m[2m  2.64 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/PharmacyInventory-BtHaDamD.js.gz          [39m[1m[2m  2.70 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/LabResultsEntry-BtixvTyp.js.br            [39m[1m[2m  2.70 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/DoctorSettings-DZUPcaKl.js.gz             [39m[1m[2m  2.72 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/Settings-6GOzb4pr.js.gz                   [39m[1m[2m  2.73 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/OpdDashboard-CuBT49XD.js.gz               [39m[1m[2m  2.81 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/BillGenerationDialog-Ot-a3FMy.js.br       [39m[1m[2m  2.82 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/pagination-C5fHwLG6.js.br                 [39m[1m[2m  2.87 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/PharmacyDashboard-D1qI730l.js.br          [39m[1m[2m  2.88 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/PharmacySettings-D8fs7T3L.js.gz           [39m[1m[2m  2.89 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/LabSettings-Cm6FAtuL.js.gz                [39m[1m[2m  2.90 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/BookAppointment-COmppsHT.js.br            [39m[1m[2m  2.91 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/UnifiedBilling-BJls622f.js.gz             [39m[1m[2m  2.92 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/ReceptionSettings-DGI3P_ei.js.gz          [39m[1m[2m  2.94 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/PharmacyDispensing-CEQicNDJ.js.gz         [39m[1m[2m  2.96 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/AdminPatients-dvlWzSAo.js.br              [39m[1m[2m  2.99 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/Consultation-BFPkr2Su.js.br               [39m[1m[2m  3.01 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/mockData-CefayKpH.js.br                   [39m[1m[2m  3.04 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/OPDConsultation-DfSkIjcg.js.br            [39m[1m[2m  3.08 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/LabResultsEntry-BtixvTyp.js.gz            [39m[1m[2m  3.08 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/Staff-CAP-14cI.js.br                      [39m[1m[2m  3.09 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/AppointmentBookingDialog-BzwFiF7A.js.br   [39m[1m[2m  3.13 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/PatientDetailsDialog-CLrLEQnk.js.br       [39m[1m[2m  3.19 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/Reports-cBl70NAZ.js.br                    [39m[1m[2m  3.20 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/BillGenerationDialog-Ot-a3FMy.js.gz       [39m[1m[2m  3.20 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/ReceptionDashboard-DM_jXqm1.js.br         [39m[1m[2m  3.21 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/PharmacyDashboard-D1qI730l.js.gz          [39m[1m[2m  3.25 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/pagination-C5fHwLG6.js.gz                 [39m[1m[2m  3.27 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/BookAppointment-COmppsHT.js.gz            [39m[1m[2m  3.37 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/AdminPatients-dvlWzSAo.js.gz              [39m[1m[2m  3.40 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/MedicalRecords-VaMisQTX.js.br             [39m[1m[2m  3.40 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/Consultation-BFPkr2Su.js.gz               [39m[1m[2m  3.40 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/OPDConsultation-DfSkIjcg.js.gz            [39m[1m[2m  3.47 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/AppointmentBookingDialog-BzwFiF7A.js.gz   [39m[1m[2m  3.50 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/ConsultationDetailsDialog-Bl-UiDRa.js.br  [39m[1m[2m  3.50 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/scroll-area-DundN8QL.js.br                [39m[1m[2m  3.53 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/PatientDashboard-BBgDbhRF.js.br           [39m[1m[2m  3.57 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/Staff-CAP-14cI.js.gz                      [39m[1m[2m  3.58 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/Reports-cBl70NAZ.js.gz                    [39m[1m[2m  3.63 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/ReceptionDashboard-DM_jXqm1.js.gz         [39m[1m[2m  3.64 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/mockData-CefayKpH.js.gz                   [39m[1m[2m  3.70 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/PatientDetailsDialog-CLrLEQnk.js.gz       [39m[1m[2m  3.80 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/MedicalRecords-VaMisQTX.js.gz             [39m[1m[2m  3.83 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/scroll-area-DundN8QL.js.gz                [39m[1m[2m  3.95 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/ConsultationDetailsDialog-Bl-UiDRa.js.gz  [39m[1m[2m  3.96 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/PatientDashboard-BBgDbhRF.js.gz           [39m[1m[2m  4.05 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/LabDashboard-CRF6CEiT.js.br               [39m[1m[2m  4.55 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/AdminDashboard-B_O_peG1.js.br             [39m[1m[2m  4.71 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/format-Dt1fCkSA.js.br                     [39m[1m[2m  4.99 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/LabDashboard-CRF6CEiT.js.gz               [39m[1m[2m  5.18 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/AdminDashboard-B_O_peG1.js.gz             [39m[1m[2m  5.33 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/format-Dt1fCkSA.js.gz                     [39m[1m[2m  5.61 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/DashboardLayout-C8XUMHXT.js.br            [39m[1m[2m  6.59 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/vendor-query-BQGkZFw7.js.br               [39m[1m[2m  7.39 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/DashboardLayout-C8XUMHXT.js.gz            [39m[1m[2m  7.44 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/purify.es-C5KSVp3G.js.br                  [39m[1m[2m  7.86 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/vendor-query-BQGkZFw7.js.gz               [39m[1m[2m  8.22 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/DoctorsSection-udN6ZnxT.js.br             [39m[1m[2m  8.55 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/purify.es-C5KSVp3G.js.gz                  [39m[1m[2m  8.79 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/PatientRegistrationDialog-B2MSBqTh.js.br  [39m[1m[2m  9.19 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/DoctorsSection-udN6ZnxT.js.gz             [39m[1m[2m  9.95 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/PharmacyBilling-BKrmopCv.js.br            [39m[1m[2m 10.30 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/PatientRegistrationDialog-B2MSBqTh.js.gz  [39m[1m[2m 10.87 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/PharmacyBilling-BKrmopCv.js.gz            [39m[1m[2m 11.44 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/LoginPage-ChdxDY9W.js.br                  [39m[1m[2m 12.79 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/LoginPage-ChdxDY9W.js.gz                  [39m[1m[2m 14.37 kB[22m[1m[22m
+[2mdist/[22m[32massets/index-1EkvvRnv.css.br                        [39m[1m[2m 14.89 kB[22m[1m[22m
+[2mdist/[22m[32massets/index-1EkvvRnv.css.gz                        [39m[1m[2m 18.70 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/index-BWA_R5O9.js.br                      [39m[1m[2m 31.83 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/vendor-ui-DjP_ABi2.js.br                  [39m[1m[2m 32.89 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/index-BWA_R5O9.js.gz                      [39m[1m[2m 37.42 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/vendor-ui-DjP_ABi2.js.gz                  [39m[1m[2m 37.66 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/html2canvas.esm-BfxBtG_O.js.br            [39m[1m[2m 38.76 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/index.es-BT_ACw_7.js.br                   [39m[1m[2m 45.37 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/vendor-react-CAjteclJ.js.br               [39m[1m[2m 46.49 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/html2canvas.esm-BfxBtG_O.js.gz            [39m[1m[2m 47.77 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/index.es-BT_ACw_7.js.gz                   [39m[1m[2m 51.39 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/vendor-react-CAjteclJ.js.gz               [39m[1m[2m 53.12 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/vendor-charts-BPHmihmt.js.br              [39m[1m[2m 90.73 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/vendor-charts-BPHmihmt.js.gz              [39m[1m[2m110.20 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/vendor-pdf-BSqjOv2X.js.br                 [39m[1m[2m122.32 kB[22m[1m[22m
+[2mdist/[22m[32massets/js/vendor-pdf-BSqjOv2X.js.gz                 [39m[1m[2m144.55 kB[22m[1m[22m
+[2mdist/[22m[35massets/index-1EkvvRnv.css                           [39m[1m[2m118.28 kB[22m[1m[22m[2m Γöé gzip:  18.91 kB[22m
+[2mdist/[22m[36massets/js/format--q_jpUZY.js                        [39m[1m[2m  0.10 kB[22m[1m[22m[2m Γöé gzip:   0.11 kB[22m
+[2mdist/[22m[36massets/js/addDays-85AQF3QO.js                       [39m[1m[2m  0.15 kB[22m[1m[22m[2m Γöé gzip:   0.15 kB[22m
+[2mdist/[22m[36massets/js/loader-circle-dizbiP9e.js                 [39m[1m[2m  0.31 kB[22m[1m[22m[2m Γöé gzip:   0.26 kB[22m
+[2mdist/[22m[36massets/js/plus-DcFkbRxe.js                          [39m[1m[2m  0.32 kB[22m[1m[22m[2m Γöé gzip:   0.26 kB[22m
+[2mdist/[22m[36massets/js/filter-78HJOQDK.js                        [39m[1m[2m  0.33 kB[22m[1m[22m[2m Γöé gzip:   0.27 kB[22m
+[2mdist/[22m[36massets/js/arrow-left-mTPuKR6F.js                    [39m[1m[2m  0.33 kB[22m[1m[22m[2m Γöé gzip:   0.27 kB[22m
+[2mdist/[22m[36massets/js/arrow-up-right-SXCjVZo4.js                [39m[1m[2m  0.33 kB[22m[1m[22m[2m Γöé gzip:   0.26 kB[22m
+[2mdist/[22m[36massets/js/search-BvuH_pNn.js                        [39m[1m[2m  0.34 kB[22m[1m[22m[2m Γöé gzip:   0.28 kB[22m
+[2mdist/[22m[36massets/js/circle-check-CHFe73M1.js                  [39m[1m[2m  0.35 kB[22m[1m[22m[2m Γöé gzip:   0.28 kB[22m
+[2mdist/[22m[36massets/js/clock-C_-4iQxf.js                         [39m[1m[2m  0.35 kB[22m[1m[22m[2m Γöé gzip:   0.28 kB[22m
+[2mdist/[22m[36massets/js/circle-check-big-BvvBHqIH.js              [39m[1m[2m  0.36 kB[22m[1m[22m[2m Γöé gzip:   0.28 kB[22m
+[2mdist/[22m[36massets/js/rotate-ccw-nby2h2Lr.js                    [39m[1m[2m  0.37 kB[22m[1m[22m[2m Γöé gzip:   0.29 kB[22m
+[2mdist/[22m[36massets/js/trending-up-Bdt5Pk0x.js                   [39m[1m[2m  0.37 kB[22m[1m[22m[2m Γöé gzip:   0.29 kB[22m
+[2mdist/[22m[36massets/js/lock-DhtixeJ0.js                          [39m[1m[2m  0.38 kB[22m[1m[22m[2m Γöé gzip:   0.30 kB[22m
+[2mdist/[22m[36massets/js/credit-card-B80zwQNu.js                   [39m[1m[2m  0.38 kB[22m[1m[22m[2m Γöé gzip:   0.29 kB[22m
+[2mdist/[22m[36massets/js/trending-down-Bzhk39Ez.js                 [39m[1m[2m  0.38 kB[22m[1m[22m[2m Γöé gzip:   0.28 kB[22m
+[2mdist/[22m[36massets/js/mail-BDH6I0Vd.js                          [39m[1m[2m  0.38 kB[22m[1m[22m[2m Γöé gzip:   0.31 kB[22m
+[2mdist/[22m[36massets/js/circle-alert-BERnICTl.js                  [39m[1m[2m  0.42 kB[22m[1m[22m[2m Γöé gzip:   0.29 kB[22m
+[2mdist/[22m[36massets/js/user-check-Ck2NkpwF.js                    [39m[1m[2m  0.42 kB[22m[1m[22m[2m Γöé gzip:   0.32 kB[22m
+[2mdist/[22m[36massets/js/eye-qXr14skX.js                           [39m[1m[2m  0.43 kB[22m[1m[22m[2m Γöé gzip:   0.31 kB[22m
+[2mdist/[22m[36massets/js/calendar-CupQVbMP.js                      [39m[1m[2m  0.43 kB[22m[1m[22m[2m Γöé gzip:   0.31 kB[22m
+[2mdist/[22m[36massets/js/download-CeBTI2B5.js                      [39m[1m[2m  0.43 kB[22m[1m[22m[2m Γöé gzip:   0.32 kB[22m
+[2mdist/[22m[36massets/js/triangle-alert-BqDI6AxU.js                [39m[1m[2m  0.43 kB[22m[1m[22m[2m Γöé gzip:   0.31 kB[22m
+[2mdist/[22m[36massets/js/shield-C2EqZJj5.js                        [39m[1m[2m  0.44 kB[22m[1m[22m[2m Γöé gzip:   0.33 kB[22m
+[2mdist/[22m[36massets/js/pencil-DzKMCYGf.js                        [39m[1m[2m  0.45 kB[22m[1m[22m[2m Γöé gzip:   0.33 kB[22m
+[2mdist/[22m[36massets/js/receipt-ClXE9066.js                       [39m[1m[2m  0.46 kB[22m[1m[22m[2m Γöé gzip:   0.31 kB[22m
+[2mdist/[22m[36massets/js/user-plus-CU_HU3aU.js                     [39m[1m[2m  0.48 kB[22m[1m[22m[2m Γöé gzip:   0.34 kB[22m
+[2mdist/[22m[36massets/js/printer-CH_4yXyS.js                       [39m[1m[2m  0.49 kB[22m[1m[22m[2m Γöé gzip:   0.34 kB[22m
+[2mdist/[22m[36massets/js/square-pen-8hxksk3S.js                    [39m[1m[2m  0.49 kB[22m[1m[22m[2m Γöé gzip:   0.34 kB[22m
+[2mdist/[22m[36massets/js/refresh-cw-BGzrU1by.js                    [39m[1m[2m  0.49 kB[22m[1m[22m[2m Γöé gzip:   0.33 kB[22m
+[2mdist/[22m[36massets/js/save-DHvSgH6K.js                          [39m[1m[2m  0.50 kB[22m[1m[22m[2m Γöé gzip:   0.33 kB[22m
+[2mdist/[22m[36massets/js/trash-2-D5jdY7bv.js                       [39m[1m[2m  0.53 kB[22m[1m[22m[2m Γöé gzip:   0.36 kB[22m
+[2mdist/[22m[36massets/js/billingService-DG4fdw-6.js                [39m[1m[2m  0.54 kB[22m[1m[22m[2m Γöé gzip:   0.32 kB[22m
+[2mdist/[22m[36massets/js/microscope-CGDNtW-g.js                    [39m[1m[2m  0.55 kB[22m[1m[22m[2m Γöé gzip:   0.35 kB[22m
+[2mdist/[22m[36massets/js/textarea-DieWlUFh.js                      [39m[1m[2m  0.56 kB[22m[1m[22m[2m Γöé gzip:   0.36 kB[22m
+[2mdist/[22m[36massets/js/phone-B_HdJzu7.js                         [39m[1m[2m  0.56 kB[22m[1m[22m[2m Γöé gzip:   0.36 kB[22m
+[2mdist/[22m[36massets/js/eye-off-mE5-JzEg.js                       [39m[1m[2m  0.60 kB[22m[1m[22m[2m Γöé gzip:   0.38 kB[22m
+[2mdist/[22m[36massets/js/label-BcpwHGDN.js                         [39m[1m[2m  0.65 kB[22m[1m[22m[2m Γöé gzip:   0.41 kB[22m
+[2mdist/[22m[36massets/js/PharmacyLogin-DiQFmSYn.js                 [39m[1m[2m  0.65 kB[22m[1m[22m[2m Γöé gzip:   0.39 kB[22m
+[2mdist/[22m[36massets/js/DoctorLogin-wab8sBnT.js                   [39m[1m[2m  0.65 kB[22m[1m[22m[2m Γöé gzip:   0.40 kB[22m
+[2mdist/[22m[36massets/js/LabLogin-D3eWq8FK.js                      [39m[1m[2m  0.66 kB[22m[1m[22m[2m Γöé gzip:   0.40 kB[22m
+[2mdist/[22m[36massets/js/AdminLogin-GzvpRHJL.js                    [39m[1m[2m  0.66 kB[22m[1m[22m[2m Γöé gzip:   0.39 kB[22m
+[2mdist/[22m[36massets/js/input-vM_WAVuC.js                         [39m[1m[2m  0.66 kB[22m[1m[22m[2m Γöé gzip:   0.40 kB[22m
+[2mdist/[22m[36massets/js/PatientLogin-BajwAeM1.js                  [39m[1m[2m  0.67 kB[22m[1m[22m[2m Γöé gzip:   0.40 kB[22m
+[2mdist/[22m[36massets/js/ReceptionLogin-B6Y58XjO.js                [39m[1m[2m  0.67 kB[22m[1m[22m[2m Γöé gzip:   0.40 kB[22m
+[2mdist/[22m[36massets/js/building-D4LYWLJB.js                      [39m[1m[2m  0.71 kB[22m[1m[22m[2m Γöé gzip:   0.38 kB[22m
+[2mdist/[22m[36massets/js/badge-CIWKVOWU.js                         [39m[1m[2m  0.75 kB[22m[1m[22m[2m Γöé gzip:   0.40 kB[22m
+[2mdist/[22m[36massets/js/pdfCore-CFJzQXI5.js                       [39m[1m[2m  0.77 kB[22m[1m[22m[2m Γöé gzip:   0.45 kB[22m
+[2mdist/[22m[36massets/js/separator-nEdM1DPV.js                     [39m[1m[2m  0.79 kB[22m[1m[22m[2m Γöé gzip:   0.46 kB[22m
+[2mdist/[22m[36massets/js/labService-B0fi8W41.js                    [39m[1m[2m  0.87 kB[22m[1m[22m[2m Γöé gzip:   0.50 kB[22m
+[2mdist/[22m[36massets/js/skeleton-Bi6Hxima.js                      [39m[1m[2m  0.88 kB[22m[1m[22m[2m Γöé gzip:   0.43 kB[22m
+[2mdist/[22m[36massets/js/pharmacyService-D-l1A_TS.js               [39m[1m[2m  0.96 kB[22m[1m[22m[2m Γöé gzip:   0.41 kB[22m
+[2mdist/[22m[36massets/js/card-Ds7QB2We.js                          [39m[1m[2m  1.07 kB[22m[1m[22m[2m Γöé gzip:   0.42 kB[22m
+[2mdist/[22m[36massets/js/DataTable-CXVomvCp.js                     [39m[1m[2m  1.12 kB[22m[1m[22m[2m Γöé gzip:   0.61 kB[22m
+[2mdist/[22m[36massets/js/tabs-0AsNatfa.js                          [39m[1m[2m  1.19 kB[22m[1m[22m[2m Γöé gzip:   0.50 kB[22m
+[2mdist/[22m[36massets/js/appointmentService-De12C3Ia.js            [39m[1m[2m  1.19 kB[22m[1m[22m[2m Γöé gzip:   0.55 kB[22m
+[2mdist/[22m[36massets/js/AdminBilling-BzYaTVM4.js                  [39m[1m[2m  1.20 kB[22m[1m[22m[2m Γöé gzip:   0.61 kB[22m
+[2mdist/[22m[36massets/js/ReceptionBilling-3r6xs73L.js              [39m[1m[2m  1.21 kB[22m[1m[22m[2m Γöé gzip:   0.61 kB[22m
+[2mdist/[22m[36massets/js/StatsCard-ygFArshZ.js                     [39m[1m[2m  1.41 kB[22m[1m[22m[2m Γöé gzip:   0.60 kB[22m
+[2mdist/[22m[36massets/js/table-6_yfQ0M1.js                         [39m[1m[2m  1.57 kB[22m[1m[22m[2m Γöé gzip:   0.56 kB[22m
+[2mdist/[22m[36massets/js/ServicesSection-Biraq-9F.js               [39m[1m[2m  1.93 kB[22m[1m[22m[2m Γöé gzip:   0.87 kB[22m
+[2mdist/[22m[36massets/js/pdfUtils-atr5Avob.js                      [39m[1m[2m  2.00 kB[22m[1m[22m[2m Γöé gzip:   0.98 kB[22m
+[2mdist/[22m[36massets/js/OPDReports-dbnEwOd6.js                    [39m[1m[2m  2.00 kB[22m[1m[22m[2m Γöé gzip:   0.83 kB[22m
+[2mdist/[22m[36massets/js/staffService-COfSvtDZ.js                  [39m[1m[2m  2.08 kB[22m[1m[22m[2m Γöé gzip:   0.82 kB[22m
+[2mdist/[22m[36massets/js/dialog-Cak8XRW_.js                        [39m[1m[2m  2.24 kB[22m[1m[22m[2m Γöé gzip:   0.88 kB[22m
+[2mdist/[22m[36massets/js/OPDAppointments-taOiermB.js               [39m[1m[2m  2.29 kB[22m[1m[22m[2m Γöé gzip:   1.02 kB[22m
+[2mdist/[22m[36massets/js/AdminAppointments-Fjv2gx2Z.js             [39m[1m[2m  2.31 kB[22m[1m[22m[2m Γöé gzip:   1.06 kB[22m
+[2mdist/[22m[36massets/js/OPDBilling-BcTEwNZJ.js                    [39m[1m[2m  2.73 kB[22m[1m[22m[2m Γöé gzip:   1.17 kB[22m
+[2mdist/[22m[36massets/js/DoctorAppointments-DNa29Q1c.js            [39m[1m[2m  2.79 kB[22m[1m[22m[2m Γöé gzip:   1.24 kB[22m
+[2mdist/[22m[36massets/js/AppointmentDetailsDialog-4oLoS0Hc.js      [39m[1m[2m  2.81 kB[22m[1m[22m[2m Γöé gzip:   0.97 kB[22m
+[2mdist/[22m[36massets/js/ForgotPassword-BHXAb5Dk.js                [39m[1m[2m  2.92 kB[22m[1m[22m[2m Γöé gzip:   1.28 kB[22m
+[2mdist/[22m[36massets/js/PathologyResults-D-QdmAcj.js              [39m[1m[2m  3.00 kB[22m[1m[22m[2m Γöé gzip:   1.34 kB[22m
+[2mdist/[22m[36massets/js/PrescriptionDetailsDialog-WERs6z4S.js     [39m[1m[2m  3.02 kB[22m[1m[22m[2m Γöé gzip:   1.02 kB[22m
+[2mdist/[22m[36massets/js/StatusBadge-BVzQwkv7.js                   [39m[1m[2m  3.13 kB[22m[1m[22m[2m Γöé gzip:   0.77 kB[22m
+[2mdist/[22m[36massets/js/ReceptionPatients-BnfH090o.js             [39m[1m[2m  3.24 kB[22m[1m[22m[2m Γöé gzip:   1.38 kB[22m
+[2mdist/[22m[36massets/js/PatientFeedbackSection-xkLgRrPX.js        [39m[1m[2m  3.28 kB[22m[1m[22m[2m Γöé gzip:   1.38 kB[22m
+[2mdist/[22m[36massets/js/ReceptionAppointments-B3cSNdFH.js         [39m[1m[2m  3.58 kB[22m[1m[22m[2m Γöé gzip:   1.48 kB[22m
+[2mdist/[22m[36massets/js/ApiTest-1mJ0dexD.js                       [39m[1m[2m  3.63 kB[22m[1m[22m[2m Γöé gzip:   1.36 kB[22m
+[2mdist/[22m[36massets/js/PatientMedicalRecords-BtDFmBKp.js         [39m[1m[2m  3.72 kB[22m[1m[22m[2m Γöé gzip:   1.34 kB[22m
+[2mdist/[22m[36massets/js/BillDetailsDialog-DP_--7EO.js             [39m[1m[2m  3.85 kB[22m[1m[22m[2m Γöé gzip:   1.37 kB[22m
+[2mdist/[22m[36massets/js/PharmacyPendingOrders-8H3cNzXP.js         [39m[1m[2m  3.86 kB[22m[1m[22m[2m Γöé gzip:   1.65 kB[22m
+[2mdist/[22m[36massets/js/PatientPrescriptions-lrqTTkBv.js          [39m[1m[2m  3.90 kB[22m[1m[22m[2m Γöé gzip:   1.68 kB[22m
+[2mdist/[22m[36massets/js/Departments-B7fbhEny.js                   [39m[1m[2m  4.45 kB[22m[1m[22m[2m Γöé gzip:   1.68 kB[22m
+[2mdist/[22m[36massets/js/servicesData-Dhxj_dwG.js                  [39m[1m[2m  4.49 kB[22m[1m[22m[2m Γöé gzip:   1.86 kB[22m
+[2mdist/[22m[36massets/js/PharmacyAlerts-C1dvWkLv.js                [39m[1m[2m  4.55 kB[22m[1m[22m[2m Γöé gzip:   1.87 kB[22m
+[2mdist/[22m[36massets/js/PathologyDashboard-wwXFUKdc.js            [39m[1m[2m  4.55 kB[22m[1m[22m[2m Γöé gzip:   1.83 kB[22m
+[2mdist/[22m[36massets/js/PathologyReports-Ci8knp-i.js              [39m[1m[2m  4.55 kB[22m[1m[22m[2m Γöé gzip:   1.60 kB[22m
+[2mdist/[22m[36massets/js/ServiceDetails-BIM28Xlx.js                [39m[1m[2m  4.56 kB[22m[1m[22m[2m Γöé gzip:   1.60 kB[22m
+[2mdist/[22m[36massets/js/PathologyRequests-z44olkqe.js             [39m[1m[2m  4.62 kB[22m[1m[22m[2m Γöé gzip:   1.73 kB[22m
+[2mdist/[22m[36massets/js/AboutSection-BDl74URp.js                  [39m[1m[2m  4.87 kB[22m[1m[22m[2m Γöé gzip:   1.82 kB[22m
+[2mdist/[22m[36massets/js/OPDPrescriptions-CrKJf487.js              [39m[1m[2m  4.92 kB[22m[1m[22m[2m Γöé gzip:   2.13 kB[22m
+[2mdist/[22m[36massets/js/CreateLabOrderDialog-BtsLGXK4.js          [39m[1m[2m  5.16 kB[22m[1m[22m[2m Γöé gzip:   1.93 kB[22m
+[2mdist/[22m[36massets/js/Footer-CRqZWq89.js                        [39m[1m[2m  5.34 kB[22m[1m[22m[2m Γöé gzip:   1.68 kB[22m
+[2mdist/[22m[36massets/js/AddMedicineDialog-DZYPKZgu.js             [39m[1m[2m  5.35 kB[22m[1m[22m[2m Γöé gzip:   1.62 kB[22m
+[2mdist/[22m[36massets/js/OPDRegistration-B0Hn7f9i.js               [39m[1m[2m  5.38 kB[22m[1m[22m[2m Γöé gzip:   1.92 kB[22m
+[2mdist/[22m[36massets/js/LabResults-Byl-E-jH.js                    [39m[1m[2m  5.68 kB[22m[1m[22m[2m Γöé gzip:   1.92 kB[22m
+[2mdist/[22m[36massets/js/DoctorPatients-DhrAxb2O.js                [39m[1m[2m  5.79 kB[22m[1m[22m[2m Γöé gzip:   2.36 kB[22m
+[2mdist/[22m[36massets/js/PatientLabResults-BWfeehPx.js             [39m[1m[2m  5.88 kB[22m[1m[22m[2m Γöé gzip:   2.33 kB[22m
+[2mdist/[22m[36massets/js/ReceptionLabResults-iC6ZxNUG.js           [39m[1m[2m  5.99 kB[22m[1m[22m[2m Γöé gzip:   2.13 kB[22m
+[2mdist/[22m[36massets/js/LabSampleCollection-DwazIo6K.js           [39m[1m[2m  6.06 kB[22m[1m[22m[2m Γöé gzip:   2.39 kB[22m
+[2mdist/[22m[36massets/js/AdminPharmacy-DC-oOrIh.js                 [39m[1m[2m  6.23 kB[22m[1m[22m[2m Γöé gzip:   2.03 kB[22m
+[2mdist/[22m[36massets/js/PatientBilling-CBuILH9-.js                [39m[1m[2m  6.63 kB[22m[1m[22m[2m Γöé gzip:   2.52 kB[22m
+[2mdist/[22m[36massets/js/PatientReports-CaMWEHg-.js                [39m[1m[2m  6.76 kB[22m[1m[22m[2m Γöé gzip:   2.57 kB[22m
+[2mdist/[22m[36massets/js/LabResultDetailsDialog-CeoMSTbC.js        [39m[1m[2m  7.08 kB[22m[1m[22m[2m Γöé gzip:   2.55 kB[22m
+[2mdist/[22m[36massets/js/AdminAnalytics-BIKa5wKq.js                [39m[1m[2m  7.32 kB[22m[1m[22m[2m Γöé gzip:   2.54 kB[22m
+[2mdist/[22m[36massets/js/LabPendingTests-_isml5TF.js               [39m[1m[2m  7.51 kB[22m[1m[22m[2m Γöé gzip:   2.30 kB[22m
+[2mdist/[22m[36massets/js/Prescriptions-Dl3AuKlg.js                 [39m[1m[2m  7.64 kB[22m[1m[22m[2m Γöé gzip:   2.64 kB[22m
+[2mdist/[22m[36massets/js/UnifiedBilling-BJls622f.js                [39m[1m[2m  7.66 kB[22m[1m[22m[2m Γöé gzip:   2.92 kB[22m
+[2mdist/[22m[36massets/js/InvoicePage-2z843JTn.js                   [39m[1m[2m  7.89 kB[22m[1m[22m[2m Γöé gzip:   2.55 kB[22m
+[2mdist/[22m[36massets/js/LabTestCatalog-CTPdvctQ.js                [39m[1m[2m  7.98 kB[22m[1m[22m[2m Γöé gzip:   2.40 kB[22m
+[2mdist/[22m[36massets/js/DoctorDashboard-BZPyJ7r9.js               [39m[1m[2m  8.55 kB[22m[1m[22m[2m Γöé gzip:   2.57 kB[22m
+[2mdist/[22m[36massets/js/OpdDashboard-CuBT49XD.js                  [39m[1m[2m  8.69 kB[22m[1m[22m[2m Γöé gzip:   2.82 kB[22m
+[2mdist/[22m[36massets/js/LabResultsEntry-BtixvTyp.js               [39m[1m[2m  8.73 kB[22m[1m[22m[2m Γöé gzip:   3.09 kB[22m
+[2mdist/[22m[36massets/js/PharmacyInventory-BtHaDamD.js             [39m[1m[2m  8.94 kB[22m[1m[22m[2m Γöé gzip:   2.70 kB[22m
+[2mdist/[22m[36massets/js/PatientSettings-BveXULRW.js               [39m[1m[2m  9.30 kB[22m[1m[22m[2m Γöé gzip:   2.59 kB[22m
+[2mdist/[22m[36massets/js/PharmacyDispensing-CEQicNDJ.js            [39m[1m[2m  9.32 kB[22m[1m[22m[2m Γöé gzip:   2.96 kB[22m
+[2mdist/[22m[36massets/js/AdminPatients-dvlWzSAo.js                 [39m[1m[2m  9.58 kB[22m[1m[22m[2m Γöé gzip:   3.40 kB[22m
+[2mdist/[22m[36massets/js/BillGenerationDialog-Ot-a3FMy.js          [39m[1m[2m  9.70 kB[22m[1m[22m[2m Γöé gzip:   3.20 kB[22m
+[2mdist/[22m[36massets/js/pagination-C5fHwLG6.js                    [39m[1m[2m  9.81 kB[22m[1m[22m[2m Γöé gzip:   3.28 kB[22m
+[2mdist/[22m[36massets/js/DoctorSettings-DZUPcaKl.js                [39m[1m[2m  9.84 kB[22m[1m[22m[2m Γöé gzip:   2.72 kB[22m
+[2mdist/[22m[36massets/js/Reports-cBl70NAZ.js                       [39m[1m[2m  9.87 kB[22m[1m[22m[2m Γöé gzip:   3.63 kB[22m
+[2mdist/[22m[36massets/js/PharmacyDashboard-D1qI730l.js             [39m[1m[2m 10.06 kB[22m[1m[22m[2m Γöé gzip:   3.26 kB[22m
+[2mdist/[22m[36massets/js/BookAppointment-COmppsHT.js               [39m[1m[2m 10.14 kB[22m[1m[22m[2m Γöé gzip:   3.37 kB[22m
+[2mdist/[22m[36massets/js/Settings-6GOzb4pr.js                      [39m[1m[2m 10.43 kB[22m[1m[22m[2m Γöé gzip:   2.73 kB[22m
+[2mdist/[22m[36massets/js/Consultation-BFPkr2Su.js                  [39m[1m[2m 10.71 kB[22m[1m[22m[2m Γöé gzip:   3.41 kB[22m
+[2mdist/[22m[36massets/js/AppointmentBookingDialog-BzwFiF7A.js      [39m[1m[2m 10.96 kB[22m[1m[22m[2m Γöé gzip:   3.50 kB[22m
+[2mdist/[22m[36massets/js/OPDConsultation-DfSkIjcg.js               [39m[1m[2m 11.51 kB[22m[1m[22m[2m Γöé gzip:   3.47 kB[22m
+[2mdist/[22m[36massets/js/ReceptionSettings-DGI3P_ei.js             [39m[1m[2m 11.66 kB[22m[1m[22m[2m Γöé gzip:   2.94 kB[22m
+[2mdist/[22m[36massets/js/MedicalRecords-VaMisQTX.js                [39m[1m[2m 11.95 kB[22m[1m[22m[2m Γöé gzip:   3.84 kB[22m
+[2mdist/[22m[36massets/js/LabSettings-Cm6FAtuL.js                   [39m[1m[2m 12.17 kB[22m[1m[22m[2m Γöé gzip:   2.91 kB[22m
+[2mdist/[22m[36massets/js/PharmacySettings-D8fs7T3L.js              [39m[1m[2m 12.20 kB[22m[1m[22m[2m Γöé gzip:   2.89 kB[22m
+[2mdist/[22m[36massets/js/ReceptionDashboard-DM_jXqm1.js            [39m[1m[2m 12.45 kB[22m[1m[22m[2m Γöé gzip:   3.65 kB[22m
+[2mdist/[22m[36massets/js/printInvoice-CmvXBuoo.js                  [39m[1m[2m 12.47 kB[22m[1m[22m[2m Γöé gzip:   2.32 kB[22m
+[2mdist/[22m[36massets/js/scroll-area-DundN8QL.js                   [39m[1m[2m 12.51 kB[22m[1m[22m[2m Γöé gzip:   3.95 kB[22m
+[2mdist/[22m[36massets/js/Staff-CAP-14cI.js                         [39m[1m[2m 12.70 kB[22m[1m[22m[2m Γöé gzip:   3.59 kB[22m
+[2mdist/[22m[36massets/js/mockData-CefayKpH.js                      [39m[1m[2m 14.13 kB[22m[1m[22m[2m Γöé gzip:   3.71 kB[22m
+[2mdist/[22m[36massets/js/ConsultationDetailsDialog-Bl-UiDRa.js     [39m[1m[2m 14.26 kB[22m[1m[22m[2m Γöé gzip:   3.97 kB[22m
+[2mdist/[22m[36massets/js/PatientDetailsDialog-CLrLEQnk.js          [39m[1m[2m 17.14 kB[22m[1m[22m[2m Γöé gzip:   3.82 kB[22m
+[2mdist/[22m[36massets/js/PatientDashboard-BBgDbhRF.js              [39m[1m[2m 17.72 kB[22m[1m[22m[2m Γöé gzip:   4.07 kB[22m
+[2mdist/[22m[36massets/js/AdminDashboard-B_O_peG1.js                [39m[1m[2m 19.09 kB[22m[1m[22m[2m Γöé gzip:   5.35 kB[22m
+[2mdist/[22m[36massets/js/LabDashboard-CRF6CEiT.js                  [39m[1m[2m 19.11 kB[22m[1m[22m[2m Γöé gzip:   5.20 kB[22m
+[2mdist/[22m[36massets/js/format-Dt1fCkSA.js                        [39m[1m[2m 19.76 kB[22m[1m[22m[2m Γöé gzip:   5.61 kB[22m
+[2mdist/[22m[36massets/js/purify.es-C5KSVp3G.js                     [39m[1m[2m 22.74 kB[22m[1m[22m[2m Γöé gzip:   8.79 kB[22m
+[2mdist/[22m[36massets/js/vendor-query-BQGkZFw7.js                  [39m[1m[2m 26.03 kB[22m[1m[22m[2m Γöé gzip:   8.23 kB[22m
+[2mdist/[22m[36massets/js/DashboardLayout-C8XUMHXT.js               [39m[1m[2m 28.02 kB[22m[1m[22m[2m Γöé gzip:   7.45 kB[22m
+[2mdist/[22m[36massets/js/DoctorsSection-udN6ZnxT.js                [39m[1m[2m 33.84 kB[22m[1m[22m[2m Γöé gzip:   9.96 kB[22m
+[2mdist/[22m[36massets/js/PharmacyBilling-BKrmopCv.js               [39m[1m[2m 34.31 kB[22m[1m[22m[2m Γöé gzip:  11.46 kB[22m
+[2mdist/[22m[36massets/js/PatientRegistrationDialog-B2MSBqTh.js     [39m[1m[2m 43.01 kB[22m[1m[22m[2m Γöé gzip:  10.93 kB[22m
+[2mdist/[22m[36massets/js/LoginPage-ChdxDY9W.js                     [39m[1m[2m 62.57 kB[22m[1m[22m[2m Γöé gzip:  14.39 kB[22m
+[2mdist/[22m[36massets/js/vendor-ui-DjP_ABi2.js                     [39m[1m[2m117.51 kB[22m[1m[22m[2m Γöé gzip:  37.73 kB[22m
+[2mdist/[22m[36massets/js/index-BWA_R5O9.js                         [39m[1m[2m126.64 kB[22m[1m[22m[2m Γöé gzip:  37.59 kB[22m
+[2mdist/[22m[36massets/js/index.es-BT_ACw_7.js                      [39m[1m[2m150.60 kB[22m[1m[22m[2m Γöé gzip:  51.53 kB[22m
+[2mdist/[22m[36massets/js/vendor-react-CAjteclJ.js                  [39m[1m[2m163.04 kB[22m[1m[22m[2m Γöé gzip:  53.20 kB[22m
+[2mdist/[22m[36massets/js/html2canvas.esm-BfxBtG_O.js               [39m[1m[2m201.41 kB[22m[1m[22m[2m Γöé gzip:  48.03 kB[22m
+[2mdist/[22m[36massets/js/vendor-charts-BPHmihmt.js                 [39m[1m[2m411.07 kB[22m[1m[22m[2m Γöé gzip: 110.47 kB[22m
+[2mdist/[22m[36massets/js/vendor-pdf-BSqjOv2X.js                    [39m[1m[2m445.10 kB[22m[1m[22m[2m Γöé gzip: 144.88 kB[22m
+[2mdist/[22m[32mplaceholder.svg.gz     [39m[1m[2m0.92 kB[1m[22m
+[2mdist/[22m[32mplaceholder.svg.br     [39m[1m[2m0.84 kB[1m[22m
+[32mΓ£ô built in 28.49s[39m
+
