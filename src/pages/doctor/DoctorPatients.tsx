@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { DataTable } from "@/components/dashboard/DataTable";
 import { patientService } from "@/services/patientService";
@@ -7,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Users, Filter as FilterIcon, Search } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { ConsultationActions } from "@/components/doctor/ConsultationActions";
+import { PatientDetailsDialog } from "@/components/patients/PatientDetailsDialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
@@ -27,6 +29,7 @@ import { format } from "date-fns";
 import { DatePicker } from "@/components/ui/date-picker";
 
 export default function DoctorPatients() {
+    const navigate = useNavigate();
     const [patients, setPatients] = useState<Patient[]>([]);
     const [loading, setLoading] = useState(false);
     const [meta, setMeta] = useState({ page: 1, totalPages: 1, total: 0 });
@@ -126,7 +129,14 @@ export default function DoctorPatients() {
             key: "actions",
             header: "Actions",
             render: (p: any) => (
-                <ConsultationActions patient={p} />
+                <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                    <ConsultationActions patient={p} />
+                    <PatientDetailsDialog patientId={p.uhid} patient={p} showMedicalRecords={true}>
+                        <Button variant="ghost" size="sm" className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 text-xs">
+                            View Details
+                        </Button>
+                    </PatientDetailsDialog>
+                </div>
             )
         }
     ];
@@ -187,6 +197,7 @@ export default function DoctorPatients() {
                             <DataTable
                                 data={patients}
                                 columns={columns}
+                                onRowClick={(p: any) => navigate(`/doctor/patients/${p.uhid}/encounter`)}
                                 emptyMessage="No patients found matching your filters"
                             />
                         )}

@@ -57,15 +57,6 @@ export function ConsultationActions({ patient }: ConsultationActionsProps) {
 
     return (
         <div className="flex items-center gap-1">
-            <Button
-                variant="ghost"
-                size="icon"
-                title="View Latest Consultation"
-                onClick={handleView}
-                disabled={loading}
-            >
-                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Eye className="h-4 w-4" />}
-            </Button>
 
             <Button
                 variant="ghost"

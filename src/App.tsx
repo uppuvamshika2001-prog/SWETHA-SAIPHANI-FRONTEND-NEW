@@ -36,6 +36,7 @@ const Reports = lazy(() => import("./pages/admin/Reports"));
 const Settings = lazy(() => import("./pages/admin/Settings"));
 const AdminPharmacy = lazy(() => import("./pages/admin/AdminPharmacy"));
 const AdminAnalytics = lazy(() => import("./pages/admin/AdminAnalytics"));
+const PatientEncounter = lazy(() => import("./pages/admin/PatientEncounter"));
 const OPDRegistration = lazy(() => import("./pages/admin/opd/OPDRegistration"));
 const OPDAppointments = lazy(() => import("./pages/admin/opd/OPDAppointments"));
 const OPDConsultation = lazy(() => import("./pages/admin/opd/OPDConsultation"));
@@ -141,6 +142,7 @@ const App = () => {
                         <Route path="/admin/dashboard" element={<AdminDashboard />} />
                         <Route path="/admin/staff" element={<Staff />} />
                         <Route path="/admin/patients" element={<AdminPatients />} />
+                        <Route path="/admin/patients/:id/encounter" element={<PatientEncounter />} />
                         <Route path="/admin/appointments" element={<AdminAppointments />} />
                         <Route path="/admin/departments" element={<Departments />} />
                         <Route path="/admin/billing" element={<AdminBilling />} />
@@ -172,6 +174,7 @@ const App = () => {
                         <Route path="/doctor/consultation/:appointmentId" element={<Consultation />} />
                         <Route path="/doctor/appointments" element={<DoctorAppointments />} />
                         <Route path="/doctor/patients" element={<DoctorPatients />} />
+                        <Route path="/doctor/patients/:id/encounter" element={<PatientEncounter />} />
                         <Route path="/doctor/records" element={<MedicalRecords />} />
                         <Route path="/doctor/prescriptions" element={<DoctorPrescriptions />} />
                         <Route path="/doctor/lab-results" element={<DoctorLabResults />} />
@@ -182,6 +185,7 @@ const App = () => {
                       <Route element={<ProtectedRoute allowedRoles={['receptionist']} />}>
                         <Route path="/reception/dashboard" element={<ReceptionDashboard />} />
                         <Route path="/reception/patients" element={<ReceptionPatients />} />
+                        <Route path="/reception/patients/:id/encounter" element={<PatientEncounter />} />
                         <Route path="/reception/appointments" element={<ReceptionAppointments />} />
                         <Route path="/reception/billing" element={<ReceptionBilling />} />
                         <Route path="/reception/lab-results" element={<ReceptionLabResults />} />
