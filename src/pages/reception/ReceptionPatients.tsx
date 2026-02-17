@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { DataTable } from '@/components/dashboard/DataTable';
 import { StatusBadge } from '@/components/dashboard/StatusBadge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Users, UserPlus, Search, Download, Edit } from 'lucide-react';
+import { Users, UserPlus, Search, Download, Edit, Trash2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { PatientRegistrationDialog } from '@/components/patients/PatientRegistrationDialog';
 import { PatientDetailsDialog } from '@/components/patients/PatientDetailsDialog';
@@ -22,8 +23,20 @@ import {
 
 import { format } from 'date-fns';
 import { DatePicker } from '@/components/ui/date-picker';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { toast } from "sonner";
 
 export default function ReceptionPatients() {
+    const navigate = useNavigate();
     const [patients, setPatients] = useState<Patient[]>([]);
     const [loading, setLoading] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
@@ -32,6 +45,10 @@ export default function ReceptionPatients() {
 
     // Date Filtering State (Default: Today)
     const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
+
+    // Delete Confirmation State
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+    const [patientToDelete, setPatientToDelete] = useState<string | null>(null);
 
     const PAGE_SIZE = 15;
 
@@ -65,7 +82,7 @@ export default function ReceptionPatients() {
         } finally {
             setLoading(false);
         }
-    }, [page, searchQuery]);
+    }, [page, searchQuery, selectedDate]);
 
     // Debounce search, immediately fetch on page change
     useEffect(() => {
@@ -83,6 +100,26 @@ export default function ReceptionPatients() {
     const handleSearchChange = (value: string) => {
         setSearchQuery(value);
         setPage(1); // Reset to page 1 on new search
+    };
+
+    const handleDeleteClick = (uhid: string) => {
+        setPatientToDelete(uhid);
+        setDeleteDialogOpen(true);
+    };
+
+    const confirmDelete = async () => {
+        if (!patientToDelete) return;
+        try {
+            await patientService.deletePatient(patientToDelete);
+            toast.success("Patient deleted successfully");
+            fetchPatients();
+        } catch (error) {
+            console.error("Failed to delete patient", error);
+            toast.error("Failed to delete patient");
+        } finally {
+            setDeleteDialogOpen(false);
+            setPatientToDelete(null);
+        }
     };
 
     // Generate page numbers for pagination
@@ -124,17 +161,30 @@ export default function ReceptionPatients() {
             header: 'Actions',
             render: (patient: any) => (
                 <div className="flex items-center gap-2">
-                    <PatientDetailsDialog patientId={patient.uhid} showMedicalRecords={false}>
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                        onClick={() => navigate(`/reception/patients/${patient.uhid}/encounter`)}
+                    >
+                        Clinical Notes
+                    </Button>
+                    <PatientDetailsDialog patientId={patient.uhid} patient={patient} showMedicalRecords={true}>
                         <Button variant="ghost" size="sm">View Details</Button>
                     </PatientDetailsDialog>
-                    <Button variant="outline" size="sm" onClick={() => printPatientCard(patient, [], false)}>
-                        <Download className="h-4 w-4" />
-                    </Button>
                     <PatientRegistrationDialog patientToEdit={patient} onRegister={() => fetchPatients()}>
                         <Button variant="ghost" size="sm">
                             <Edit className="h-4 w-4" />
                         </Button>
                     </PatientRegistrationDialog>
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                        onClick={() => handleDeleteClick(patient.uhid)}
+                    >
+                        <Trash2 className="h-4 w-4" />
+                    </Button>
                 </div>
             )
         }
@@ -242,6 +292,21 @@ export default function ReceptionPatients() {
                         )}
                     </CardContent>
                 </Card>
+
+                <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                                This action cannot be undone. This will permanently delete the patient record.
+                            </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={confirmDelete} className="bg-red-600 hover:bg-red-700">Delete</AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
             </div>
         </DashboardLayout>
     );

@@ -20,12 +20,39 @@ import {
 } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
-import { FileText, Plus, Trash2, Loader2, IndianRupee } from "lucide-react";
+import { FileText, Plus, Trash2, Loader2, IndianRupee, TestTube2, Stethoscope, Microscope } from "lucide-react";
 import { patientService } from "@/services/patientService";
 import { billingService } from "@/services/billingService";
 import { labService } from "@/services/labService";
 import { Patient } from "@/types";
 import { Separator } from "@/components/ui/separator";
+import { MultiSelect } from "@/components/ui/multi-select";
+
+// Common Lab Test Prices
+const TEST_PRICES: Record<string, number> = {
+    "CBC": 350,
+    "Complete Blood Count": 350,
+    "Lipid Profile": 600,
+    "Thyroid Profile": 800,
+    "Thyroid Function Test": 800,
+    "Blood Sugar (Fasting)": 150,
+    "Blood Sugar (PP)": 150,
+    "Blood Sugar (Random)": 150,
+    "HbA1c": 500,
+    "Urine Routine": 200,
+    "Liver Function Test": 700,
+    "Kidney Function Test": 700,
+    "Electrolytes": 400,
+    "Vitamin D": 1200,
+    "Vitamin B12": 1000,
+    "Dengue NS1": 600,
+    "Malaria Parasite": 300,
+    "Typhoid": 400,
+    "CBP": 350,
+    "CUE": 200
+};
+
+const DEFAULT_LAB_PRICE = 500;
 
 interface BillGenerationDialogProps {
     children?: React.ReactNode;
@@ -58,6 +85,11 @@ export function BillGenerationDialog({
     const [unitPrice, setUnitPrice] = useState("");
     const [quantity, setQuantity] = useState("1");
     const [discount, setDiscount] = useState("0");
+
+    // Manual Item State
+    const [entryMode, setEntryMode] = useState<'service' | 'lab_multi'>('service');
+    // Multi-Select Lab Tests
+    const [selectedMultiLabTests, setSelectedMultiLabTests] = useState<string[]>([]);
 
     useEffect(() => {
         if (showOpen) {
@@ -104,14 +136,52 @@ export function BillGenerationDialog({
         if (selectedLabOrderIds.includes(order.id)) return;
 
         // Add to items
-        const testNames = order.tests.map((t: any) => t.test_name).join(", ");
+        const testNames = order.test_name;
         const description = `Lab: ${testNames} (Order #${order.order_id})`;
-        const amount = 500; // Default or fetch price? Using placeholder for now, user can edit.
+
+        // Determine price
+        let amount = DEFAULT_LAB_PRICE;
+        // Check exact match or partial match
+        const exactPrice = TEST_PRICES[testNames];
+        if (exactPrice) {
+            amount = exactPrice;
+        } else {
+            // Try to find a matching price
+            const matchingKey = Object.keys(TEST_PRICES).find(key => testNames.includes(key));
+            if (matchingKey) {
+                amount = TEST_PRICES[matchingKey];
+            }
+        }
+
 
         setItems([...items, { description, quantity: 1, unitPrice: amount, total: amount }]);
         setSelectedLabOrderIds([...selectedLabOrderIds, order.id]);
 
         toast.info("Lab order added. Please verify price.");
+    };
+
+    const handleAddMultiLabTests = () => {
+        if (selectedMultiLabTests.length === 0) return;
+
+        const newItems = [...items];
+        let addedCount = 0;
+
+        selectedMultiLabTests.forEach(testName => {
+            const price = TEST_PRICES[testName] || DEFAULT_LAB_PRICE;
+            const description = `Lab: ${testName}`;
+
+            newItems.push({
+                description,
+                quantity: 1,
+                unitPrice: price,
+                total: price
+            });
+            addedCount++;
+        });
+
+        setItems(newItems);
+        setSelectedMultiLabTests([]);
+        toast.success(`Added ${addedCount} lab tests to bill.`);
     };
 
     const handleAddItem = () => {
@@ -247,15 +317,18 @@ export function BillGenerationDialog({
                     {pendingLabOrders.length > 0 && (
                         <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-100 dark:border-blue-800">
                             <h4 className="text-sm font-semibold text-blue-800 dark:text-blue-200 mb-2 flex items-center gap-2">
-                                <FileText className="h-4 w-4" /> Pending Lab Orders
+                                <FileText className="h-4 w-4" /> Pending Lab Orders ({pendingLabOrders.length})
                             </h4>
                             <div className="space-y-2">
                                 {pendingLabOrders.map(order => (
                                     <div key={order.id} className="flex justify-between items-center bg-white dark:bg-slate-950 p-3 rounded border border-blue-200 dark:border-blue-800">
                                         <div>
                                             <div className="font-medium text-sm">{order.order_id}</div>
-                                            <div className="text-xs text-muted-foreground">
-                                                {order.tests.map((t: any) => t.test_name).join(", ")}
+                                            <div className="text-xs text-muted-foreground flex items-center gap-2">
+                                                <span>{order.test_name}</span>
+                                                <span className="font-semibold text-blue-600">
+                                                    ₹{TEST_PRICES[order.test_name] || (Object.keys(TEST_PRICES).find(k => order.test_name.includes(k)) ? TEST_PRICES[Object.keys(TEST_PRICES).find(k => order.test_name.includes(k))!] : DEFAULT_LAB_PRICE)}
+                                                </span>
                                             </div>
                                         </div>
                                         <Button
@@ -275,12 +348,23 @@ export function BillGenerationDialog({
 
                     {/* Add Item Section */}
                     <div className="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-lg border border-slate-100 dark:border-slate-800 space-y-4">
-                        <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-200">Add Service Item</h4>
-                        <div className="grid grid-cols-12 gap-4 items-end">
-                            <div className="col-span-12 md:col-span-5 space-y-1.5">
+                        <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-200">Add Service / Test</h4>
+
+                        <div className="flex flex-col md:flex-row gap-4 items-end">
+                            {/* Service Description - Always Visible */}
+                            <div className="w-full md:w-1/3 space-y-1.5">
                                 <Label htmlFor="desc" className="text-xs text-slate-500">Service Description</Label>
-                                <Select value={description} onValueChange={setDescription}>
-                                    <SelectTrigger id="desc" className="bg-white dark:bg-slate-950 h-9">
+                                <Select value={description} onValueChange={(val) => {
+                                    setDescription(val);
+                                    if (val === "Lab Fee") {
+                                        setEntryMode('lab_multi');
+                                    } else {
+                                        setEntryMode('service');
+                                        if (val === "Consultation Fee") setUnitPrice("500");
+                                        else setUnitPrice("");
+                                    }
+                                }}>
+                                    <SelectTrigger id="desc" className="bg-white dark:bg-slate-950 h-9 w-full">
                                         <SelectValue placeholder="Select service" />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -289,33 +373,64 @@ export function BillGenerationDialog({
                                     </SelectContent>
                                 </Select>
                             </div>
-                            <div className="col-span-4 md:col-span-2 space-y-1.5">
-                                <Label htmlFor="qty" className="text-xs text-slate-500">Qty</Label>
-                                <Input
-                                    id="qty"
-                                    type="number"
-                                    min="1"
-                                    value={quantity}
-                                    onChange={(e) => setQuantity(e.target.value)}
-                                    className="bg-white dark:bg-slate-950 h-9 text-right"
-                                />
-                            </div>
-                            <div className="col-span-8 md:col-span-3 space-y-1.5">
-                                <Label htmlFor="price" className="text-xs text-slate-500">Unit Price (₹)</Label>
-                                <Input
-                                    id="price"
-                                    type="number"
-                                    value={unitPrice}
-                                    onChange={(e) => setUnitPrice(e.target.value)}
-                                    placeholder="0.00"
-                                    className="bg-white dark:bg-slate-950 h-9 text-right"
-                                />
-                            </div>
-                            <div className="col-span-12 md:col-span-2">
-                                <Button onClick={handleAddItem} size="sm" className="w-full bg-slate-800 hover:bg-slate-900 text-white dark:bg-slate-700 dark:hover:bg-slate-600 h-9">
-                                    <Plus className="h-3.5 w-3.5 mr-1.5" /> Add
-                                </Button>
-                            </div>
+
+                            {entryMode === 'service' ? (
+                                <>
+                                    <div className="w-full md:w-24 space-y-1.5">
+                                        <Label htmlFor="qty" className="text-xs text-slate-500">Qty</Label>
+                                        <Input
+                                            id="qty"
+                                            type="number"
+                                            min="1"
+                                            value={quantity}
+                                            onChange={(e) => setQuantity(e.target.value)}
+                                            className="bg-white dark:bg-slate-950 h-9 text-right"
+                                        />
+                                    </div>
+                                    <div className="w-full md:w-32 space-y-1.5">
+                                        <Label htmlFor="price" className="text-xs text-slate-500">Unit Price (₹)</Label>
+                                        <Input
+                                            id="price"
+                                            type="number"
+                                            value={unitPrice}
+                                            onChange={(e) => setUnitPrice(e.target.value)}
+                                            placeholder="0.00"
+                                            className="bg-white dark:bg-slate-950 h-9 text-right"
+                                        />
+                                    </div>
+                                    <div className="w-full md:w-auto">
+                                        <Button onClick={handleAddItem} size="sm" className="w-full md:w-auto bg-slate-800 hover:bg-slate-900 text-white dark:bg-slate-700 dark:hover:bg-slate-600 h-9 px-4">
+                                            <Plus className="h-3.5 w-3.5 mr-1.5" /> Add
+                                        </Button>
+                                    </div>
+                                </>
+                            ) : (
+                                <>
+                                    <div className="flex-1 space-y-1.5 w-full">
+                                        <Label className="text-xs text-slate-500">Select Lab Tests (Multiple)</Label>
+                                        <MultiSelect
+                                            options={Object.entries(TEST_PRICES).map(([test, price]) => ({
+                                                label: `${test} (₹${price})`,
+                                                value: test
+                                            }))}
+                                            selected={selectedMultiLabTests}
+                                            onChange={setSelectedMultiLabTests}
+                                            placeholder="Select lab tests..."
+                                            className="bg-white dark:bg-slate-950 w-full"
+                                        />
+                                    </div>
+                                    <div className="w-full md:w-auto">
+                                        <Button
+                                            onClick={handleAddMultiLabTests}
+                                            disabled={selectedMultiLabTests.length === 0}
+                                            size="sm"
+                                            className="w-full md:w-auto bg-blue-600 hover:bg-blue-700 text-white h-9 px-4"
+                                        >
+                                            <Plus className="h-3.5 w-3.5 mr-1.5" /> Add Items
+                                        </Button>
+                                    </div>
+                                </>
+                            )}
                         </div>
                     </div>
 

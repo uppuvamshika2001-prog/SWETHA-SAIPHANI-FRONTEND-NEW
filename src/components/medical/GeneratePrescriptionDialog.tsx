@@ -8,11 +8,13 @@ import { Plus, Trash2, Pill, Search } from "lucide-react";
 import { usePrescriptions, Prescription } from "@/contexts/PrescriptionContext";
 import { usePatients } from "@/contexts/PatientContext";
 import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
 
 export function GeneratePrescriptionDialog() {
     const [open, setOpen] = useState(false);
     const { addPrescription } = usePrescriptions();
     const { patients } = usePatients();
+    const { user, profile } = useAuth();
 
     const [formData, setFormData] = useState({
         patientId: "",
@@ -84,8 +86,8 @@ export function GeneratePrescriptionDialog() {
             order_id: `RX-${Math.floor(Math.random() * 10000)}`,
             patient_id: selectedPatientUhid, // Use UHID
             patient_name: formData.patientName,
-            doctor_id: 'doc-curr',
-            doctor_name: 'Dr. Current User',
+            doctor_id: user?.id || 'unknown',
+            doctor_name: profile?.full_name || user?.full_name || user?.email || 'Doctor',
             diagnosis: formData.diagnosis,
             items: items.map(i => ({
                 medicine_id: `med-${Math.floor(Math.random() * 10000)}`,

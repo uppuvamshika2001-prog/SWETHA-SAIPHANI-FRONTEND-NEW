@@ -4,6 +4,7 @@ import { DataTable } from '@/components/dashboard/DataTable';
 import { StatusBadge } from '@/components/dashboard/StatusBadge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { DatePicker } from '@/components/ui/date-picker';
 import {
   Users,
   UserCheck,
@@ -56,10 +57,10 @@ export default function AdminDashboard() {
     if (showLoading) setLoading(true);
     try {
       const [fetchedAppointments, fetchedStaff, fetchedBills, fetchedPatients] = await Promise.all([
-        appointmentService.getAppointments(),
+        appointmentService.getAppointments({ limit: 100 }),
         staffService.getStaff(),
-        billingService.getBills(),
-        patientService.getPatients()
+        billingService.getBills({ limit: 100 }),
+        patientService.getPatients({ pageSize: 100 })
       ]);
       setAppointments(fetchedAppointments);
       setStaff(fetchedStaff);
@@ -69,11 +70,15 @@ export default function AdminDashboard() {
       setPatients(Array.isArray(patientsData) ? patientsData : (patientsData.items || []));
       setLastUpdated(new Date());
 
-      // Update current date reference
+      // Only auto-update currentDate if it was already today (keep user selection if they changed it)
+      // Actually, let's NOT auto-update current date if user selected a different one.
+      // The previous logic forced it to today.
+      /*
       const today = format(new Date(), 'yyyy-MM-dd');
       if (today !== currentDate) {
         setCurrentDate(today);
       }
+      */
     } catch (error) {
       console.error("Failed to fetch dashboard data", error);
       toast.error("Failed to load dashboard data");
@@ -90,20 +95,10 @@ export default function AdminDashboard() {
       fetchDashboardData(false);
     }, 30000);
 
-    // Check for day change every minute to update the "Today" reference
-    const dateInterval = setInterval(() => {
-      const now = format(new Date(), 'yyyy-MM-dd');
-      if (now !== currentDate) {
-        console.log("Day changed, refreshing dashboard...");
-        fetchDashboardData(true);
-      }
-    }, 60000);
-
     return () => {
       clearInterval(pollingInterval);
-      clearInterval(dateInterval);
     };
-  }, [currentDate]);
+  }, []); // Remove currentDate dependency to prevent refetching loop if we used it in fetch
 
   const todayAppointments = appointments.filter(
     (apt) => format(new Date(apt.date), 'yyyy-MM-dd') === currentDate
@@ -183,10 +178,12 @@ export default function AdminDashboard() {
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
             <h1 className="text-2xl font-bold">Hospital Overview</h1>
-            <div className="flex items-center gap-2">
-              <p className="text-muted-foreground">
-                {format(new Date(), 'EEEE, MMMM d, yyyy')}
-              </p>
+            <div className="flex items-center gap-2 mt-1">
+              <DatePicker
+                date={new Date(currentDate)}
+                setDate={(date) => date && setCurrentDate(format(date, 'yyyy-MM-dd'))}
+                className="w-[200px]"
+              />
               <span className="h-1 w-1 rounded-full bg-muted-foreground/50"></span>
               <p className="text-xs text-muted-foreground flex items-center gap-1">
                 <Activity className="h-3 w-3 animate-pulse text-green-500" />
@@ -268,7 +265,7 @@ export default function AdminDashboard() {
             value={activePatientsToday}
             icon={<Users className="h-5 w-5" />}
             trend={{ value: 12, isPositive: true }}
-            description="Registered today"
+            description={`Registered on ${currentDate === format(new Date(), 'yyyy-MM-dd') ? 'today' : format(new Date(currentDate), 'MMM dd')}`}
           />
           <StatsCard
             title="Doctors on Duty"
@@ -282,14 +279,14 @@ export default function AdminDashboard() {
             value={todayAppointments.length}
             icon={<Calendar className="h-5 w-5" />}
             trend={{ value: 5, isPositive: true }}
-            description="Scheduled for today"
+            description={`Scheduled for ${currentDate === format(new Date(), 'yyyy-MM-dd') ? 'today' : format(new Date(currentDate), 'MMM dd')}`}
           />
           <StatsCard
             title="Today's Revenue"
             value={`₹${todayRevenue.toLocaleString()}`}
             icon={<IndianRupee className="h-5 w-5" />}
             trend={{ value: 8.2, isPositive: true }}
-            description="From paid bills"
+            description={`From paid bills on ${currentDate === format(new Date(), 'yyyy-MM-dd') ? 'today' : format(new Date(currentDate), 'MMM dd')}`}
             variant="success"
           />
         </div>

@@ -1,7 +1,7 @@
 import { AppRole } from '@/types';
 import { toast } from 'sonner';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
+const API_URL = import.meta.env.VITE_API_URL || '/api';
 
 
 export interface User {
@@ -25,6 +25,8 @@ interface AuthResponse {
 }
 
 class ApiService {
+    private refreshPromise: Promise<void> | null = null;
+
     private getHeaders() {
         const headers: Record<string, string> = {
             'Content-Type': 'application/json',
@@ -40,117 +42,158 @@ class ApiService {
         return headers;
     }
 
-    private async handleResponse<T>(response: Response): Promise<T> {
+    private async refreshAccessToken(refreshToken: string): Promise<void> {
+        if (this.refreshPromise) return this.refreshPromise;
+
+        this.refreshPromise = (async () => {
+            try {
+                console.log('[API] Attempting to refresh access token...');
+                const response = await fetch(`${API_URL}/auth/refresh`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ refreshToken }),
+                });
+
+                if (!response.ok) {
+                    throw new Error('Refresh failed');
+                }
+
+                const res = await response.json();
+                const tokens = (res && res.status === 'success' && res.data !== undefined) ? res.data : res;
+
+                localStorage.setItem('accessToken', tokens.accessToken);
+                localStorage.setItem('refreshToken', tokens.refreshToken);
+                console.log('[API] Token refreshed successfully');
+            } catch (error) {
+                console.error('[API] Token refresh failed', error);
+                localStorage.removeItem('accessToken');
+                localStorage.removeItem('refreshToken');
+                throw error;
+            } finally {
+                this.refreshPromise = null;
+            }
+        })();
+
+        return this.refreshPromise;
+    }
+
+    private async handleResponse<T>(response: Response, retryRequest?: () => Promise<T>): Promise<T> {
         console.log(`[API] ${response.url} returned ${response.status}`);
+
+        const isAuthEndpoint = response.url.includes('/auth/login') ||
+            response.url.includes('/auth/register') ||
+            response.url.includes('/auth/refresh');
+
+
+        if (response.status === 401) {
+            if (!isAuthEndpoint) {
+                const refreshToken = localStorage.getItem('refreshToken');
+                if (refreshToken && retryRequest) {
+                    try {
+                        await this.refreshAccessToken(refreshToken);
+                        return await retryRequest();
+                    } catch (error) {
+                        console.error('[API] Silent refresh failed, redirecting to login');
+                    }
+                }
+
+                // Redirect to appropriate login page if refresh not possible or failed
+                const currentPath = window.location.pathname;
+                const isOnLoginPage = currentPath.includes('/login') || currentPath === '/';
+
+                console.log(`[API] 401 Check - Path: ${currentPath}, isAuthEndpoint: ${isAuthEndpoint}, isOnLoginPage: ${isOnLoginPage}`);
+
+                if (!isOnLoginPage) {
+                    localStorage.removeItem('accessToken');
+                    localStorage.removeItem('refreshToken');
+
+                    let loginPath = '/';
+                    if (currentPath.startsWith('/admin')) loginPath = '/admin/login';
+                    else if (currentPath.startsWith('/doctor')) loginPath = '/doctor/login';
+                    else if (currentPath.startsWith('/reception')) loginPath = '/reception/login';
+                    else if (currentPath.startsWith('/pharmacy')) loginPath = '/pharmacy/login';
+                    else if (currentPath.startsWith('/lab')) loginPath = '/lab/login';
+                    else if (currentPath.startsWith('/patient')) loginPath = '/patient/login';
+
+                    console.log(`[API 401] Session expired, redirecting to ${loginPath}`);
+                    toast.error("Session expired. Please login again.");
+
+                    setTimeout(() => {
+                        window.location.href = loginPath;
+                    }, 100);
+                } else {
+                    console.log('[API] 401 intercepted, but user is on login page. Initializing generic error.');
+                }
+            } else {
+                console.log('[API] 401 on Auth Endpoint - skipping auto-redirect logic');
+            }
+        }
+
         if (!response.ok) {
             let errorData: any = {};
             try {
                 errorData = await response.json();
-                // Log the full error response for debugging
                 console.error('[API Error Response]', JSON.stringify(errorData, null, 2));
             } catch (e) {
                 console.error('[API] Could not parse error response as JSON');
             }
 
-            // Helper function to extract error message from various backend formats
             const extractErrorMessage = (data: any): string | null => {
                 if (!data) return null;
-                // Try common error message locations
                 if (typeof data.message === 'string') return data.message;
                 if (typeof data.error === 'string') return data.error;
                 if (data.error?.message) return data.error.message;
                 if (data.errors && Array.isArray(data.errors) && data.errors[0]?.message) {
                     return data.errors.map((e: any) => e.message).join(', ');
                 }
-                if (data.detail) return data.detail; // FastAPI format
+                if (data.detail) return data.detail;
                 if (data.msg) return data.msg;
                 return null;
             };
 
             const errorMessage = extractErrorMessage(errorData);
 
-            // Handle specific HTTP status codes
             switch (response.status) {
-                case 400:
-                    throw new Error(errorMessage || 'Bad request. Please check your input.');
-
-                case 401: {
-                    // Check if this is from an auth endpoint (login/register) - don't redirect
-                    const isAuthEndpoint = response.url.includes('/auth/login') ||
-                        response.url.includes('/auth/register');
-
+                case 400: throw new Error(errorMessage || 'Bad request. Please check your input.');
+                case 401:
                     if (isAuthEndpoint) {
-                        throw new Error(errorMessage || 'Invalid email or password');
-                    }
-
-                    // For other 401s (session expired), redirect to appropriate login page
-                    const currentPath = window.location.pathname;
-                    const isOnLoginPage = currentPath.includes('/login') || currentPath === '/';
-
-                    if (!isOnLoginPage) {
-                        localStorage.removeItem('accessToken');
-                        localStorage.removeItem('refreshToken');
-
-                        // Determine correct login page based on current path
-                        let loginPath = '/';
-                        if (currentPath.startsWith('/admin')) loginPath = '/admin/login';
-                        else if (currentPath.startsWith('/doctor')) loginPath = '/doctor/login';
-                        else if (currentPath.startsWith('/reception')) loginPath = '/reception/login';
-                        else if (currentPath.startsWith('/pharmacy')) loginPath = '/pharmacy/login';
-                        else if (currentPath.startsWith('/lab')) loginPath = '/lab/login';
-                        else if (currentPath.startsWith('/patient')) loginPath = '/patient/login';
-
-                        console.log(`[API 401] Session expired, redirecting to ${loginPath}`);
-
-                        // Show toast notification (dynamic import to avoid circular deps)
-                        toast.error("Session expired. Please login again.");
-
-                        // Small delay to allow toast to show
-                        setTimeout(() => {
-                            window.location.href = loginPath;
-                        }, 100);
+                        // User requested specific "Incorrect password" message.
+                        // If backend returns generic "Invalid email or password", override it.
+                        if (!errorMessage || errorMessage.toLowerCase().includes('invalid email or password')) {
+                            throw new Error('Incorrect password');
+                        }
+                        throw new Error(errorMessage);
                     }
                     throw new Error(errorMessage || 'Session expired. Please login again.');
-                }
-
-                case 403:
-                    throw new Error(errorMessage || 'Access denied. You do not have permission.');
-
+                case 403: throw new Error(errorMessage || 'Access denied. You do not have permission.');
                 case 404:
+                    if (isAuthEndpoint) {
+                        // Map 404 on login to "Invalid email"
+                        if (!errorMessage || errorMessage.toLowerCase().includes('not found') || errorMessage.toLowerCase().includes('invalid')) {
+                            throw new Error('Invalid email');
+                        }
+                        throw new Error(errorMessage);
+                    }
                     throw new Error(errorMessage || 'Resource not found.');
-
-                case 409:
-                    throw new Error(errorMessage || 'User already exists. Please login instead.');
-
-                case 422:
-                    throw new Error(errorMessage || 'Validation error. Please check your input.');
-
-                case 429: {
-                    // Rate limit exceeded - show toast and DO NOT retry
-                    console.warn('[API 429] Rate limit exceeded');
+                case 409: throw new Error(errorMessage || 'User already exists. Please login instead.');
+                case 422: throw new Error(errorMessage || 'Validation error. Please check your input.');
+                case 429:
                     toast.error("Too many attempts. Please wait a moment and try again.");
                     throw new Error(errorMessage || 'Too many requests. Please wait a moment and try again.');
-                }
-
                 case 500:
                     console.error('[API] Server Error 500 - Backend issue detected');
                     throw new Error(errorMessage || 'Server error. Please try again later or contact support.');
-
                 case 502:
                 case 503:
                 case 504:
                     throw new Error(errorMessage || 'Server is temporarily unavailable. Please try again.');
-
                 default:
                     throw new Error(errorMessage || `Request failed with status ${response.status}`);
             }
         }
-        if (response.status === 204) {
-            return {} as T;
-        }
+
+        if (response.status === 204) return {} as T;
         const res = await response.json();
-        // Some endpoints return { status: 'success', data: ... }, others just data.
-        // We'll normalize this. If 'data' property exists and looks like a wrapper, return 'data'.
         if (res && res.status === 'success' && res.data !== undefined) {
             return res.data as T;
         }
@@ -158,64 +201,74 @@ class ApiService {
     }
 
     async get<T>(endpoint: string): Promise<T> {
-        const response = await fetch(`${API_URL}${endpoint}`, {
-            method: 'GET',
-            headers: this.getHeaders(),
-        });
-        return this.handleResponse<T>(response);
+        const execute = async () => {
+            const response = await fetch(`${API_URL}${endpoint}`, {
+                method: 'GET',
+                headers: this.getHeaders(),
+            });
+            return this.handleResponse<T>(response, execute);
+        };
+        return execute();
     }
 
     async post<T>(endpoint: string, body: any): Promise<T> {
-        const headers = this.getHeaders();
-        let requestBody = body;
+        const execute = async () => {
+            const headers = this.getHeaders();
+            let requestBody;
+            if (body instanceof FormData) {
+                delete headers['Content-Type'];
+                requestBody = body;
+            } else {
+                requestBody = JSON.stringify(body);
+            }
 
-        console.log(`[API Request] POST ${endpoint}`, body instanceof FormData ? 'FormData' : 'JSON');
-
-        // Handle FormData
-        if (body instanceof FormData) {
-            delete headers['Content-Type']; // Let browser set multipart boundary
-            requestBody = body;
-        } else {
-            requestBody = JSON.stringify(body);
-        }
-
-        const response = await fetch(`${API_URL}${endpoint}`, {
-            method: 'POST',
-            headers,
-            body: requestBody,
-        });
-        return this.handleResponse<T>(response);
+            const response = await fetch(`${API_URL}${endpoint}`, {
+                method: 'POST',
+                headers,
+                body: requestBody,
+            });
+            return this.handleResponse<T>(response, execute);
+        };
+        return execute();
     }
 
     async patch<T>(endpoint: string, body: any): Promise<T> {
-        const response = await fetch(`${API_URL}${endpoint}`, {
-            method: 'PATCH',
-            headers: this.getHeaders(),
-            body: JSON.stringify(body),
-        });
-        return this.handleResponse<T>(response);
+        const execute = async () => {
+            const response = await fetch(`${API_URL}${endpoint}`, {
+                method: 'PATCH',
+                headers: this.getHeaders(),
+                body: JSON.stringify(body),
+            });
+            return this.handleResponse<T>(response, execute);
+        };
+        return execute();
     }
 
     async put<T>(endpoint: string, body: any): Promise<T> {
-        const response = await fetch(`${API_URL}${endpoint}`, {
-            method: 'PUT',
-            headers: this.getHeaders(),
-            body: JSON.stringify(body),
-        });
-        return this.handleResponse<T>(response);
+        const execute = async () => {
+            const response = await fetch(`${API_URL}${endpoint}`, {
+                method: 'PUT',
+                headers: this.getHeaders(),
+                body: JSON.stringify(body),
+            });
+            return this.handleResponse<T>(response, execute);
+        };
+        return execute();
     }
 
     async delete<T>(endpoint: string): Promise<T> {
-        const response = await fetch(`${API_URL}${endpoint}`, {
-            method: 'DELETE',
-            headers: this.getHeaders(),
-        });
-        return this.handleResponse<T>(response);
+        const execute = async () => {
+            const response = await fetch(`${API_URL}${endpoint}`, {
+                method: 'DELETE',
+                headers: this.getHeaders(),
+            });
+            return this.handleResponse<T>(response, execute);
+        };
+        return execute();
     }
 
     // Auth specific methods
     async login(email: string, password: string): Promise<AuthResponse> {
-        // Use generic post, but wrapped response is handled inside handleResponse
         return this.post<AuthResponse>('/auth/login', { email, password });
     }
 
@@ -236,6 +289,7 @@ class ApiService {
     async logout(refreshToken: string) {
         return this.post<void>('/auth/logout', { refreshToken });
     }
+
     async updateProfile(data: any) {
         return this.patch<any>('/users/me', data);
     }

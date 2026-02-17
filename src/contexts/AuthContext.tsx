@@ -106,12 +106,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signIn = async (email: string, password: string, expectedRole: AppRole): Promise<{ error: string | null }> => {
     try {
+      console.log('[AuthContext] signIn called for', email, expectedRole);
       const { user: authUser, tokens } = await api.login(email, password);
+      console.log('[AuthContext] api.login success', authUser);
 
       localStorage.setItem('accessToken', tokens.accessToken);
       localStorage.setItem('refreshToken', tokens.refreshToken);
 
       const userRole = authUser.role.toLowerCase() as AppRole;
+      console.log('[AuthContext] detailed role check:', { userRole, expectedRole });
 
       if (userRole !== expectedRole) {
         // In strict mode we might logout, but here we just warn if needed or block.
@@ -119,8 +122,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // But front-end logic requires strict portal separation.
         // We'll check compatibility.
         if (userRole !== expectedRole) {
-          await signOut();
-          return { error: `This login page is for ${expectedRole.replace('_', ' ')}s only.` };
+          console.warn('[AuthContext] Role mismatch. Expected:', expectedRole, 'Got:', userRole);
+          await signOut(false); // Do not redirect, just clear state
+          return { error: `This login page is for ${expectedRole.replace('_', ' ')}s only. You are a ${userRole}.` };
         }
       }
 
@@ -152,7 +156,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       return { error: null };
     } catch (error: any) {
-      console.error('Sign in error:', error);
+      console.error('[AuthContext] Sign in error:', error);
       return { error: error.message || 'Authentication failed' };
     }
   };
@@ -180,9 +184,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const signOut = async () => {
+  const signOut = async (shouldRedirect = true) => {
     // Capture current role before clearing state
     const currentRole = role;
+    console.log('[AuthContext] signOut called. Current role:', currentRole, 'Redirect:', shouldRedirect);
 
     const refreshToken = localStorage.getItem('refreshToken');
     if (refreshToken) {
@@ -200,16 +205,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setRole(null);
 
     // Redirect to role-specific login page
-    let loginPath = '/';
-    if (currentRole === 'admin') loginPath = '/admin/login';
-    else if (currentRole === 'doctor') loginPath = '/doctor/login';
-    else if (currentRole === 'receptionist') loginPath = '/reception/login';
-    else if (currentRole === 'pharmacist') loginPath = '/pharmacy/login';
-    else if (currentRole === 'lab_technician') loginPath = '/lab/login';
-    else if (currentRole === 'patient') loginPath = '/patient/login';
+    if (shouldRedirect) {
+      let loginPath = '/';
+      if (currentRole === 'admin') loginPath = '/admin/login';
+      else if (currentRole === 'doctor') loginPath = '/doctor/login';
+      else if (currentRole === 'receptionist') loginPath = '/reception/login';
+      else if (currentRole === 'pharmacist') loginPath = '/pharmacy/login';
+      else if (currentRole === 'lab_technician') loginPath = '/lab/login';
+      else if (currentRole === 'patient') loginPath = '/patient/login';
 
-    console.log(`[AUTH] Signed out, redirecting to ${loginPath}`);
-    window.location.href = loginPath;
+      console.log(`[AUTH] Signed out, redirecting to ${loginPath}`);
+      window.location.href = loginPath;
+    }
   };
 
   const resetPassword = async (email: string): Promise<{ error: string | null }> => {

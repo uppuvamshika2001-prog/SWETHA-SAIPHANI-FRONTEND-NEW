@@ -92,7 +92,7 @@ export const HeroSection = () => {
                                             height={1000}
                                             className="w-full h-full object-cover"
                                             loading={index === 0 ? "eager" : "lazy"}
-                                            fetchPriority={index === 0 ? "high" : "low"}
+                                            fetchpriority={index === 0 ? "high" : "low"}
                                             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 40vw"
                                         />
                                     </div>

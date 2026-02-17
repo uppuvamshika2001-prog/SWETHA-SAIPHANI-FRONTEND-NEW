@@ -218,18 +218,21 @@ export default function DoctorDashboard() {
                 icon={<Calendar className="h-5 w-5" />}
                 description="Scheduled for today"
                 variant="primary"
+                onClick={() => navigate('/doctor/appointments')}
               />
               <StatsCard
                 title="Pending Consultations"
                 value={scheduledAppointments}
                 icon={<Clock className="h-5 w-5" />}
                 description="Awaiting your attention"
+                onClick={() => navigate('/doctor/appointments')}
               />
               <StatsCard
                 title="My Patients"
-                value={myPatients.length}
+                value={patients.length} // Use total patients count
                 icon={<Users className="h-5 w-5" />}
                 description="Under your care"
+                onClick={() => navigate('/doctor/patients')}
               />
               <StatsCard
                 title="Lab Results to Review"
@@ -237,6 +240,7 @@ export default function DoctorDashboard() {
                 icon={<FlaskConical className="h-5 w-5" />}
                 description="New results available"
                 variant="warning"
+                onClick={() => navigate('/doctor/lab-results')}
               />
             </>
           )}

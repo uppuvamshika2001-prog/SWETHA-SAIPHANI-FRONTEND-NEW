@@ -70,6 +70,15 @@ export function PrescriptionDetailsDialog({
                                     Ref: {prescription.order_id}
                                 </div>
                             </div>
+
+                            <div className="space-y-1 col-span-2 md:col-span-2 border-t pt-2 mt-2">
+                                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                    <Stethoscope className="h-4 w-4" /> Consultant
+                                </div>
+                                <div className="font-medium">
+                                    {prescription.doctor_name || "Dr. Swetha Saiphani"}
+                                </div>
+                            </div>
                         </div>
 
                         {/* Diagnosis */}

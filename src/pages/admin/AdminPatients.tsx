@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { DataTable } from "@/components/dashboard/DataTable";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -41,6 +42,7 @@ import {
 import { toast } from "sonner";
 
 export default function AdminPatients() {
+    const navigate = useNavigate();
     const [patients, setPatients] = useState<Patient[]>([]);
     const [loading, setLoading] = useState(false);
     const [meta, setMeta] = useState({ page: 1, totalPages: 1, total: 0 });
@@ -57,6 +59,9 @@ export default function AdminPatients() {
         sortDir: 'desc',
         date: undefined
     });
+
+    const [selectedPatientId, setSelectedPatientId] = useState<string | null>(null);
+    const [showDetailsDialog, setShowDetailsDialog] = useState(false);
 
 
     const columns = [
@@ -76,10 +81,12 @@ export default function AdminPatients() {
             key: "actions",
             header: "Actions",
             render: (p: any) => (
-                <div className="flex items-center gap-2">
-                    <PatientDetailsDialog patientId={p.uhid} patient={p}>
-                        <Button variant="ghost" size="sm">View</Button>
-                    </PatientDetailsDialog>
+                <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                    <Button variant="ghost" size="sm" onClick={() => {
+                        setSelectedPatientId(p.uhid);
+                        setShowDetailsDialog(true);
+                    }}>View Details</Button>
+
                     <Button variant="outline" size="sm" onClick={() => downloadPatientCardPDF(p)}>
                         <Download className="h-4 w-4" />
                     </Button>
@@ -252,6 +259,7 @@ export default function AdminPatients() {
                         <DataTable
                             data={patients}
                             columns={columns}
+                            onRowClick={(p: any) => navigate(`/admin/patients/${p.uhid}/encounter`)}
                             emptyMessage={loading ? "Loading..." : "No patients found matching your filters"}
                         />
 
@@ -290,6 +298,13 @@ export default function AdminPatients() {
                     filters={filters}
                     onApply={handleFilterChange}
                     onClear={handleClearFilters}
+                />
+
+                <PatientDetailsDialog
+                    open={showDetailsDialog}
+                    onOpenChange={setShowDetailsDialog}
+                    patientId={selectedPatientId || undefined}
+                    showMedicalRecords={true}
                 />
             </div>
         </DashboardLayout>

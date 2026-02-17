@@ -75,8 +75,8 @@ export function PatientRegistrationDialog({ children, onRegister, patientToEdit 
         email: '',
         address: '',
         country: 'IN',
-        state: '',
-        district: '',
+        state: 'IN-TS',
+        district: 'IN-TS-KNR',
         mandal: '',
         village: '',
         pincode: '',
@@ -207,12 +207,6 @@ export function PatientRegistrationDialog({ children, onRegister, patientToEdit 
 
                 // Map other potential fields if they exist in patient object
                 gender: patientToEdit.gender ? patientToEdit.gender.charAt(0).toUpperCase() + patientToEdit.gender.slice(1) : '',
-            });
-        } else if (open && !patientToEdit) {
-            // Reset to new form if opening in "Add" mode
-            setFormData({
-                ...initialFormState,
-                uhid: 'P-' + new Date().toISOString().slice(0, 10).replace(/-/g, '') + '-' + Math.floor(1000 + Math.random() * 9000),
             });
         }
     }, [open, patientToEdit]);
@@ -354,7 +348,7 @@ export function PatientRegistrationDialog({ children, onRegister, patientToEdit 
         const isIndia = formData.country === 'IN';
         const mandalRequired = isIndia && availableMandals.length > 0;
 
-        if (!formData.firstName || !formData.phone || !formData.email || !formData.address || !formData.country || !formData.state || !formData.village || !formData.pincode) {
+        if (!formData.firstName || !formData.phone || !formData.country || !formData.state || !formData.village) {
             toast({
                 title: "Validation Error",
                 description: "Please fill in all required fields.",
@@ -664,6 +658,89 @@ export function PatientRegistrationDialog({ children, onRegister, patientToEdit 
         }
     };
 
+    const handlePrintRecord = async () => {
+        try {
+            const doc = new jsPDF();
+
+            // Add Full Page Background Template using the specific file requested
+            // Note: The file name in public folder is "WhatsApp Image 2026-02-17 at 10.48.41 AM.jpeg"
+            try {
+                const backgroundUrl = '/WhatsApp Image 2026-02-17 at 10.48.41 AM.jpeg';
+                const backgroundBase64 = await getBase64ImageFromUrl(backgroundUrl);
+                doc.addImage(backgroundBase64, 'JPEG', 0, 0, 210, 297);
+            } catch (error) {
+                console.error("Failed to load background template", error);
+                toast({
+                    title: "Template Error",
+                    description: "Could not load the print template background.",
+                    variant: "destructive"
+                });
+                return;
+            }
+
+            doc.setFontSize(11);
+            doc.setFont("helvetica", "bold");
+            doc.setTextColor(0, 0, 0);
+
+            // Coordinates for fields based on a standard A4 layout assumption
+            // We need to fill: Patient Name, ID, Doctor Name, Address, Date, Mobile No, Dept
+
+            // Coordinates for fields based on a standard A4 layout assumption
+            // We need to fill: Patient Name, ID, Doctor Name, Address, Date, Mobile No, Dept
+
+            // These coordinates are estimates and may need adjustment based on the actual image layout
+            const leftColX = 57;
+            const rightColX = 168;
+
+            // Row 1
+            const row1Y = 51; // Patient Name, Date
+            doc.text(`${formData.title} ${formData.firstName} ${formData.lastName}`.trim(), leftColX, row1Y);
+            doc.text(`${new Date().toLocaleDateString()}`, rightColX, row1Y);
+
+            // Row 2
+            const row2Y = 58; // Patient ID, Mobile
+            doc.text(`${formData.uhid}`, leftColX, row2Y);
+            doc.text(`${formData.phone}`, rightColX, row2Y);
+
+            // Row 3
+            const row3Y = 64; // Doctor Name, Dept
+            doc.text(`${formData.consultingDoctor || ''}`, leftColX, row3Y);
+            doc.text(`${formData.department || ''}`, rightColX, row3Y);
+
+            // Address Row
+            // Address label is usually significantly below the Doctor/Dept row
+            const addressY = 79;
+            // Resolve names for the PDF document
+            const stateName = states.find(s => s.code === formData.state)?.name || formData.state;
+            const districtName = districts.find(d => d.code === formData.district)?.name || formData.district;
+            const mandalName = mandals.find(m => m.code === formData.mandal)?.name || formData.mandal;
+
+            // Construct address cleanly
+            const addressParts = [
+                formData.address,
+                formData.village,
+                mandalName,
+                districtName,
+                stateName
+            ].filter(part => part && part.trim() !== '');
+
+            const addressString = addressParts.join(', ') + (formData.pincode ? ` - ${formData.pincode}` : '');
+
+            doc.text(`${addressString}`, leftColX, addressY, { maxWidth: 125 });
+
+            doc.autoPrint();
+            window.open(doc.output('bloburl'), '_blank');
+
+        } catch (error) {
+            console.error("Print Record failed", error);
+            toast({
+                title: "Print Failed",
+                description: "Could not generate record for printing.",
+                variant: "destructive"
+            });
+        }
+    };
+
     const handleClose = () => {
         setOpen(false);
         setShowReceipt(false);
@@ -683,8 +760,8 @@ export function PatientRegistrationDialog({ children, onRegister, patientToEdit 
             email: '',
             address: '',
             country: 'IN',
-            state: '',
-            district: '',
+            state: 'IN-TS',
+            district: 'IN-TS-KNR',
             mandal: '',
             village: '',
             pincode: '',
@@ -832,12 +909,12 @@ export function PatientRegistrationDialog({ children, onRegister, patientToEdit 
                                         </div>
                                     </div>
                                     <div className="space-y-2">
-                                        <Label htmlFor="email">Email *</Label>
-                                        <Input id="email" value={formData.email} type="email" placeholder="patient@email.com" required onChange={(e) => handleChange('email', e.target.value)} />
+                                        <Label htmlFor="email">Email</Label>
+                                        <Input id="email" value={formData.email} type="email" placeholder="patient@email.com" onChange={(e) => handleChange('email', e.target.value)} />
                                     </div>
                                     <div className="col-span-1 md:col-span-3 space-y-2">
-                                        <Label htmlFor="address">Address *</Label>
-                                        <Textarea id="address" value={formData.address} placeholder="Enter complete address" required onChange={(e) => handleChange('address', e.target.value)} />
+                                        <Label htmlFor="address">Address</Label>
+                                        <Textarea id="address" value={formData.address} placeholder="Enter complete address" onChange={(e) => handleChange('address', e.target.value)} />
                                     </div>
                                     <div className="space-y-2">
                                         <Label htmlFor="country">Country *</Label>
@@ -878,10 +955,10 @@ export function PatientRegistrationDialog({ children, onRegister, patientToEdit 
                                         </Select>
                                     </div>
                                     <div className="space-y-2">
-                                        <Label htmlFor="district">District *</Label>
+                                        <Label htmlFor="district">District</Label>
                                         <Select
                                             value={formData.district}
-                                            required
+
                                             onValueChange={(v) => handleChange('district', v)}
                                             disabled={availableDistricts.length === 0}
                                         >
@@ -930,8 +1007,8 @@ export function PatientRegistrationDialog({ children, onRegister, patientToEdit 
                                         <Input id="village" value={formData.village} placeholder="Village or City" required onChange={(e) => handleChange('village', e.target.value)} />
                                     </div>
                                     <div className="space-y-2">
-                                        <Label htmlFor="pincode">PIN / ZIP Code *</Label>
-                                        <Input id="pincode" value={formData.pincode} placeholder="PIN Code" required onChange={handlePincodeChange} />
+                                        <Label htmlFor="pincode">PIN / ZIP Code</Label>
+                                        <Input id="pincode" value={formData.pincode} placeholder="PIN Code" onChange={handlePincodeChange} />
                                     </div>
                                 </div>
                             </div>
@@ -1148,6 +1225,10 @@ export function PatientRegistrationDialog({ children, onRegister, patientToEdit 
                             <Button variant="secondary" className="gap-2" onClick={handlePrintReceipt}>
                                 <Printer className="h-4 w-4" />
                                 Print Receipt
+                            </Button>
+                            <Button variant="default" className="gap-2 bg-blue-600 hover:bg-blue-700 text-white" onClick={handlePrintRecord}>
+                                <Printer className="h-4 w-4" />
+                                Print Record
                             </Button>
                         </div>
                     </div>

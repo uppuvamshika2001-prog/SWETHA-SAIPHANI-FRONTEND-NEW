@@ -42,8 +42,9 @@ const adaptAppointment = (data: AppointmentResponse): Appointment => {
 };
 
 export const appointmentService = {
-    async getAppointments(): Promise<Appointment[]> {
-        const response = await api.get<any>('/appointments');
+    async getAppointments(params?: any): Promise<Appointment[]> {
+        const queryString = params ? '?' + new URLSearchParams(params).toString() : '';
+        const response = await api.get<any>(`/appointments${queryString}`);
         const items = response.items ? response.items : response;
         if (!Array.isArray(items)) {
             console.error("Expected array of appointments", response);
