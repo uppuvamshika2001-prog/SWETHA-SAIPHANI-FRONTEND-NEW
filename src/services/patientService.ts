@@ -18,6 +18,8 @@ export interface PatientResponse {
     allergies: string | null;
     createdAt: string;
     updatedAt: string;
+    consultingDoctor: string | null;
+    department: string | null;
 }
 
 // Adapter to transform backend PatientResponse to frontend Patient type
@@ -42,6 +44,8 @@ const adaptPatient = (data: PatientResponse): Patient => {
         status: 'active',
         created_at: new Date(data.createdAt).toISOString(),
         updated_at: new Date(data.updatedAt).toISOString(),
+        consulting_doctor: data.consultingDoctor || undefined,
+        department: data.department || undefined,
     };
 };
 

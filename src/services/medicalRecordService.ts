@@ -33,6 +33,7 @@ export interface MedicalRecord {
     doctor: {
         firstName: string;
         lastName: string;
+        specialization?: string;
     };
     appointmentId?: string;
     date: string;
@@ -88,7 +89,7 @@ export const medicalRecordService = {
     /**
      * Get all medical records (for Admin OPD Consultation view)
      */
-    async getRecords(params?: { patientId?: string; doctorId?: string; search?: string }): Promise<MedicalRecord[]> {
+    async getRecords(params?: { patientId?: string; doctorId?: string; search?: string; startDate?: string; endDate?: string }): Promise<MedicalRecord[]> {
         const cacheKey = getCacheKey('/medical-records', params);
         const cached = apiCache.get<MedicalRecord[]>(cacheKey);
         if (cached) return cached;

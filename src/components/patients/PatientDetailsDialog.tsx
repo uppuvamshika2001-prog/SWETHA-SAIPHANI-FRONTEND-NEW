@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Printer, Loader2, AlertCircle, ChevronLeft, ChevronRight, History } from "lucide-react";
 import { usePatients } from "@/contexts/PatientContext";
 import { useState, useEffect } from "react";
+import { DOCTORS } from "@/data/doctors";
 
 
 import { medicalRecordService, MedicalRecord } from "@/services/medicalRecordService";
@@ -97,6 +98,24 @@ export function PatientDetailsDialog({
 
     const { plan, followUp, additional } = activeRecord ? parseTreatmentNotes(activeRecord.treatmentNotes) : { plan: "", followUp: "", additional: "" };
 
+    const getDoctorQualification = (doctorName: string, doctorObj?: any) => {
+        if (doctorObj && doctorObj.specialization) {
+            return `Dr. ${doctorObj.firstName} ${doctorObj.lastName}, ${doctorObj.specialization}`;
+        }
+
+        // Normalize name for lookup
+        const normalizeName = (name: string) => name?.toLowerCase().replace(/\s+/g, '').trim() || '';
+        const target = normalizeName(doctorName);
+
+        const found = DOCTORS.find(d => normalizeName(d.full_name) === target || normalizeName(d.full_name).includes(target));
+
+        if (found) {
+            return `${found.full_name}, ${found.specialization}`; // Use full name from list which includes "Dr."
+        }
+
+        return doctorName || "-";
+    };
+
     const handlePrint = () => {
         if (!patient) return;
 
@@ -106,6 +125,10 @@ export function PatientDetailsDialog({
         const today = activeRecord
             ? format(new Date(activeRecord.date || activeRecord.createdAt), 'dd/MM/yyyy')
             : format(new Date(), 'dd/MM/yyyy');
+
+
+
+        const doctorDetails = getDoctorDetails(activeRecord && activeRecord.doctor ? `Dr. ${activeRecord.doctor.firstName} ${activeRecord.doctor.lastName}` : (patient.consulting_doctor || ""), activeRecord?.doctor);
 
         // Helper to generate HTML for tables/sections
         const vitalsHtml = activeRecord && activeRecord.vitals && Object.values(activeRecord.vitals).some(v => v)
@@ -250,7 +273,7 @@ export function PatientDetailsDialog({
           <div class="row"><span class="label">CONTACT</span><span class="value">${patient.phone || "-"}</span></div>
           <div class="row"><span class="label">EMAIL</span><span class="value">${patient.email || "N/A"}</span></div>
           <div class="row" style="grid-column:1/-1"><span class="label">ADDRESS</span><span class="value">${patient.address || "N/A"}</span></div>
-          <div class="row"><span class="label">CONSULTANT</span><span class="value">${activeRecord && activeRecord.doctor ? `Dr. ${activeRecord.doctor.firstName} ${activeRecord.doctor.lastName}` : "-"}</span></div>
+          <div class="row"><span class="label">CONSULTANT</span><span class="value">${getDoctorQualification(activeRecord && activeRecord.doctor ? `Dr. ${activeRecord.doctor.firstName} ${activeRecord.doctor.lastName}` : (patient.consulting_doctor || ""), activeRecord?.doctor)}</span></div>
           <div class="row"><span class="label">DATE</span><span class="value">${today}</span></div>
         </div>
       </div>
@@ -357,7 +380,7 @@ export function PatientDetailsDialog({
                                         <div className="flex"><span className="w-24 text-[#555] font-semibold shrink-0">CONTACT</span><span className="font-medium">{patient.phone}</span></div>
                                         <div className="flex"><span className="w-24 text-[#555] font-semibold shrink-0">EMAIL</span><span className="font-medium lowercase">{patient.email || 'N/A'}</span></div>
                                         <div className="col-span-2 flex mt-1"><span className="w-24 text-[#555] font-semibold shrink-0">ADDRESS</span><span className="font-medium">{patient.address || 'N/A'}</span></div>
-                                        <div className="flex mt-1"><span className="w-24 text-[#555] font-semibold shrink-0">CONSULTANT</span><span className="font-medium">{activeRecord && activeRecord.doctor ? `Dr. ${activeRecord.doctor.firstName} ${activeRecord.doctor.lastName}` : "-"}</span></div>
+                                        <div className="flex mt-1"><span className="w-24 text-[#555] font-semibold shrink-0">CONSULTANT</span><span className="font-medium">{getDoctorQualification(activeRecord && activeRecord.doctor ? `Dr. ${activeRecord.doctor.firstName} ${activeRecord.doctor.lastName}` : (patient.consulting_doctor || ""), activeRecord?.doctor)}</span></div>
                                         <div className="flex mt-1"><span className="w-24 text-[#555] font-semibold shrink-0">DATE</span><span className="font-medium">{activeRecord ? format(new Date(activeRecord.date || activeRecord.createdAt), 'dd/MM/yyyy') : format(new Date(), 'dd/MM/yyyy')}</span></div>
                                     </div>
                                 </div>

@@ -77,7 +77,7 @@ export const DoctorsSection = () => {
         },
         {
             ...doctors[0],
-            full_name: "Dr. B. Sai Phani Chandra",
+            full_name: "Dr. B. Sai Phani Chandra", 
             image: "/dr_sai_phani_chandra_v3_clean.png",
             imagePosition: "50% 5%",
             website: "https://www.kimshospitals.com/doctor-profile/dr-b-sai-phani-chandra/",

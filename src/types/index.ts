@@ -45,6 +45,8 @@ export interface Patient {
   status: 'active';
   created_at: string;
   updated_at: string;
+  consulting_doctor?: string;
+  department?: string;
 }
 
 // Doctor types
@@ -134,12 +136,14 @@ export interface VitalSigns {
 // Lab types
 export interface LabTest {
   id: string;
+  code: string;
   name: string;
-  category: string;
-  normal_range: string;
-  unit: string;
+  department: string;
   price: number;
-  turnaround_time: string;
+  turnaround: string;
+  isActive?: boolean;
+  unit?: string;
+  normal_range?: string;
 }
 
 export interface LabOrder {

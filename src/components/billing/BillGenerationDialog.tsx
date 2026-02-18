@@ -28,30 +28,6 @@ import { Patient } from "@/types";
 import { Separator } from "@/components/ui/separator";
 import { MultiSelect } from "@/components/ui/multi-select";
 
-// Common Lab Test Prices
-const TEST_PRICES: Record<string, number> = {
-    "CBC": 350,
-    "Complete Blood Count": 350,
-    "Lipid Profile": 600,
-    "Thyroid Profile": 800,
-    "Thyroid Function Test": 800,
-    "Blood Sugar (Fasting)": 150,
-    "Blood Sugar (PP)": 150,
-    "Blood Sugar (Random)": 150,
-    "HbA1c": 500,
-    "Urine Routine": 200,
-    "Liver Function Test": 700,
-    "Kidney Function Test": 700,
-    "Electrolytes": 400,
-    "Vitamin D": 1200,
-    "Vitamin B12": 1000,
-    "Dengue NS1": 600,
-    "Malaria Parasite": 300,
-    "Typhoid": 400,
-    "CBP": 350,
-    "CUE": 200
-};
-
 const DEFAULT_LAB_PRICE = 500;
 
 interface BillGenerationDialogProps {
@@ -91,11 +67,23 @@ export function BillGenerationDialog({
     // Multi-Select Lab Tests
     const [selectedMultiLabTests, setSelectedMultiLabTests] = useState<string[]>([]);
 
+    const [availableTests, setAvailableTests] = useState<any[]>([]);
+
     useEffect(() => {
         if (showOpen) {
             fetchPatients();
+            fetchAvailableTests();
         }
     }, [showOpen]);
+
+    const fetchAvailableTests = async () => {
+        try {
+            const tests = await labService.getLabTests();
+            setAvailableTests(tests);
+        } catch (error) {
+            console.error("Failed to fetch lab tests", error);
+        }
+    };
 
     const fetchPatients = async () => {
         setLoadingPatients(true);
@@ -141,20 +129,18 @@ export function BillGenerationDialog({
 
         // Determine price
         let amount = DEFAULT_LAB_PRICE;
-        // Check exact match or partial match
-        const exactPrice = TEST_PRICES[testNames];
-        if (exactPrice) {
-            amount = exactPrice;
-        } else {
-            // Try to find a matching price
-            const matchingKey = Object.keys(TEST_PRICES).find(key => testNames.includes(key));
-            if (matchingKey) {
-                amount = TEST_PRICES[matchingKey];
-            }
+        // Find matching test in catalog
+        const matchingTest = availableTests.find(t =>
+            t.name.toLowerCase() === testNames.toLowerCase() ||
+            testNames.toLowerCase().includes(t.name.toLowerCase())
+        );
+
+        if (matchingTest) {
+            amount = matchingTest.price;
         }
 
 
-        setItems([...items, { description, quantity: 1, unitPrice: amount, total: amount }]);
+        setItems([...items, { description, quantity: 1, unitPrice: Number(amount), total: Number(amount) }]);
         setSelectedLabOrderIds([...selectedLabOrderIds, order.id]);
 
         toast.info("Lab order added. Please verify price.");
@@ -166,17 +152,20 @@ export function BillGenerationDialog({
         const newItems = [...items];
         let addedCount = 0;
 
-        selectedMultiLabTests.forEach(testName => {
-            const price = TEST_PRICES[testName] || DEFAULT_LAB_PRICE;
-            const description = `Lab: ${testName}`;
+        selectedMultiLabTests.forEach(testId => {
+            const test = availableTests.find(t => t.id === testId);
+            if (test) {
+                const price = test.price;
+                const description = `Lab: ${test.name}`;
 
-            newItems.push({
-                description,
-                quantity: 1,
-                unitPrice: price,
-                total: price
-            });
-            addedCount++;
+                newItems.push({
+                    description,
+                    quantity: 1,
+                    unitPrice: Number(price),
+                    total: Number(price)
+                });
+                addedCount++;
+            }
         });
 
         setItems(newItems);
@@ -327,7 +316,13 @@ export function BillGenerationDialog({
                                             <div className="text-xs text-muted-foreground flex items-center gap-2">
                                                 <span>{order.test_name}</span>
                                                 <span className="font-semibold text-blue-600">
-                                                    ₹{TEST_PRICES[order.test_name] || (Object.keys(TEST_PRICES).find(k => order.test_name.includes(k)) ? TEST_PRICES[Object.keys(TEST_PRICES).find(k => order.test_name.includes(k))!] : DEFAULT_LAB_PRICE)}
+                                                    ₹{(() => {
+                                                        const match = availableTests.find(t =>
+                                                            t.name.toLowerCase() === order.test_name.toLowerCase() ||
+                                                            order.test_name.toLowerCase().includes(t.name.toLowerCase())
+                                                        );
+                                                        return match ? match.price : DEFAULT_LAB_PRICE;
+                                                    })()}
                                                 </span>
                                             </div>
                                         </div>
@@ -409,9 +404,9 @@ export function BillGenerationDialog({
                                     <div className="flex-1 space-y-1.5 w-full">
                                         <Label className="text-xs text-slate-500">Select Lab Tests (Multiple)</Label>
                                         <MultiSelect
-                                            options={Object.entries(TEST_PRICES).map(([test, price]) => ({
-                                                label: `${test} (₹${price})`,
-                                                value: test
+                                            options={availableTests.map((test) => ({
+                                                label: `${test.name} (₹${test.price})`,
+                                                value: test.id
                                             }))}
                                             selected={selectedMultiLabTests}
                                             onChange={setSelectedMultiLabTests}
@@ -460,8 +455,8 @@ export function BillGenerationDialog({
                                                 {item.description}
                                             </TableCell>
                                             <TableCell className="text-right text-slate-600">{item.quantity}</TableCell>
-                                            <TableCell className="text-right text-slate-600">₹{item.unitPrice.toFixed(2)}</TableCell>
-                                            <TableCell className="text-right font-medium text-slate-900 dark:text-white">₹{item.total.toFixed(2)}</TableCell>
+                                            <TableCell className="text-right text-slate-600">₹{Number(item.unitPrice).toFixed(2)}</TableCell>
+                                            <TableCell className="text-right font-medium text-slate-900 dark:text-white">₹{Number(item.total).toFixed(2)}</TableCell>
                                             <TableCell>
                                                 <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-red-500 hover:bg-red-50" onClick={() => handleRemoveItem(index)}>
                                                     <Trash2 className="h-4 w-4" />

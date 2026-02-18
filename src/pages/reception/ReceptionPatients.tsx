@@ -50,7 +50,7 @@ export default function ReceptionPatients() {
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [patientToDelete, setPatientToDelete] = useState<string | null>(null);
 
-    const PAGE_SIZE = 15;
+    const PAGE_SIZE = 100;
 
 
     const fetchPatients = useCallback(async () => {

@@ -8,6 +8,7 @@ import {
     DialogTitle,
     DialogTrigger,
 } from "@/components/ui/dialog";
+import { DOCTORS as FALLBACK_DOCTORS, getDepartmentMapping } from '@/data/doctors';
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -166,6 +167,8 @@ export function PatientRegistrationDialog({ children, onRegister, patientToEdit 
             let state = '';
             let pincode = '';
 
+            // Attempt to parse existing address string to extract components and street address
+            // This assumes the format: "Street, Village, Mandal, District, State - Pincode"
             if (address && address.includes(',')) {
                 const parts = address.split(',').map((p: string) => p.trim());
                 if (parts.length >= 5) {
@@ -186,6 +189,32 @@ export function PatientRegistrationDialog({ children, onRegister, patientToEdit 
                 }
             }
 
+            // Prioritize granular fields from patient object if they exist
+            // (e.g. if parsed state was 'Telangana' but DB has 'IN-TS' or 'Telangana')
+            if (patientToEdit.state) state = patientToEdit.state;
+            if (patientToEdit.district) district = patientToEdit.district;
+            if (patientToEdit.mandal) mandal = patientToEdit.mandal;
+            if (patientToEdit.village) village = patientToEdit.village;
+            if (patientToEdit.pincode) pincode = patientToEdit.pincode;
+
+
+            // Reverse Lookup: Convert Names to Codes for Dropdowns
+            // 1. State
+            const foundState = states.find(s => s.name === state || s.code === state);
+            if (foundState) state = foundState.code;
+
+            // 2. District
+            const foundDistrict = districts.find(d =>
+                d.stateCode === state && (d.name === district || d.code === district)
+            );
+            if (foundDistrict) district = foundDistrict.code;
+
+            // 3. Mandal
+            const foundMandal = mandals.find(m =>
+                m.districtCode === district && (m.name === mandal || m.code === mandal)
+            );
+            if (foundMandal) mandal = foundMandal.code;
+
             setFormData({
                 ...initialFormState,
                 ...patientToEdit,
@@ -198,7 +227,7 @@ export function PatientRegistrationDialog({ children, onRegister, patientToEdit 
                 email: patientToEdit.email || '',
 
                 // Mapped address fields
-                address,
+                address, // This is now the street address (if parsed) or full address
                 village,
                 mandal,
                 district,
@@ -281,32 +310,9 @@ export function PatientRegistrationDialog({ children, onRegister, patientToEdit 
     const [doctorsList, setDoctorsList] = useState<any[]>([]);
 
     // Department mapping for staff/doctors that may have different department names
-    const getDepartmentMapping = (dept: string): string | null => {
-        const deptLower = (dept || "").toLowerCase();
-        if (deptLower.includes("oncology") && !deptLower.includes("paediatric")) return "Oncology";
-        if (deptLower.includes("pulmonology")) return "Pulmonology";
-        if (deptLower.includes("hemato") || deptLower.includes("paediatric hemato")) return "Paediatric Hemato-Oncology";
-        if (deptLower.includes("ortho") && !deptLower.includes("paediatric")) return "Orthopaedics";
-        if (deptLower.includes("general physician") || deptLower === "general physician") return "General Physician";
-        if (deptLower.includes("paediatric ortho") || deptLower.includes("pediatric ortho")) return "Paediatric Orthopaedics";
-        if (deptLower.includes("neuro")) return "Neurosurgeon";
-        return null;
-    };
 
     // Helper function to normalize name for comparison (remove extra spaces, lowercase)
     const normalizeName = (name: string) => name?.toLowerCase().replace(/\s+/g, '').trim() || '';
-
-    const FALLBACK_DOCTORS = [
-        { id: '1', full_name: 'Dr. B. Sai Phani Chandra', specialization: 'Consultant Orthopaedics', department: 'Orthopaedics', role: 'doctor', status: 'active' },
-        { id: '4', full_name: 'Dr. Hariprakash', specialization: 'Consultant Orthopaedic', department: 'Orthopaedics', role: 'doctor', status: 'active' },
-        { id: '2', full_name: 'Dr. Swetha Pendyala', specialization: 'Neurosurgeon', department: 'Neurosurgeon', role: 'doctor', status: 'active' },
-        { id: '3', full_name: 'Dr. Roshan Kumar Jaiswal', specialization: 'Paediatric Orthopaedic', department: 'Paediatric Orthopaedics', role: 'doctor', status: 'active' },
-        { id: '5', full_name: 'Dr. Ravikanti Nagaraju', specialization: 'General Physician', department: 'General Physician', role: 'doctor', status: 'active' },
-        { id: '7', full_name: 'Dr. Mahesh Gudelli', specialization: 'Pulmonology', department: 'Pulmonology', role: 'doctor', status: 'active' },
-        { id: '8', full_name: 'Dr. Sneha Sagar', specialization: 'Medical Oncology', department: 'Oncology', role: 'doctor', status: 'active' },
-        { id: '9', full_name: 'Dr. T Dheeraj', specialization: 'Surgical Oncology', department: 'Oncology', role: 'doctor', status: 'active' },
-        { id: '10', full_name: 'Dr. Navya Sri Yenigalla', specialization: 'Paediatric Hemato-Oncology', department: 'Paediatric Hemato-Oncology', role: 'doctor', status: 'active' },
-    ];
 
     useEffect(() => {
         const fetchDoctors = async () => {
@@ -485,11 +491,14 @@ export function PatientRegistrationDialog({ children, onRegister, patientToEdit 
                     description: "Patient details have been successfully updated.",
                 });
                 setOpen(false); // Close dialog after update
+                if (onRegister) {
+                    onRegister(submissionData);
+                }
             } else {
                 await addPatient(submissionData);
 
                 if (onRegister) {
-                    // logic for callback
+                    onRegister(submissionData);
                 }
 
                 toast({
@@ -521,7 +530,7 @@ export function PatientRegistrationDialog({ children, onRegister, patientToEdit 
 
         try {
             // Add Full Page Background Template
-            const headerUrl = '/header_template.jpg';
+            const headerUrl = '/3.jpg';
             const headerBase64 = await getBase64ImageFromUrl(headerUrl);
             doc.addImage(headerBase64, 'JPEG', 0, 0, 210, 297);
         } catch (error) {
@@ -554,13 +563,22 @@ export function PatientRegistrationDialog({ children, onRegister, patientToEdit 
         const addressString = `${formData.address}, ${formData.village}, ${mandalName}, ${districtName}, ${stateName} – ${formData.pincode}`;
         const displayAddress = isMasked ? maskData(addressString, 'address') : addressString;
 
+        // Find doctor to get specialization/qualification
+        const selectedDoctor = doctorsList.concat(FALLBACK_DOCTORS).find(d =>
+            normalizeName(d.full_name) === normalizeName(formData.consultingDoctor)
+        );
+
+        const doctorText = selectedDoctor
+            ? `${formData.consultingDoctor}\n${selectedDoctor.specialization || ''}`
+            : (formData.consultingDoctor || "Not Selected");
+
         // Patient Details Table
         const tableData = [
             ["UHID", formData.uhid],
             ["Patient Name", displayName],
             ["Age/Gender", `${formData.age} Years / ${formData.gender}`],
             ["Phone", displayPhone],
-            ["Consulting Doctor", formData.consultingDoctor || "Not Selected"],
+            ["Consulting Doctor", doctorText],
             ["Address", displayAddress],
             ["Date", new Date().toLocaleString()],
         ];
@@ -663,9 +681,9 @@ export function PatientRegistrationDialog({ children, onRegister, patientToEdit 
             const doc = new jsPDF();
 
             // Add Full Page Background Template using the specific file requested
-            // Note: The file name in public folder is "WhatsApp Image 2026-02-17 at 10.48.41 AM.jpeg"
+            // Note: The file name in public folder is "2.jpg"
             try {
-                const backgroundUrl = '/WhatsApp Image 2026-02-17 at 10.48.41 AM.jpeg';
+                const backgroundUrl = '/2.jpg';
                 const backgroundBase64 = await getBase64ImageFromUrl(backgroundUrl);
                 doc.addImage(backgroundBase64, 'JPEG', 0, 0, 210, 297);
             } catch (error) {
@@ -814,7 +832,6 @@ export function PatientRegistrationDialog({ children, onRegister, patientToEdit 
                                                 <SelectItem value="Mr">Mr.</SelectItem>
                                                 <SelectItem value="Mrs">Mrs.</SelectItem>
                                                 <SelectItem value="Ms">Ms.</SelectItem>
-                                                <SelectItem value="Dr">Dr.</SelectItem>
                                             </SelectContent>
                                         </Select>
                                     </div>
@@ -1238,4 +1255,4 @@ export function PatientRegistrationDialog({ children, onRegister, patientToEdit 
         </Dialog >
     );
 }
-
+export default PatientRegistrationDialog;

@@ -4,7 +4,7 @@ import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { DataTable } from "@/components/dashboard/DataTable";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, Users, Download, Filter as FilterIcon, Search, Trash2 } from "lucide-react";
+import { Plus, Users, Download, Filter as FilterIcon, Search, Trash2, Edit } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { PatientRegistrationDialog } from "@/components/patients/PatientRegistrationDialog";
 import { PatientDetailsDialog } from "@/components/patients/PatientDetailsDialog";
@@ -54,7 +54,7 @@ export default function AdminPatients() {
     // Filter State
     const [filters, setFilters] = useState<PatientFilter>({
         page: 1,
-        pageSize: 15,
+        pageSize: 100,
         sortBy: 'created_at',
         sortDir: 'desc',
         date: undefined
@@ -90,6 +90,12 @@ export default function AdminPatients() {
                     <Button variant="outline" size="sm" onClick={() => downloadPatientCardPDF(p)}>
                         <Download className="h-4 w-4" />
                     </Button>
+
+                    <PatientRegistrationDialog patientToEdit={p} onRegister={() => fetchPatients()}>
+                        <Button variant="ghost" size="sm">
+                            <Edit className="h-4 w-4" />
+                        </Button>
+                    </PatientRegistrationDialog>
 
                     <AlertDialog>
                         <AlertDialogTrigger asChild>

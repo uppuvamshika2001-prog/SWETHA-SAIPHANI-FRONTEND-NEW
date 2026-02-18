@@ -36,41 +36,34 @@ const adaptStaff = (data: any): any => {
 
 export const staffService = {
     async getStaff(): Promise<any[]> {
-        const response = await api.get<any>('/users');
-        // Handle paginated response structure
-        const users = response.items ? response.items : response;
+        // Fetch from /staff endpoint to get only staff members and avoid pagination issues with /users
+        // Increase limit to ensure we get all staff
+        const response = await api.get<any>('/staff?limit=100');
+        const staffItems = response.items ? response.items : response;
 
-        if (!Array.isArray(users)) {
-            console.error("Expected array of users or paginated response", response);
+        if (!Array.isArray(staffItems)) {
+            console.error("Expected array of staff", response);
             return [];
         }
 
-        // Filter out patients - Staff Directory should only show staff members
-        const staffUsers = users.filter((u: any) => {
-            const role = (u.role || '').toUpperCase();
-            return role !== 'PATIENT';
-        });
-
-        return staffUsers.map((u: any) => {
-            // Check if we have nested profile or flat structure
-            const profile = u.profile || u;
-            const firstName = profile.firstName || '';
-            const lastName = profile.lastName || '';
-            const specialization = profile.specialization || '';
-
+        return staffItems.map((s: any) => {
             return {
-                id: u.id,
-                user_id: u.id,
-                full_name: `${firstName} ${lastName}`.trim() || u.email,
-                email: u.email,
-                role: (u.role || '').toLowerCase() as AppRole,
-                department: profile.specialization || profile.department || 'General',
-                status: (u.status || '').toLowerCase(),
-                phone: profile.phone,
-                specialization: specialization,
-                created_at: u.createdAt,
+                id: s.userId, // Use userId to keep consistency with existing update/delete calls that use /users/:id
+                staffId: s.id, // Keep the actual staff ID ref
+                user_id: s.userId,
+                full_name: `${s.firstName} ${s.lastName}`.trim(),
+                email: s.email, // Flattened in backend response
+                role: (s.role || '').toLowerCase() as AppRole,
+                department: s.department || 'General',
+                status: (s.status || '').toLowerCase(),
+                phone: s.phone,
+                specialization: s.specialization,
+                created_at: s.createdAt,
                 last_login: new Date().toISOString(),
                 availability: [],
+                education: s.education,
+                bio: s.bio,
+                experience: s.experience
             };
         });
     },

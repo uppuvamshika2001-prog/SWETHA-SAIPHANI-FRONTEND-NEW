@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Activity, Search, Edit, Trash2, Plus, CheckCircle } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import {
     Dialog,
@@ -18,21 +18,14 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 
-// Mock catalog data
-const INITIAL_TEST_CATALOG = [
-    { id: 1, name: "Complete Blood Count (CBC)", code: "HEM001", department: "Hematology", price: 500, turnaround: "24 hrs" },
-    { id: 2, name: "Lipid Profile", code: "BIO001", department: "Biochemistry", price: 800, turnaround: "24 hrs" },
-    { id: 3, name: "Thyroid Function Test (TFT)", code: "BIO002", department: "Biochemistry", price: 1200, turnaround: "48 hrs" },
-    { id: 4, name: "Urinalysis Routine", code: "CLI001", department: "Clinical Pathology", price: 150, turnaround: "4 hrs" },
-    { id: 5, name: "Liver Function Test (LFT)", code: "BIO003", department: "Biochemistry", price: 900, turnaround: "24 hrs" },
-    { id: 6, name: "Blood Culture", code: "MIC001", department: "Microbiology", price: 1500, turnaround: "72 hrs" },
-    { id: 7, name: "HbA1c", code: "BIO004", department: "Biochemistry", price: 600, turnaround: "4 hrs" },
-    { id: 8, name: "Serum Electrolytes", code: "BIO005", department: "Biochemistry", price: 450, turnaround: "4 hrs" },
-];
+import { labService } from "@/services/labService";
+
+// Removed mock data
 
 const LabTestCatalog = () => {
     const [searchTerm, setSearchTerm] = useState("");
-    const [testCatalog, setTestCatalog] = useState(INITIAL_TEST_CATALOG);
+    const [testCatalog, setTestCatalog] = useState<any[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
     const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
     const [editingTest, setEditingTest] = useState<any>(null);
@@ -44,13 +37,30 @@ const LabTestCatalog = () => {
         turnaround: ""
     });
 
-    const filteredTests = testCatalog.filter(test =>
+    useEffect(() => {
+        fetchTests();
+    }, []);
+
+    const fetchTests = async () => {
+        try {
+            setIsLoading(true);
+            const tests = await labService.getLabTests();
+            setTestCatalog(tests);
+        } catch (error) {
+            toast.error("Failed to fetch tests");
+            console.error(error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const filteredTests = (testCatalog || []).filter(test =>
         test.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         test.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
         test.department.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
-    const handleAddTest = () => {
+    const handleAddTest = async () => {
         if (!newTest.name || !newTest.code || !newTest.department || !newTest.price) {
             toast.error("Missing Fields", {
                 description: "Please fill in all required fields",
@@ -58,21 +68,22 @@ const LabTestCatalog = () => {
             return;
         }
 
-        const newTestEntry = {
-            id: Date.now(),
-            name: newTest.name,
-            code: newTest.code,
-            department: newTest.department,
-            price: parseInt(newTest.price),
-            turnaround: newTest.turnaround || "24 hrs"
-        };
-
-        setTestCatalog([...testCatalog, newTestEntry]);
-        setNewTest({ name: "", code: "", department: "", price: "", turnaround: "" });
-        setIsAddDialogOpen(false);
-        toast.success("Test Added", {
-            description: `${newTest.name} has been added to the catalog`,
-        });
+        try {
+            await labService.createTest({
+                ...newTest,
+                price: parseFloat(newTest.price),
+                turnaround: newTest.turnaround || "24 hrs"
+            });
+            toast.success("Test Added", {
+                description: `${newTest.name} has been added to the catalog`,
+            });
+            setNewTest({ name: "", code: "", department: "", price: "", turnaround: "" });
+            setIsAddDialogOpen(false);
+            fetchTests();
+        } catch (error: any) {
+            toast.error(error.message || "Failed to add test");
+            console.error(error);
+        }
     };
 
     const handleEditTest = (test: any) => {
@@ -80,23 +91,38 @@ const LabTestCatalog = () => {
         setIsEditDialogOpen(true);
     };
 
-    const handleSaveEdit = () => {
+    const handleSaveEdit = async () => {
         if (!editingTest) return;
 
-        setTestCatalog(testCatalog.map(t =>
-            t.id === editingTest.id ? editingTest : t
-        ));
-        setIsEditDialogOpen(false);
-        toast.success("Test Updated", {
-            description: `${editingTest.name} has been updated`,
-        });
+        try {
+            await labService.updateTest(editingTest.id, {
+                ...editingTest,
+                price: parseFloat(editingTest.price)
+            });
+            toast.success("Test Updated", {
+                description: `${editingTest.name} has been updated`,
+            });
+            setIsEditDialogOpen(false);
+            fetchTests();
+        } catch (error: any) {
+            toast.error(error.message || "Failed to update test");
+            console.error(error);
+        }
     };
 
-    const handleDeleteTest = (test: any) => {
-        setTestCatalog(testCatalog.filter(t => t.id !== test.id));
-        toast.success("Test Deleted", {
-            description: `${test.name} has been removed from the catalog`,
-        });
+    const handleDeleteTest = async (test: any) => {
+        if (!confirm(`Are you sure you want to delete ${test.name}?`)) return;
+
+        try {
+            await labService.deleteTest(test.id);
+            toast.success("Test Deleted", {
+                description: `${test.name} has been removed from the catalog`,
+            });
+            fetchTests();
+        } catch (error: any) {
+            toast.error(error.message || "Failed to delete test");
+            console.error(error);
+        }
     };
 
     return (
@@ -288,7 +314,7 @@ const LabTestCatalog = () => {
                                             id="edit-price"
                                             type="number"
                                             value={editingTest.price}
-                                            onChange={(e) => setEditingTest({ ...editingTest, price: parseInt(e.target.value) })}
+                                            onChange={(e) => setEditingTest({ ...editingTest, price: e.target.value === "" ? "" : parseInt(e.target.value) })}
                                         />
                                     </div>
                                     <div className="grid gap-2">
