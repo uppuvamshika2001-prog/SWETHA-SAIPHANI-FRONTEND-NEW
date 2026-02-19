@@ -8,7 +8,7 @@ const initReportPdf = async (title: string): Promise<{ doc: jsPDF; headerImgData
     const doc = new jsPDF();
 
     // Load the full-page background template
-    const headerImageUrl = '/header_template.jpg';
+    const headerImageUrl = '/templete%20new.jpeg';
     let headerImgData = '';
     try {
         headerImgData = await getBase64ImageFromUrl(headerImageUrl);

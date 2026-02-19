@@ -1,7 +1,7 @@
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Activity, Users, Mail, UserCheck, ShieldCheck } from "lucide-react";
-import { doctors, staffMembers } from "@/data/mockData";
+import { staffService } from "@/services/staffService";
 import {
     Dialog,
     DialogContent,
@@ -12,10 +12,28 @@ import {
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useState, useEffect } from "react";
 
 export default function Departments() {
+    const [staffList, setStaffList] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+
     // Fixed list of departments as specified
-    const allowedDepartments = ["Orthopaedics", "Neurosurgeon", "General Physician", "Paediatric Orthopaedics", "Pulmonology", "Oncology", "Paediatric Hemato-Oncology"];
+    const allowedDepartments = ["Orthopaedics", "Neurosurgery", "General Physician", "Paediatric Orthopaedics", "Pulmonology", "Oncology", "Paediatric Hemato-Oncology"];
+
+    useEffect(() => {
+        const fetchStaff = async () => {
+            try {
+                const data = await staffService.getStaff();
+                setStaffList(data);
+            } catch (error) {
+                console.error("Failed to fetch staff:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchStaff();
+    }, []); // Empty dependency array ensures run once on mount
 
     // Department mapping for staff/doctors that may have different department names
     const getDepartmentMapping = (dept: string): string | null => {
@@ -26,14 +44,15 @@ export default function Departments() {
         if (deptLower.includes("ortho") && !deptLower.includes("paediatric")) return "Orthopaedics";
         if (deptLower.includes("general physician") || deptLower === "general physician") return "General Physician";
         if (deptLower.includes("paediatric ortho") || deptLower.includes("pediatric ortho")) return "Paediatric Orthopaedics";
-        if (deptLower.includes("neuro")) return "Neurosurgeon";
+        if (deptLower.includes("neuro")) return "Neurosurgery";
         return null;
     };
 
     const departments = allowedDepartments.map((deptName) => {
         // Filter doctors that belong to this department (including similar names)
-        const deptDoctors = doctors.filter(d => getDepartmentMapping(d.department) === deptName);
-        const deptStaff = staffMembers.filter(s => getDepartmentMapping(s.department) === deptName);
+        const deptDoctors = staffList.filter(s => s.role === 'doctor' && getDepartmentMapping(s.department) === deptName);
+        const deptStaff = staffList.filter(s => s.role !== 'doctor' && getDepartmentMapping(s.department) === deptName);
+        const totalMembers = staffList.filter(s => getDepartmentMapping(s.department) === deptName);
 
         // Define a "Head" for the department - picking the most experienced doctor or first staff
         const head = deptDoctors.sort((a, b) => (b.experience_years || 0) - (a.experience_years || 0))[0]?.full_name
@@ -43,7 +62,7 @@ export default function Departments() {
         return {
             name: deptName,
             head: head,
-            count: deptDoctors.length,
+            count: totalMembers.length,
             doctors: deptDoctors,
             staff: deptStaff
         };

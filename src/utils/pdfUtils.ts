@@ -106,7 +106,7 @@ const BRAND_COLORS = {
  */
 export const drawClinicHeader = async (doc: jsPDF, title: string = '') => {
     const pageWidth = doc.internal.pageSize.getWidth();
-    const headerImageUrl = '/header_template.jpg';
+    const headerImageUrl = '/templete%20new.jpeg';
 
     try {
         const headerBase64 = await getBase64ImageFromUrl(headerImageUrl);

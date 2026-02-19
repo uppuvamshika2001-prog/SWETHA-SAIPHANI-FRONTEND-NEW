@@ -7,7 +7,7 @@ export default function AdminLogin() {
       title="Hospital Administrator"
       description="Access the administrative control panel"
       dashboardPath="/admin/dashboard"
-      allowSignup={true}
+      allowSignup={false}
     />
   );
 }

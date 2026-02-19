@@ -35,7 +35,7 @@ export const downloadLabReportPDF = async (order: LabOrder, forceMasked: boolean
         // 1. Add Background Template
         try {
             if (!isMasked) {
-                const headerUrl = '/header_template.jpg';
+                const headerUrl = '/templete%20new.jpeg';
                 const headerBase64 = await getBase64ImageFromUrl(headerUrl);
                 doc.addImage(headerBase64, 'JPEG', 0, 0, 210, 297);
             }

@@ -8,7 +8,7 @@ import {
     DialogTitle,
     DialogTrigger,
 } from "@/components/ui/dialog";
-import { DOCTORS as FALLBACK_DOCTORS, getDepartmentMapping } from '@/data/doctors';
+import { getDepartmentMapping } from '@/data/doctors';
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -21,7 +21,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { useState, useEffect, useMemo } from "react";
 import { useToast } from "@/components/ui/use-toast";
-import jsPDF from "jspdf";
+import jsPDF, { GState } from "jspdf";
 import autoTable from "jspdf-autotable";
 import { CheckCircle2, Download, Printer } from "lucide-react";
 import { staffService } from "@/services/staffService";
@@ -96,6 +96,21 @@ export function PatientRegistrationDialog({ children, onRegister, patientToEdit 
     };
 
     const [formData, setFormData] = useState(initialFormState);
+
+    useEffect(() => {
+        if (!open) return; // Only fetch when dialog is open
+
+        const fetchDoctors = async () => {
+            try {
+                const staff = await staffService.getStaff();
+                const doctors = staff.filter((s: any) => s.role === 'doctor' && s.status === 'active');
+                setDoctorsList(doctors);
+            } catch (error) {
+                console.error("Failed to fetch doctors:", error);
+            }
+        };
+        fetchDoctors();
+    }, [open]); // Depend only on 'open' state
 
     // Geographic data - dynamic based on selection
     const sortedCountries = useMemo(() => getSortedCountries(), []);
@@ -320,28 +335,9 @@ export function PatientRegistrationDialog({ children, onRegister, patientToEdit 
                 const staff = await staffService.getStaff();
                 // Filter for doctors, loosen status check to include 'active' or if generic
                 const activeDoctors = staff.filter((s: any) => s.role === 'doctor');
-
-                // Merge API doctors with fallback doctors to ensure all 9 specific doctors are always visible
-                const mergedDoctors = [...activeDoctors];
-
-                FALLBACK_DOCTORS.forEach(fallback => {
-                    const exists = mergedDoctors.some(d =>
-                        normalizeName(d.full_name) === normalizeName(fallback.full_name)
-                    );
-                    if (!exists) {
-                        mergedDoctors.push({ ...fallback, isPredefined: true });
-                    }
-                });
-
-                if (mergedDoctors.length > 0) {
-                    setDoctorsList(mergedDoctors);
-                } else {
-                    console.warn("No doctors found from API or fallback list.");
-                    setDoctorsList(FALLBACK_DOCTORS);
-                }
+                setDoctorsList(activeDoctors);
             } catch (error) {
-                console.error("Failed to fetch doctors, using fallback", error);
-                setDoctorsList(FALLBACK_DOCTORS);
+                console.error("Failed to fetch doctors:", error);
             }
         };
         fetchDoctors();
@@ -521,21 +517,34 @@ export function PatientRegistrationDialog({ children, onRegister, patientToEdit 
         }
     };
 
-    const generateReceiptDoc = async () => {
+    const generateReceiptDoc = async (actionType: 'download' | 'print') => {
         const doc = new jsPDF();
 
         // Generate filename and check if masked
+        // Use unique document ID for each action type to track them separately
         const patientName = `${formData.title} ${formData.firstName} ${formData.lastName}`.trim();
-        const { filename, isMasked } = generatePdfFilename(patientName, formData.uhid, formData.uhid);
+        const documentId = `${formData.uhid}_receipt_${actionType}`;
+        const { filename, isMasked } = generatePdfFilename(patientName, formData.uhid, documentId);
 
         try {
-            // Add Full Page Background Template
-            const headerUrl = '/3.jpg';
-            const headerBase64 = await getBase64ImageFromUrl(headerUrl);
-            doc.addImage(headerBase64, 'JPEG', 0, 0, 210, 297);
+            if (!isMasked) {
+                // Add Full Page Background Template (Original Only)
+                // Using the specific template requested by user
+                const headerUrl = '/templete new.jpeg';
+                const headerBase64 = await getBase64ImageFromUrl(headerUrl);
+                doc.addImage(headerBase64, 'JPEG', 0, 0, 210, 297);
+            } else {
+                // Masked Copy: No Header/Footer, Add Watermark
+                doc.saveGraphicsState();
+                doc.setGState(new GState({ opacity: 0.1 }));
+                doc.setFontSize(60);
+                doc.setTextColor(150, 150, 150);
+                doc.text("MASKED COPY", 105, 150, { align: "center", angle: 45 });
+                doc.restoreGraphicsState();
+            }
         } catch (error) {
-            console.error("Failed to load background template", error);
-            // Fallback if image fails? We'll just proceed with white background but keeping content
+            console.error("Failed to load background template or add watermark", error);
+            // Fallback if image fails, continue
         }
 
         /* 
@@ -543,8 +552,8 @@ export function PatientRegistrationDialog({ children, onRegister, patientToEdit 
         */
 
         // Title - Positioned below the header area of the background image
-        // Adjust Y coordinate as needed based on the template's header height
-        const contentStartY = 45;
+        // Adjusted Y coordinate to clear the template header (approx 50-55mm)
+        const contentStartY = 55;
 
         doc.setFontSize(12);
         doc.setFont("helvetica", "bold");
@@ -564,7 +573,7 @@ export function PatientRegistrationDialog({ children, onRegister, patientToEdit 
         const displayAddress = isMasked ? maskData(addressString, 'address') : addressString;
 
         // Find doctor to get specialization/qualification
-        const selectedDoctor = doctorsList.concat(FALLBACK_DOCTORS).find(d =>
+        const selectedDoctor = doctorsList.find(d =>
             normalizeName(d.full_name) === normalizeName(formData.consultingDoctor)
         );
 
@@ -642,7 +651,7 @@ export function PatientRegistrationDialog({ children, onRegister, patientToEdit 
 
     const handleDownloadReceipt = async () => {
         try {
-            const { doc, filename, isMasked } = await generateReceiptDoc();
+            const { doc, filename, isMasked } = await generateReceiptDoc('download');
             doc.save(filename);
             toast({
                 title: isMasked ? "Masked Receipt Downloaded" : "Receipt Downloaded",
@@ -662,7 +671,7 @@ export function PatientRegistrationDialog({ children, onRegister, patientToEdit 
 
     const handlePrintReceipt = async () => {
         try {
-            const { doc } = await generateReceiptDoc();
+            const { doc } = await generateReceiptDoc('print');
             // Open print dialog
             doc.autoPrint();
             window.open(doc.output('bloburl'), '_blank');
@@ -680,8 +689,13 @@ export function PatientRegistrationDialog({ children, onRegister, patientToEdit 
         try {
             const doc = new jsPDF();
 
-            // Add Full Page Background Template using the specific file requested
-            // Note: The file name in public folder is "2.jpg"
+            // Track print count for Template separately
+            // e.g. P-2024..._template_print
+            const patientName = `${formData.title} ${formData.firstName} ${formData.lastName}`.trim();
+            const documentId = `${formData.uhid}_template_print`;
+            const { isMasked } = generatePdfFilename(patientName, formData.uhid, documentId);
+
+            // Add Full Page Background Template using 2.jpg
             try {
                 const backgroundUrl = '/2.jpg';
                 const backgroundBase64 = await getBase64ImageFromUrl(backgroundUrl);
@@ -700,40 +714,58 @@ export function PatientRegistrationDialog({ children, onRegister, patientToEdit 
             doc.setFont("helvetica", "bold");
             doc.setTextColor(0, 0, 0);
 
-            // Coordinates for fields based on a standard A4 layout assumption
-            // We need to fill: Patient Name, ID, Doctor Name, Address, Date, Mobile No, Dept
-
-            // Coordinates for fields based on a standard A4 layout assumption
-            // We need to fill: Patient Name, ID, Doctor Name, Address, Date, Mobile No, Dept
-
-            // These coordinates are estimates and may need adjustment based on the actual image layout
+            // Coordinates matching PatientDetailsDialog (all in mm)
             const leftColX = 57;
             const rightColX = 168;
 
-            // Row 1
-            const row1Y = 51; // Patient Name, Date
-            doc.text(`${formData.title} ${formData.firstName} ${formData.lastName}`.trim(), leftColX, row1Y);
-            doc.text(`${new Date().toLocaleDateString()}`, rightColX, row1Y);
+            // Apply masking if isMasked is true
+            const displayParams = {
+                name: isMasked ? maskData(patientName, 'name') : patientName,
+                phone: isMasked ? maskData(formData.phone, 'phone') : formData.phone,
+                // Do not mask UHID usually, but if requested:
+                // uhid: isMaskData(formData.uhid, 'id') : formData.uhid
+                uhid: formData.uhid
+            };
 
-            // Row 2
-            const row2Y = 58; // Patient ID, Mobile
-            doc.text(`${formData.uhid}`, leftColX, row2Y);
-            doc.text(`${formData.phone}`, rightColX, row2Y);
+            // Row 1 (51mm): Name (Age/Gender) | Date
+            const ageGender = `(${formData.age}Y/${formData.gender.charAt(0).toUpperCase()})`;
+            doc.text(`${displayParams.name} ${ageGender}`, leftColX, 51);
 
-            // Row 3
-            const row3Y = 64; // Doctor Name, Dept
-            doc.text(`${formData.consultingDoctor || ''}`, leftColX, row3Y);
-            doc.text(`${formData.department || ''}`, rightColX, row3Y);
+            const today = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' });
+            doc.text(today, rightColX, 51);
 
-            // Address Row
-            // Address label is usually significantly below the Doctor/Dept row
-            const addressY = 79;
-            // Resolve names for the PDF document
+            // Row 2 (58mm): UHID | Mobile
+            doc.text(`${displayParams.uhid}`, leftColX, 58);
+            doc.text(`${displayParams.phone}`, rightColX, 58);
+
+            // Row 3 (64mm): Doctor | OPD (or Dept)
+            // Resolve doctor specialization
+            const selectedDoctor = doctorsList.find(d =>
+                normalizeName(d.full_name) === normalizeName(formData.consultingDoctor)
+            );
+
+            // Doctor Name
+            doc.text(`${formData.consultingDoctor || ''}`, leftColX, 64);
+
+            // Doctor Specialization (Small font, slightly below)
+            if (selectedDoctor && selectedDoctor.specialization) {
+                doc.setFontSize(9);
+                doc.setFont("helvetica", "normal");
+                doc.text(selectedDoctor.specialization, leftColX, 68); // 4mm below name
+                // Reset font
+                doc.setFontSize(11);
+                doc.setFont("helvetica", "bold");
+            }
+
+            // Department / OPD
+            doc.text("OPD", rightColX, 64);
+
+            // Address (79mm)
+            // Resolve address details
             const stateName = states.find(s => s.code === formData.state)?.name || formData.state;
             const districtName = districts.find(d => d.code === formData.district)?.name || formData.district;
             const mandalName = mandals.find(m => m.code === formData.mandal)?.name || formData.mandal;
 
-            // Construct address cleanly
             const addressParts = [
                 formData.address,
                 formData.village,
@@ -742,15 +774,19 @@ export function PatientRegistrationDialog({ children, onRegister, patientToEdit 
                 stateName
             ].filter(part => part && part.trim() !== '');
 
-            const addressString = addressParts.join(', ') + (formData.pincode ? ` - ${formData.pincode}` : '');
+            let addressString = addressParts.join(', ') + (formData.pincode ? ` - ${formData.pincode}` : '');
 
-            doc.text(`${addressString}`, leftColX, addressY, { maxWidth: 125 });
+            if (isMasked) {
+                addressString = maskData(addressString, 'address');
+            }
+
+            // Wrap text for address (width approx 125mm)
+            doc.text(addressString, leftColX, 79, { maxWidth: 125 });
 
             doc.autoPrint();
             window.open(doc.output('bloburl'), '_blank');
-
         } catch (error) {
-            console.error("Print Record failed", error);
+            console.error("Print failed", error);
             toast({
                 title: "Print Failed",
                 description: "Could not generate record for printing.",
@@ -1245,7 +1281,7 @@ export function PatientRegistrationDialog({ children, onRegister, patientToEdit 
                             </Button>
                             <Button variant="default" className="gap-2 bg-blue-600 hover:bg-blue-700 text-white" onClick={handlePrintRecord}>
                                 <Printer className="h-4 w-4" />
-                                Print Record
+                                Print Template
                             </Button>
                         </div>
                     </div>

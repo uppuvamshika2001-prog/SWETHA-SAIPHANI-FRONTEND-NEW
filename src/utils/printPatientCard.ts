@@ -113,7 +113,7 @@ export const printPatientCard = (patient: any, medicalRecords: MedicalRecord[] =
                     padding: 40px; 
                     position: relative;
                     width: 100%;
-                    background-image: url('/header_template.jpg');
+                    background-image: url('/2.jpg');
                     background-repeat: no-repeat;
                     background-position: top center;
                     background-size: 100% 100%; /* Fill the A4 container */
@@ -122,7 +122,7 @@ export const printPatientCard = (patient: any, medicalRecords: MedicalRecord[] =
                 .content-wrapper {
                      flex: 1;
                      width: 100%;
-                     margin-top: 150px; /* Push content down to avoid overlapping the header background */
+                     margin-top: 105mm; /* Push content down to avoid overlapping the header background */
                 }
 
                 .report-title {
@@ -209,54 +209,30 @@ export const printPatientCard = (patient: any, medicalRecords: MedicalRecord[] =
                 <img src="/saiphani-logo-v3.png" alt="" />
             </div>
 
-            <div class="page-container">
-                <!-- BODY -->
-                <div class="content-wrapper">
-                    <div class="report-title">Patient Details</div>
+                <div class="page-container">
+                    <!-- Absolute Positioned Header Fields -->
+                   
+                    <!-- Row 1: Name (with Age/Gender) & Date - 51mm -->
+                    <div style="position: absolute; top: 51mm; left: 57mm; font-weight: bold; text-transform: uppercase;">${patient.full_name} (${ageDisplay}/${genderDisplay.charAt(0)})</div>
+                    <div style="position: absolute; top: 51mm; left: 168mm; font-weight: bold;">${new Date().toLocaleDateString()}</div>
 
-                    <!-- Patient Information -->
-                    <div style="margin-bottom: 20px;">
-                        <div class="section-header">Patient Information</div>
-                        
-                        <table style="width: 100%;">
-                            <tr>
-                                <td style="width: 50%; padding-bottom: 10px;">
-                                    <div style="font-size: 10px; font-weight: 600; color: #6b7280; text-transform: uppercase; margin-bottom: 2px;">Name</div>
-                                    <div style="font-weight: 500;">${patient.full_name}</div>
-                                </td>
-                                <td style="width: 50%; padding-bottom: 10px;">
-                                    <div style="font-size: 10px; font-weight: 600; color: #6b7280; text-transform: uppercase; margin-bottom: 2px;">Patient ID</div>
-                                    <div style="font-weight: 500;">${patient.uhid || patient.id || 'N/A'}</div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td style="width: 50%; padding-bottom: 10px;">
-                                    <div style="font-size: 10px; font-weight: 600; color: #6b7280; text-transform: uppercase; margin-bottom: 2px;">Age / Gender</div>
-                                    <div style="font-weight: 500;">${ageDisplay} / <span style="text-transform: capitalize;">${genderDisplay}</span></div>
-                                </td>
-                                <td style="width: 50%; padding-bottom: 10px;">
-                                    <div style="font-size: 10px; font-weight: 600; color: #6b7280; text-transform: uppercase; margin-bottom: 2px;">Blood Group</div>
-                                    <div style="font-weight: 500;">${patient.blood_group || 'Not recorded'}</div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td style="width: 50%; padding-bottom: 10px;">
-                                    <div style="font-size: 10px; font-weight: 600; color: #6b7280; text-transform: uppercase; margin-bottom: 2px;">Contact</div>
-                                    <div style="font-weight: 500;">${patient.phone}</div>
-                                </td>
-                                <td style="width: 50%; padding-bottom: 10px;">
-                                    <div style="font-size: 10px; font-weight: 600; color: #6b7280; text-transform: uppercase; margin-bottom: 2px;">Email</div>
-                                    <div style="font-weight: 500; text-transform: lowercase;">${patient.email || 'N/A'}</div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td colspan="2" style="padding-bottom: 10px;">
-                                    <div style="font-size: 10px; font-weight: 600; color: #6b7280; text-transform: uppercase; margin-bottom: 2px;">Address</div>
-                                    <div style="font-weight: 500; line-height: 1.4;">${addressHtml}</div>
-                                </td>
-                            </tr>
-                        </table>
+                    <!-- Row 2: ID & Mobile - 58mm -->
+                    <div style="position: absolute; top: 58mm; left: 57mm; font-weight: bold; text-transform: uppercase;">${patient.uhid || patient.id || 'N/A'}</div>
+                    <div style="position: absolute; top: 58mm; left: 168mm; font-weight: bold;">${patient.phone}</div>
+
+                    <!-- Row 3: Consultant & Dept - 64mm -->
+                    <!-- Note: For printPatientCard we don't always have exact doctor info, defaulting to OPD or whatever available -->
+                    <div style="position: absolute; top: 64mm; left: 57mm; font-weight: bold; text-transform: uppercase;">${'OPD'}</div>
+                    <div style="position: absolute; top: 64mm; left: 168mm; font-weight: bold;">OPD</div>
+
+                    <!-- Address - 79mm -->
+                    <div style="position: absolute; top: 79mm; left: 57mm; width: 125mm; font-weight: bold; text-transform: uppercase; line-height: 1.2;">
+                         ${addressHtml.replace(/<[^>]*>/g, ', ').replace(/^,\s*/, '')}
                     </div>
+
+                    <!-- BODY -->
+                    <div class="content-wrapper">
+                        <div class="report-title">Patient Details</div>
 
                     ${showClinicalInfo ? `
                     <!-- Active Medical Conditions -->

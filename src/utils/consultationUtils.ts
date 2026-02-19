@@ -16,7 +16,7 @@ export const generateConsultationPDF = async (record: MedicalRecord, options: { 
 
         // 1. Add Background Template
         try {
-            const headerUrl = '/header_template.jpg';
+            const headerUrl = '/templete%20new.jpeg';
             const headerBase64 = await getBase64ImageFromUrl(headerUrl);
             doc.addImage(headerBase64, 'JPEG', 0, 0, 210, 297);
         } catch (error) {

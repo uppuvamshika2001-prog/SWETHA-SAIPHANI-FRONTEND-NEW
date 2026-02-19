@@ -310,6 +310,7 @@ export default function AdminPatients() {
                     open={showDetailsDialog}
                     onOpenChange={setShowDetailsDialog}
                     patientId={selectedPatientId || undefined}
+                    patient={patients.find(p => p.uhid === selectedPatientId)}
                     showMedicalRecords={true}
                 />
             </div>

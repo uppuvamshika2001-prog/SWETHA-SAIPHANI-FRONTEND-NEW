@@ -99,12 +99,12 @@ export const LabProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
             const response = await api.get<{ items: LabOrder[] }>(`/lab/orders?${params}`);
             setLabOrders(response.items || []);
-            setHasFetchedOrders(true);
         } catch (err: any) {
             setError(err.message || 'Failed to fetch lab orders');
             console.error('[LabContext] fetchLabOrders error:', err);
         } finally {
             setLoading(false);
+            setHasFetchedOrders(true);
         }
     }, []);
 
@@ -115,12 +115,12 @@ export const LabProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         try {
             const response = await api.get<{ items: LabOrder[] }>('/lab/orders/my-orders?limit=50');
             setMyLabOrders(response.items || []);
-            setHasFetchedMyOrders(true);
         } catch (err: any) {
             setError(err.message || 'Failed to fetch my lab orders');
             console.error('[LabContext] fetchMyLabOrders error:', err);
         } finally {
             setLoading(false);
+            setHasFetchedMyOrders(true);
         }
     }, []);
 

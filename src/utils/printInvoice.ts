@@ -56,7 +56,7 @@ export const printInvoice = (bill: Bill) => {
                     padding: 40px; 
                     position: relative;
                     width: 100%;
-                    background-image: url('/header_template.jpg');
+                    background-image: url('/templete%20new.jpeg');
                     background-repeat: no-repeat;
                     background-position: top center;
                     background-size: 100% 100%;

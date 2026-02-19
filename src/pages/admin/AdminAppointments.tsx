@@ -29,7 +29,7 @@ export default function AdminAppointments() {
             }
         };
         fetchAppointments();
-    }, []);
+    }, []); // Empty dependency array ensures run once on mount
 
     const fetchAppointments = async () => {
         try {
