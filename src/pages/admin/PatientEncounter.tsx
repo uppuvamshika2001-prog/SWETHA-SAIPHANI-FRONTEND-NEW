@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -63,6 +64,7 @@ export default function PatientEncounter() {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
     const location = useLocation();
+    const { profile } = useAuth();
     const role = location.pathname.includes("/reception")
         ? "receptionist"
         : location.pathname.includes("/doctor")
@@ -235,6 +237,14 @@ export default function PatientEncounter() {
                </div>`;
 
         const activeTests = labTests.filter((t) => t.testName.trim());
+        const doctorFullName = _record?.doctor
+            ? `${_record.doctor.firstName} ${_record.doctor.lastName}`.trim()
+            : `${profile?.full_name || "-"}`;
+
+        const doctorSpecialization = _record?.doctor?.specialization
+            ? `- ${_record.doctor.specialization}`
+            : "";
+
         const labHtml = activeTests.length > 0
             ? `<div style="margin-bottom:18px">
                 <h3 style="color:#00509e;font-size:13px;margin:0 0 6px;border-bottom:1px solid #ccc;padding-bottom:3px">Lab Tests Ordered</h3>
@@ -315,7 +325,7 @@ export default function PatientEncounter() {
     .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1px 20px; font-size: 11.5px; }
     .info-grid .row { display: flex; padding: 2px 0; }
     .info-grid .label { color: #555; width: 105px; flex-shrink: 0; font-weight: 600; }
-    .info-grid .value { color: #212121; }
+    .info-grid .value { color: #212121; flex: 1; white-space: normal; word-wrap: break-word; line-height: 1.3; }
     .section-title { color: #00509e; font-size: 12.5px; margin: 0 0 4px; border-bottom: 1px solid #ccc; padding-bottom: 2px; }
     .section-content { font-size: 11.5px; margin-bottom: 8px; white-space: pre-line; line-height: 1.4; }
     .section-block { margin-bottom: 10px; page-break-inside: avoid; }
@@ -344,8 +354,9 @@ export default function PatientEncounter() {
           <div class="row"><span class="label">BLOOD GROUP</span><span class="value">${patient?.blood_group || "N/A"}</span></div>
           <div class="row"><span class="label">CONTACT</span><span class="value">${patient?.phone || "-"}</span></div>
           <div class="row"><span class="label">EMAIL</span><span class="value">${patient?.email || "N/A"}</span></div>
-          <div class="row" style="grid-column:1/-1"><span class="label">ADDRESS</span><span class="value">${patient?.address || "N/A"}</span></div>
+          <div class="row" style="grid-column:1/-1; align-items:flex-start;"><span class="label">ADDRESS</span><span class="value" style="padding-right:20px;">${patient?.address || "N/A"}</span></div>
           <div class="row"><span class="label">DATE</span><span class="value">${today}</span></div>
+          <div class="row"><span class="label">DOCTOR</span><span class="value" style="font-weight:600">Dr. ${doctorFullName} <span style="font-size: 10px; color: #666; font-weight: 500;"> ${doctorSpecialization}</span></span></div>
           ${allergiesRow}
         </div>
       </div>

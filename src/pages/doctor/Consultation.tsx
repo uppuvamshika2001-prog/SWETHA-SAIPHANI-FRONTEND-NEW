@@ -28,7 +28,7 @@ import { Appointment, Patient } from '@/types';
 export default function Consultation() {
     const { appointmentId } = useParams();
     const navigate = useNavigate();
-    const { addPrescription } = usePrescriptions();
+    const { refreshPrescriptions } = usePrescriptions();
     const { user } = useAuth();
 
     // Data state
@@ -186,42 +186,14 @@ export default function Consultation() {
                     frequency: p.frequency,
                     duration: p.duration
                 })),
-                labOrders: orderedLabTests.map(t => t.id)
+                labOrders: orderedLabTests.map(t => t.name)
             };
 
             await medicalRecordService.createRecord(recordData);
 
-            // Save prescriptions to context for pharmacy (existing functionality)
-            if (prescriptions.length > 0) {
-                const prescriptionItems: PrescriptionItem[] = prescriptions.map(p => {
-                    const med = medicines.find(m => m.id === p.id);
-                    return {
-                        medicine_id: p.id,
-                        medicine_name: p.name,
-                        dosage: p.dosage,
-                        frequency: p.frequency,
-                        duration: p.duration,
-                        quantity: 1,
-                        unit_price: med?.unit_price || med?.unitPrice || 0,
-                        total_price: med?.unit_price || med?.unitPrice || 0
-                    };
-                });
-
-                const newPrescription: Prescription = {
-                    id: Math.random().toString(36).substr(2, 9),
-                    order_id: 'RX-' + Date.now().toString().slice(-6),
-                    patient_id: patient.uhid,
-                    patient_name: patient.full_name,
-                    doctor_id: user?.id || appointment.doctor_id,
-                    doctor_name: appointment.doctor_name,
-                    diagnosis: diagnosis,
-                    items: prescriptionItems,
-                    total_amount: prescriptionItems.reduce((sum, item) => sum + item.total_price, 0),
-                    status: 'pending',
-                    created_at: new Date().toISOString()
-                };
-
-                addPrescription(newPrescription);
+            // Refresh prescriptions so the newly created record is fetched locally
+            if (prescriptions.length > 0 && typeof refreshPrescriptions === 'function') {
+                await refreshPrescriptions();
             }
 
             toast.success("Consultation saved successfully!", {

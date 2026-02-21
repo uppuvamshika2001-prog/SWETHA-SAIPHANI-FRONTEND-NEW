@@ -744,14 +744,52 @@ export function PatientRegistrationDialog({ children, onRegister, patientToEdit 
                 normalizeName(d.full_name) === normalizeName(formData.consultingDoctor)
             );
 
+            // Extract Name and Specialization
+            let printDocName = formData.consultingDoctor || '';
+            let printDocSpec = '';
+
+            const match = printDocName.match(/(.*?)\s*\((.*?)\)/);
+            if (match) {
+                printDocName = match[1].trim();
+                printDocSpec = match[2].trim();
+            } else if (selectedDoctor && selectedDoctor.specialization) {
+                printDocSpec = selectedDoctor.specialization;
+            }
+
             // Doctor Name
-            doc.text(`${formData.consultingDoctor || ''}`, leftColX, 64);
+            doc.setFontSize(11);
+            doc.setFont("helvetica", "bold");
+            doc.text(printDocName, leftColX, 64, { maxWidth: 95 });
 
             // Doctor Specialization (Small font, slightly below)
-            if (selectedDoctor && selectedDoctor.specialization) {
+            if (printDocSpec) {
                 doc.setFontSize(9);
                 doc.setFont("helvetica", "normal");
-                doc.text(selectedDoctor.specialization, leftColX, 68); // 4mm below name
+
+                let formattedSpec = printDocSpec;
+                const parts = printDocSpec.split(',').map(p => p.trim());
+                if (parts.length >= 2) {
+                    const lines = [];
+                    const baseSize = Math.floor(parts.length / 2);
+                    let remainder = parts.length % 2;
+                    let startIndex = 0;
+
+                    for (let i = 0; i < 2; i++) {
+                        let currentSize = baseSize + (remainder > 0 ? 1 : 0);
+                        remainder--;
+                        if (currentSize > 0) {
+                            lines.push(parts.slice(startIndex, startIndex + currentSize).join(', '));
+                            startIndex += currentSize;
+                        }
+                    }
+                    formattedSpec = lines.join('\n');
+                }
+
+                const nameLines = doc.splitTextToSize(printDocName, 95).length;
+                const specY = 64 + (nameLines * 4); // roughly 4mm below the last line of the name
+
+                doc.text(formattedSpec, leftColX, specY, { maxWidth: 95 });
+
                 // Reset font
                 doc.setFontSize(11);
                 doc.setFont("helvetica", "bold");
