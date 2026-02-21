@@ -87,13 +87,34 @@ export const generateConsultationPDF = async (record: MedicalRecord, options: { 
 
         currentY += 6;
 
-        // Row 3
+        // Row 3 - Doctor Name
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(107, 114, 128);
         doc.text("DOCTOR", leftColX, currentY);
         doc.setFont('helvetica', 'normal');
         doc.setTextColor(17, 24, 39);
-        doc.text(`Dr. ${record.doctor.firstName} ${record.doctor.lastName}`, 45, currentY);
+
+        // Build doctor display name, avoiding "Dr. Dr." duplication
+        let doctorFullName = `${record.doctor.firstName} ${record.doctor.lastName}`.trim();
+        if (!doctorFullName.toLowerCase().startsWith('dr.') && !doctorFullName.toLowerCase().startsWith('dr ')) {
+            doctorFullName = `Dr. ${doctorFullName}`;
+        }
+
+        // Separate qualifications if present (e.g. in parentheses or after comma)
+        const qualMatch = doctorFullName.match(/^(.*?)(\(.*\))$/);
+        const maxDoctorWidth = rightColX - 45 - 5; // Don't overlap into DEPT column
+
+        if (qualMatch) {
+            // Name without qualifications
+            doc.text(qualMatch[1].trim(), 45, currentY, { maxWidth: maxDoctorWidth });
+            // Qualifications on next line, smaller font
+            doc.setFontSize(8);
+            doc.setTextColor(107, 114, 128);
+            doc.text(qualMatch[2].trim(), 45, currentY + 5, { maxWidth: maxDoctorWidth });
+            doc.setFontSize(10);
+        } else {
+            doc.text(doctorFullName, 45, currentY, { maxWidth: maxDoctorWidth });
+        }
 
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(107, 114, 128);
@@ -102,7 +123,7 @@ export const generateConsultationPDF = async (record: MedicalRecord, options: { 
         doc.setTextColor(17, 24, 39);
         doc.text("OPD Consultation", rightColX + 35, currentY);
 
-        currentY += 12;
+        currentY += 16;
 
         // 3. Symptoms & Vitals
         doc.setFontSize(12);
