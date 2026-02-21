@@ -354,9 +354,12 @@ export default function PatientEncounter() {
           <div class="row"><span class="label">BLOOD GROUP</span><span class="value">${patient?.blood_group || "N/A"}</span></div>
           <div class="row"><span class="label">CONTACT</span><span class="value">${patient?.phone || "-"}</span></div>
           <div class="row"><span class="label">EMAIL</span><span class="value">${patient?.email || "N/A"}</span></div>
-          <div class="row" style="grid-column:1/-1; align-items:flex-start;"><span class="label">ADDRESS</span><span class="value" style="padding-right:20px;">${patient?.address || "N/A"}</span></div>
+          <div class="row" style="align-items:flex-start;"><span class="label">ADDRESS</span><span class="value" style="padding-right:10px;">${patient?.address || "N/A"}</span></div>
           <div class="row"><span class="label">DATE</span><span class="value">${today}</span></div>
-          <div class="row"><span class="label">DOCTOR</span><span class="value" style="font-weight:600">Dr. ${doctorFullName} <span style="font-size: 10px; color: #666; font-weight: 500;"> ${doctorSpecialization}</span></span></div>
+          <div class="row" style="grid-column:1/-1; align-items:flex-start; margin-top:2px; border-top:1px dashed #eee; padding-top:4px;">
+            <span class="label">DOCTOR</span>
+            <span class="value" style="font-weight:600">${doctorFullName.startsWith('Dr.') ? '' : 'Dr. '}${doctorFullName} <span style="font-size: 10px; color: #666; font-weight: 500;"> ${doctorSpecialization}</span></span>
+          </div>
           ${allergiesRow}
         </div>
       </div>

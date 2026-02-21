@@ -182,7 +182,7 @@ export const patientService = {
         const records = await api.get<any[]>(`/medical-records/patient/${uhid}`);
         return records.map((record: any) => ({
             id: record.id,
-            doctor_name: record.doctor ? `Dr. ${record.doctor.firstName} ${record.doctor.lastName}` : 'Unknown Doctor',
+            doctor_name: record.doctor ? `Dr. ${record.doctor.firstName.replace(/^Dr\.\s+/i, '')} ${record.doctor.lastName}` : 'Unknown Doctor',
             date: record.createdAt || record.date,
             diagnosis: record.diagnosis,
             treatment_notes: record.treatment || record.notes || 'No treatment notes',

@@ -36,6 +36,7 @@ const Reports = lazy(() => import("./pages/admin/Reports"));
 const Settings = lazy(() => import("./pages/admin/Settings"));
 const AdminPharmacy = lazy(() => import("./pages/admin/AdminPharmacy"));
 const AdminAnalytics = lazy(() => import("./pages/admin/AdminAnalytics"));
+const AdminLabManagement = lazy(() => import("./pages/admin/AdminLabManagement"));
 const PatientEncounter = lazy(() => import("./pages/admin/PatientEncounter"));
 const OPDRegistration = lazy(() => import("./pages/admin/opd/OPDRegistration"));
 const OPDAppointments = lazy(() => import("./pages/admin/opd/OPDAppointments"));
@@ -151,6 +152,7 @@ const App = () => {
                         <Route path="/admin/profile" element={<Settings />} />
                         <Route path="/admin/pharmacy" element={<AdminPharmacy />} />
                         <Route path="/admin/analytics" element={<AdminAnalytics />} />
+                        <Route path="/admin/lab-management" element={<AdminLabManagement />} />
 
                         {/* Admin OPD Routes */}
                         <Route path="/admin/opd/registration" element={<OPDRegistration />} />

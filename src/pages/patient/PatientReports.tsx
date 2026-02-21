@@ -26,12 +26,14 @@ interface ReportItem {
 const PatientReports = () => {
     const { toast } = useToast();
     const [reports, setReports] = useState<ReportItem[]>([]);
+    const [patientProfile, setPatientProfile] = useState<any>(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const fetchData = async () => {
             try {
                 const profile = await patientService.getMyProfile();
+                setPatientProfile(profile);
                 const [prescriptions, bills, labResults, records] = await Promise.all([
                     patientService.getPatientPrescriptions(profile.id),
                     patientService.getPatientBills(profile.id),
@@ -49,7 +51,7 @@ const PatientReports = () => {
                         title: `Prescription - ${new Date(createdAt).toLocaleDateString()}`,
                         type: 'Prescription',
                         date: createdAt,
-                        author: p.doctor ? `Dr. ${p.doctor.firstName} ${p.doctor.lastName}` : 'Doctor',
+                        author: p.doctor ? (p.doctor.firstName + ' ' + p.doctor.lastName).trim().replace(/^Dr\.\s+/i, '') : 'Doctor',
                         status: 'Available',
                         originalData: p
                     });
@@ -143,17 +145,47 @@ const PatientReports = () => {
 
         const yStart = 60; // Below header area of template
 
+        // --- ADD PATIENT INFORMATION SECTION ---
+        if (patientProfile) {
+            doc.setFontSize(10);
+            doc.setFont("helvetica", "bold");
+            doc.setTextColor(17, 24, 39);
+            doc.text("PATIENT INFORMATION", 14, yStart);
+            doc.setDrawColor(229, 231, 235);
+            doc.line(14, yStart + 2, 196, yStart + 2);
+
+            doc.setFontSize(9);
+            doc.setFont("helvetica", "bold");
+            doc.setTextColor(107, 114, 128);
+            doc.text("NAME", 14, yStart + 8);
+            doc.text("PATIENT ID", 14, yStart + 13);
+            doc.text("AGE / GENDER", 110, yStart + 8);
+            doc.text("CONTACT", 110, yStart + 13);
+
+            doc.setFont("helvetica", "normal");
+            doc.setTextColor(17, 24, 39);
+            doc.text(`${patientProfile.full_name}`, 40, yStart + 8);
+            doc.text(`${patientProfile.uhid || 'N/A'}`, 40, yStart + 13);
+            doc.text(`${patientProfile.age || 'N/A'} / ${patientProfile.gender?.toUpperCase() || 'N/A'}`, 140, yStart + 8);
+            doc.text(`${patientProfile.phone || 'N/A'}`, 140, yStart + 13);
+
+            doc.setDrawColor(229, 231, 235);
+            doc.line(14, yStart + 16, 196, yStart + 16);
+        }
+
+        const contentStart = yStart + 25;
+
         // --- GENERATE CONTENT BASED ON TYPE ---
         if (report.type === 'Lab Report') {
             const data = report.originalData;
             doc.setFontSize(10);
             doc.setFont("helvetica", "normal");
-            doc.text(`Order ID: ${data.order_id}`, 14, yStart);
-            doc.text(`Date: ${new Date(data.date).toLocaleDateString()}`, 14, yStart + 5);
+            doc.text(`Order ID: ${data.order_id}`, 14, contentStart);
+            doc.text(`Date: ${new Date(data.date).toLocaleDateString()}`, 14, contentStart + 6);
 
             autoTable(doc, {
                 ...getTransparentTableStyles(),
-                startY: yStart + 15,
+                startY: contentStart + 12,
                 head: [['Test Name', 'Result', 'Normal Range', 'Status']],
                 body: data.tests.map((t: any) => [
                     t.test_name,
@@ -168,10 +200,10 @@ const PatientReports = () => {
             const data = report.originalData;
             doc.setFontSize(10);
             doc.setFont("helvetica", "normal");
-            doc.text(`Doctor: ${report.author}`, 14, yStart);
-            doc.text(`Date: ${new Date(data.createdAt || data.created_at).toLocaleDateString()}`, 14, yStart + 5);
+            doc.text(`Doctor: ${report.author.startsWith('Dr.') ? '' : 'Dr. '}${report.author}`, 14, contentStart);
+            doc.text(`Date: ${new Date(data.createdAt || data.created_at).toLocaleDateString()}`, 14, contentStart + 6);
 
-            let noteY = yStart + 15;
+            let noteY = contentStart + 15;
             if (data.notes) {
                 const splitNotes = doc.splitTextToSize(`Notes: ${data.notes}`, 180);
                 doc.text(splitNotes, 14, noteY);
@@ -192,13 +224,13 @@ const PatientReports = () => {
             const data = report.originalData;
             doc.setFontSize(10);
             doc.setFont("helvetica", "normal");
-            doc.text(`Bill ID: ${data.bill_id}`, 14, yStart);
-            doc.text(`Date: ${new Date(data.created_at).toLocaleDateString()}`, 14, yStart + 5);
-            doc.text(`Status: ${data.status.toUpperCase()}`, 190, yStart + 5, { align: 'right' });
+            doc.text(`Bill ID: ${data.bill_id}`, 14, contentStart);
+            doc.text(`Date: ${new Date(data.created_at).toLocaleDateString()}`, 14, contentStart + 6);
+            doc.text(`Status: ${data.status.toUpperCase()}`, 196, contentStart + 6, { align: 'right' });
 
             autoTable(doc, {
                 ...getTransparentTableStyles(),
-                startY: yStart + 15,
+                startY: contentStart + 12,
                 head: [['Description', 'Category', 'Amount']],
                 body: data.items.map((i: any) => [
                     i.description, i.category, `Rs. ${Number(i.total).toFixed(2)}`
@@ -212,8 +244,8 @@ const PatientReports = () => {
             const data = report.originalData;
             doc.setFontSize(10);
             doc.setFont("helvetica", "normal");
-            doc.text(`Doctor: ${data.doctor_name}`, 14, yStart);
-            doc.text(`Date: ${new Date(data.date).toLocaleDateString()}`, 14, yStart + 5);
+            doc.text(`Doctor: ${data.doctor_name.startsWith('Dr.') ? '' : 'Dr. '}${data.doctor_name}`, 14, contentStart);
+            doc.text(`Date: ${new Date(data.date).toLocaleDateString()}`, 14, contentStart + 6);
 
             const content = [
                 { title: 'Diagnosis', text: data.diagnosis },
@@ -221,7 +253,7 @@ const PatientReports = () => {
                 { title: 'Treatment', text: data.treatment_notes }
             ];
 
-            let y = yStart + 15;
+            let y = contentStart + 16;
             content.forEach(section => {
                 doc.setFont("helvetica", "bold");
                 doc.text(`${section.title}:`, 14, y);

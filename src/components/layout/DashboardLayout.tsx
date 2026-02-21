@@ -79,6 +79,7 @@ const getNavItems = (role: AppRole, basePath: string): NavItem[] => {
                     href: `${basePath}/pathology/dashboard`,
                     icon: <FlaskConical className="h-5 w-5" />,
                 },
+                { title: 'Lab Management', href: `${basePath}/lab-management`, icon: <Activity className="h-5 w-5" /> },
                 { title: 'Staff Management', href: `${basePath}/staff`, icon: <UserCog className="h-5 w-5" /> },
                 { title: 'Patients', href: `${basePath}/patients`, icon: <Users className="h-5 w-5" /> },
                 { title: 'Appointments', href: `${basePath}/appointments`, icon: <Calendar className="h-5 w-5" /> },
