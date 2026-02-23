@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Button } from "@/components/ui/button";
 import {
     Dialog,
@@ -20,7 +22,7 @@ import {
 } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
-import { FileText, Plus, Trash2, Loader2, IndianRupee, TestTube2, Stethoscope, Microscope } from "lucide-react";
+import { FileText, Plus, Trash2, Loader2, IndianRupee, TestTube2, Stethoscope, Microscope, Check, ChevronsUpDown } from "lucide-react";
 import { patientService } from "@/services/patientService";
 import { billingService } from "@/services/billingService";
 import { labService } from "@/services/labService";
@@ -54,6 +56,7 @@ export function BillGenerationDialog({
     const [patientList, setPatientList] = useState<Patient[]>([]);
     const [loadingPatients, setLoadingPatients] = useState(false);
     const [submitting, setSubmitting] = useState(false);
+    const [patientPopoverOpen, setPatientPopoverOpen] = useState(false);
 
     // Item State
     const [items, setItems] = useState<{ description: string, quantity: number, unitPrice: number, total: number }[]>([]);
@@ -285,19 +288,56 @@ export function BillGenerationDialog({
                 </DialogHeader>
 
                 <div className="flex-1 overflow-y-auto p-6 space-y-6">
-                    {/* Patient Selection */}
+                    {/* Patient Selection - Searchable Combobox */}
                     <div className="space-y-2">
                         <Label htmlFor="patient" className="text-sm font-medium text-slate-700 dark:text-slate-300">Select Patient</Label>
-                        <Select value={patientId} onValueChange={setPatientId} disabled={loadingPatients}>
-                            <SelectTrigger id="patient" className="h-11 border-slate-200 focus:ring-teal-500">
-                                <SelectValue placeholder={loadingPatients ? "Loading patients..." : "Search or select patient"} />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {patientList.map((p) => (
-                                    <SelectItem key={p.uhid} value={p.uhid}>{p.full_name} ({p.uhid})</SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
+                        <Popover open={patientPopoverOpen} onOpenChange={setPatientPopoverOpen}>
+                            <PopoverTrigger asChild>
+                                <Button
+                                    variant="outline"
+                                    role="combobox"
+                                    aria-expanded={patientPopoverOpen}
+                                    className="w-full h-11 justify-between border-slate-200 focus:ring-teal-500 font-normal"
+                                    disabled={loadingPatients}
+                                >
+                                    {loadingPatients
+                                        ? "Loading patients..."
+                                        : patientId
+                                            ? patientList.find(p => p.uhid === patientId)
+                                                ? `${patientList.find(p => p.uhid === patientId)!.full_name} (${patientId})`
+                                                : patientId
+                                            : "Search patient by name or UHID..."
+                                    }
+                                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                                <Command>
+                                    <CommandInput placeholder="Type name or UHID to search..." />
+                                    <CommandList>
+                                        <CommandEmpty>No patient found.</CommandEmpty>
+                                        <CommandGroup>
+                                            {patientList.map((p) => (
+                                                <CommandItem
+                                                    key={p.uhid}
+                                                    value={`${p.full_name} ${p.uhid}`}
+                                                    onSelect={() => {
+                                                        setPatientId(p.uhid);
+                                                        setPatientPopoverOpen(false);
+                                                    }}
+                                                >
+                                                    <Check className={`mr-2 h-4 w-4 ${patientId === p.uhid ? "opacity-100" : "opacity-0"}`} />
+                                                    <div className="flex flex-col">
+                                                        <span className="font-medium">{p.full_name}</span>
+                                                        <span className="text-xs text-muted-foreground">{p.uhid}</span>
+                                                    </div>
+                                                </CommandItem>
+                                            ))}
+                                        </CommandGroup>
+                                    </CommandList>
+                                </Command>
+                            </PopoverContent>
+                        </Popover>
                     </div>
 
                     <Separator className="bg-slate-100 dark:bg-slate-800" />
