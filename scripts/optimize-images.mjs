@@ -91,8 +91,6 @@ async function optimizeImage(config) {
 
   // Generate responsive sizes
   for (const size of sizes) {
-    if (size.width > origWidth) continue; // Skip if original is smaller
-
     const responsiveName = `${baseName}${size.suffix}.webp`;
     const responsivePath = path.resolve(optimizedDir, responsiveName);
 
