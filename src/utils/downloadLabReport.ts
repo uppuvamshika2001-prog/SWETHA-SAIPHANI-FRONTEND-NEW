@@ -86,57 +86,51 @@ export const downloadLabReportPDF = async (order: LabOrder, forceMasked: boolean
 
         // 3. Test Results
         let currentY = startY + 25;
-        const tests = (order as any).tests || [];
 
-        if (tests.length > 0) {
-            tests.forEach((test: any, index: number) => {
-                doc.setFontSize(12);
-                doc.setFont('helvetica', 'bold');
-                doc.text(`Test ${index + 1}: ${test.test_name || 'Details'}`, 14, currentY);
-                currentY += 8;
+        // Add LAB RESULTS Title
+        doc.setFontSize(14);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(0, 0, 0);
+        doc.text("LAB RESULTS", pageWidth / 2, currentY, { align: 'center' });
+        currentY += 15;
 
-                // Results Table
-                let params: any[] = [];
-                if (test.result && test.result.result && test.result.result.parameters) {
-                    params = test.result.result.parameters;
-                } else if (typeof test.result === 'string' && test.result.startsWith('{')) {
-                    try {
-                        const parsed = JSON.parse(test.result);
-                        params = parsed.result?.parameters || [];
-                    } catch (e) { }
-                }
+        // Safely extract parameters from the order.result object
+        const params = order.result?.result?.parameters || (order.result as any)?.parameters || [];
 
-                if (params.length > 0) {
-                    const tableData = params.map((p: any) => [
-                        p.name || '-',
-                        `${p.value || ''} ${p.unit || ''}`,
-                        p.normalRange || '-'
-                    ]);
+        if (params.length > 0) {
+            doc.setFontSize(12);
+            doc.setFont('helvetica', 'bold');
+            doc.text(`Test: ${order.testName || 'Details'}`, 14, currentY);
+            currentY += 8;
 
-                    autoTable(doc, {
-                        ...getTransparentTableStyles(),
-                        startY: currentY,
-                        head: [['Parameter', 'Result', 'Normal Range']],
-                        body: tableData,
-                        columnStyles: {
-                            0: { cellWidth: 80 },
-                            1: { cellWidth: 50, fontStyle: 'bold' },
-                            2: { cellWidth: 50 }
-                        }
-                    });
-                    currentY = (doc as any).lastAutoTable.finalY + 15;
-                } else if (test.result) {
-                    doc.setFontSize(10);
-                    doc.setFont('helvetica', 'normal');
-                    const resStr = typeof test.result === 'string' ? test.result : JSON.stringify(test.result);
-                    const splitRes = doc.splitTextToSize(`Result: ${resStr}`, pageWidth - 28);
-                    doc.text(splitRes, 20, currentY);
-                    currentY += (splitRes.length * 5) + 10;
+            const tableData = params.map((p: any) => [
+                p.name || '-',
+                `${p.value || ''} ${p.unit && p.unit.trim() !== '' ? p.unit : ''}`.trim(),
+                p.normalRange || '-'
+            ]);
+
+            autoTable(doc, {
+                ...getTransparentTableStyles(),
+                startY: currentY,
+                head: [['Parameter', 'Result', 'Normal Range']],
+                body: tableData,
+                columnStyles: {
+                    0: { cellWidth: 80 },
+                    1: { cellWidth: 50, fontStyle: 'bold' },
+                    2: { cellWidth: 50 }
                 }
             });
+            currentY = (doc as any).lastAutoTable.finalY + 15;
+        } else if (order.result?.interpretation || (order as any).notes) {
+            // Has a result but no parameters table
+            doc.setFontSize(10);
+            doc.setFont('helvetica', 'normal');
+            doc.text(`Result recorded, see interpretation.`, 14, currentY);
+            currentY += 10;
         } else {
             doc.setFont('helvetica', 'italic');
             doc.text("No test details recorded.", 14, currentY);
+            currentY += 10;
         }
 
         // 4. Notes & Remarks
