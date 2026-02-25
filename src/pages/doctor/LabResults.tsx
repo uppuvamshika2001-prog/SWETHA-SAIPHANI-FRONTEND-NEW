@@ -50,7 +50,7 @@ export default function DoctorLabResults() {
         {
             key: "status",
             header: "Status",
-            render: (order: LabOrder) => <StatusBadge status={order.status.toLowerCase()} />
+            render: (order: LabOrder) => <StatusBadge status={order.status.toLowerCase() as any} />
         },
         {
             key: "createdAt",
@@ -67,7 +67,7 @@ export default function DoctorLabResults() {
                     </Button>
                     {order.result?.attachments && order.result.attachments.length > 0 && (
                         <Button variant="ghost" size="icon" asChild>
-                            <a href={order.result.attachments[0]} target="_blank" rel="noopener noreferrer">
+                            <a href={order.result.attachments[0].replace('api.swethasaiphani.com', 'api.swethasaiphani.clinic')} target="_blank" rel="noopener noreferrer">
                                 <Download className="h-4 w-4 text-green-600" />
                             </a>
                         </Button>
@@ -141,7 +141,7 @@ export default function DoctorLabResults() {
                                 </div>
                                 <div>
                                     <p className="text-sm text-muted-foreground">Status</p>
-                                    <StatusBadge status={selectedOrder.status.toLowerCase()} />
+                                    <StatusBadge status={selectedOrder.status.toLowerCase() as any} />
                                 </div>
                                 <div>
                                     <p className="text-sm text-muted-foreground">Priority</p>
@@ -162,23 +162,27 @@ export default function DoctorLabResults() {
                                 <div className="space-y-3 p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
                                     <h4 className="font-semibold text-green-700 dark:text-green-400">Test Results</h4>
 
-                                    {selectedOrder.result.result.parameters.length > 0 && (
-                                        <div className="grid gap-2">
-                                            {selectedOrder.result.result.parameters.map((param, idx) => (
-                                                <div key={idx} className="flex justify-between items-center p-2 bg-white dark:bg-slate-900 rounded border">
-                                                    <span className="font-medium">{param.name}</span>
-                                                    <span>
-                                                        {param.value} {param.unit && <span className="text-muted-foreground">{param.unit}</span>}
-                                                        {param.normalRange && (
-                                                            <span className="text-xs text-muted-foreground ml-2">
-                                                                (Normal: {param.normalRange})
-                                                            </span>
-                                                        )}
-                                                    </span>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )}
+                                    {(() => {
+                                        const params = selectedOrder.result?.result?.parameters || (selectedOrder.result as any)?.parameters || [];
+                                        if (params.length === 0) return null;
+                                        return (
+                                            <div className="grid gap-2">
+                                                {params.map((param: any, idx: number) => (
+                                                    <div key={idx} className="flex justify-between items-center p-2 bg-white dark:bg-slate-900 rounded border">
+                                                        <span className="font-medium">{param.name}</span>
+                                                        <span>
+                                                            {param.value} {param.unit && <span className="text-muted-foreground">{param.unit}</span>}
+                                                            {param.normalRange && (
+                                                                <span className="text-xs text-muted-foreground ml-2">
+                                                                    (Normal: {param.normalRange})
+                                                                </span>
+                                                            )}
+                                                        </span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        );
+                                    })()}
 
                                     {selectedOrder.result.interpretation && (
                                         <div>
@@ -191,7 +195,7 @@ export default function DoctorLabResults() {
                                         <div className="flex gap-2 pt-2">
                                             {selectedOrder.result.attachments.map((url, idx) => (
                                                 <Button key={idx} variant="outline" size="sm" asChild>
-                                                    <a href={url} target="_blank" rel="noopener noreferrer">
+                                                    <a href={url.replace('api.swethasaiphani.com', 'api.swethasaiphani.clinic')} target="_blank" rel="noopener noreferrer">
                                                         <Download className="h-4 w-4 mr-2" />
                                                         Download Report
                                                     </a>
