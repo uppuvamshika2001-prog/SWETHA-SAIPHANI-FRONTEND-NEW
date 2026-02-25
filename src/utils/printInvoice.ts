@@ -2,7 +2,7 @@
 import { toast } from "sonner";
 import { Bill } from "@/services/billingService";
 
-export const printInvoice = (bill: Bill) => {
+export const printInvoice = (bill: Bill, title: string = 'Invoice') => {
     const printWindow = window.open('', '_blank');
     if (!printWindow) {
         toast.error("Please allow popups to print the invoice");
@@ -23,7 +23,7 @@ export const printInvoice = (bill: Bill) => {
         <!DOCTYPE html>
         <html>
         <head>
-            <title>Invoice - ${bill.billNumber}</title>
+            <title>${title} - ${bill.billNumber}</title>
             <style>
                 @page {
                     size: A4;
@@ -173,7 +173,7 @@ export const printInvoice = (bill: Bill) => {
             <div class="page-container">
                 <!-- BODY -->
                 <div class="content-wrapper">
-                    <div class="invoice-title">Invoice</div>
+                    <div class="invoice-title">${title}</div>
 
                     <!-- Two Column Info -->
                     <div style="display: flex; justify-content: space-between; margin-bottom: 30px;">

@@ -142,6 +142,54 @@ export function LabResultDetailsDialog({
                         </div>
                     </div>
 
+                    {/* Attached Report Documents */}
+                    {order.result?.attachments && order.result.attachments.length > 0 && (
+                        <div className="border rounded-lg overflow-hidden">
+                            <div className="bg-muted/50 p-3 border-b">
+                                <h3 className="font-semibold flex items-center gap-2">
+                                    <FileText className="h-4 w-4" />
+                                    Attached Report Documents
+                                </h3>
+                            </div>
+                            <div className="p-4 space-y-3">
+                                {order.result.attachments.map((url: string, idx: number) => {
+                                    const filename = url.split('/').pop() || `Document ${idx + 1}`;
+                                    const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(url);
+                                    return (
+                                        <div key={idx} className="space-y-2">
+                                            <div className="flex items-center gap-3 p-3 border rounded-md bg-background">
+                                                <div className="h-10 w-10 bg-primary/10 rounded flex items-center justify-center flex-shrink-0">
+                                                    <FileText className="h-5 w-5 text-primary" />
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="text-sm font-medium truncate">{filename}</p>
+                                                    <p className="text-xs text-muted-foreground">{isImage ? 'Image' : 'Document'}</p>
+                                                </div>
+                                                <Button
+                                                    size="sm"
+                                                    variant="outline"
+                                                    className="gap-2 shrink-0"
+                                                    onClick={() => window.open(url, '_blank')}
+                                                >
+                                                    <Download className="h-4 w-4" />
+                                                    View / Download
+                                                </Button>
+                                            </div>
+                                            {isImage && (
+                                                <img
+                                                    src={url}
+                                                    alt={filename}
+                                                    className="max-h-48 rounded-md border object-contain cursor-pointer"
+                                                    onClick={() => window.open(url, '_blank')}
+                                                />
+                                            )}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    )}
+
                     {/* Remarks */}
                     <div className="bg-muted/30 p-4 rounded-lg space-y-2">
                         <h4 className="font-medium text-sm flex items-center gap-2">

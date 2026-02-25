@@ -46,7 +46,7 @@ export const downloadPharmacyBillPDF = async (bill: Bill) => {
 
         doc.setFontSize(16);
         doc.setFont('helvetica', 'bold');
-        doc.text(isMasked ? 'INVOICE' : 'INVOICE', 14, startY);
+        doc.text(isMasked ? 'PHARMACY INVOICE' : 'PHARMACY INVOICE', 14, startY);
 
         // Patient Details (Masked if needed)
         const displayPatientName = isMasked ? maskData(patientName, 'name') : patientName;

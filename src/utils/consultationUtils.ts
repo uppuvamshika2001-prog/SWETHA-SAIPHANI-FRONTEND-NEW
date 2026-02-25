@@ -83,7 +83,7 @@ export const generateConsultationPDF = async (record: MedicalRecord, options: { 
         doc.text("RECORD ID", rightColX, currentY);
         doc.setFont('helvetica', 'normal');
         doc.setTextColor(17, 24, 39);
-        doc.text(`#${record.id.toUpperCase()}`, rightColX + 35, currentY);
+        doc.text(`#${record.id.slice(0, 8).toUpperCase()}`, rightColX + 35, currentY);
 
         currentY += 6;
 
@@ -239,7 +239,7 @@ export const generateConsultationPDF = async (record: MedicalRecord, options: { 
 
         // Finalize
         const dateStr = format(new Date(), 'yyyyMMdd');
-        const filename = `${record.patient.firstName}_${record.id.toUpperCase()}_${dateStr}.pdf`;
+        const filename = `${record.patient.firstName}_${record.id.slice(0, 8).toUpperCase()}_${dateStr}.pdf`;
 
         if (options.action === 'print') {
             doc.autoPrint();

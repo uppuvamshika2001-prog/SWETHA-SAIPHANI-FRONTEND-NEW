@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+
 import { Button } from "@/components/ui/button";
 import {
     Dialog,
@@ -22,7 +21,7 @@ import {
 } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
-import { FileText, Plus, Trash2, Loader2, IndianRupee, TestTube2, Stethoscope, Microscope, Check, ChevronsUpDown } from "lucide-react";
+import { FileText, Plus, Trash2, Loader2, IndianRupee, TestTube2, Stethoscope, Microscope, Check } from "lucide-react";
 import { patientService } from "@/services/patientService";
 import { billingService } from "@/services/billingService";
 import { labService } from "@/services/labService";
@@ -56,7 +55,8 @@ export function BillGenerationDialog({
     const [patientList, setPatientList] = useState<Patient[]>([]);
     const [loadingPatients, setLoadingPatients] = useState(false);
     const [submitting, setSubmitting] = useState(false);
-    const [patientPopoverOpen, setPatientPopoverOpen] = useState(false);
+    const [patientSearch, setPatientSearch] = useState("");
+    const [showPatientResults, setShowPatientResults] = useState(false);
 
     // Item State
     const [items, setItems] = useState<{ description: string, quantity: number, unitPrice: number, total: number }[]>([]);
@@ -256,6 +256,7 @@ export function BillGenerationDialog({
 
             // Reset and close
             setPatientId("");
+            setPatientSearch("");
             setItems([]);
             setSelectedLabOrderIds([]);
             if (setShowOpen) setShowOpen(false);
@@ -291,53 +292,59 @@ export function BillGenerationDialog({
                     {/* Patient Selection - Searchable Combobox */}
                     <div className="space-y-2">
                         <Label htmlFor="patient" className="text-sm font-medium text-slate-700 dark:text-slate-300">Select Patient</Label>
-                        <Popover open={patientPopoverOpen} onOpenChange={setPatientPopoverOpen}>
-                            <PopoverTrigger asChild>
-                                <Button
-                                    variant="outline"
-                                    role="combobox"
-                                    aria-expanded={patientPopoverOpen}
-                                    className="w-full h-11 justify-between border-slate-200 focus:ring-teal-500 font-normal"
-                                    disabled={loadingPatients}
-                                >
-                                    {loadingPatients
-                                        ? "Loading patients..."
-                                        : patientId
-                                            ? patientList.find(p => p.uhid === patientId)
-                                                ? `${patientList.find(p => p.uhid === patientId)!.full_name} (${patientId})`
-                                                : patientId
-                                            : "Search patient by name or UHID..."
+                        <div className="relative">
+                            <Input
+                                id="patient"
+                                placeholder="Search patient by name or UHID..."
+                                value={patientSearch}
+                                onChange={(e) => {
+                                    setPatientSearch(e.target.value);
+                                    setShowPatientResults(true);
+                                    if (!e.target.value) {
+                                        setPatientId("");
                                     }
-                                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
-                                <Command>
-                                    <CommandInput placeholder="Type name or UHID to search..." />
-                                    <CommandList>
-                                        <CommandEmpty>No patient found.</CommandEmpty>
-                                        <CommandGroup>
-                                            {patientList.map((p) => (
-                                                <CommandItem
-                                                    key={p.uhid}
-                                                    value={`${p.full_name} ${p.uhid}`}
-                                                    onSelect={() => {
-                                                        setPatientId(p.uhid);
-                                                        setPatientPopoverOpen(false);
-                                                    }}
-                                                >
-                                                    <Check className={`mr-2 h-4 w-4 ${patientId === p.uhid ? "opacity-100" : "opacity-0"}`} />
-                                                    <div className="flex flex-col">
-                                                        <span className="font-medium">{p.full_name}</span>
-                                                        <span className="text-xs text-muted-foreground">{p.uhid}</span>
-                                                    </div>
-                                                </CommandItem>
-                                            ))}
-                                        </CommandGroup>
-                                    </CommandList>
-                                </Command>
-                            </PopoverContent>
-                        </Popover>
+                                }}
+                                onFocus={() => setShowPatientResults(true)}
+                                className="h-11 border-slate-200 focus:ring-teal-500"
+                                disabled={loadingPatients}
+                                autoComplete="off"
+                            />
+                            {showPatientResults && patientSearch.length > 0 && (
+                                <div className="absolute z-50 w-full mt-1 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                                    {(() => {
+                                        const filtered = patientList.filter(p => {
+                                            const search = patientSearch.toLowerCase();
+                                            return p.full_name?.toLowerCase().includes(search) ||
+                                                p.uhid?.toLowerCase().includes(search);
+                                        });
+                                        if (filtered.length === 0) {
+                                            return (
+                                                <div className="px-4 py-3 text-sm text-slate-500 text-center">
+                                                    No patients found
+                                                </div>
+                                            );
+                                        }
+                                        return filtered.map((p) => (
+                                            <div
+                                                key={p.uhid}
+                                                className={`px-4 py-2.5 cursor-pointer hover:bg-teal-50 dark:hover:bg-slate-800 flex items-center gap-2 border-b border-slate-50 dark:border-slate-800 last:border-b-0 ${patientId === p.uhid ? 'bg-teal-50 dark:bg-slate-800' : ''}`}
+                                                onClick={() => {
+                                                    setPatientId(p.uhid);
+                                                    setPatientSearch(`${p.full_name} (${p.uhid})`);
+                                                    setShowPatientResults(false);
+                                                }}
+                                            >
+                                                {patientId === p.uhid && <Check className="h-4 w-4 text-teal-600 shrink-0" />}
+                                                <div className="flex flex-col">
+                                                    <span className="font-medium text-sm text-slate-800 dark:text-slate-200">{p.full_name}</span>
+                                                    <span className="text-xs text-slate-500">{p.uhid}</span>
+                                                </div>
+                                            </div>
+                                        ));
+                                    })()}
+                                </div>
+                            )}
+                        </div>
                     </div>
 
                     <Separator className="bg-slate-100 dark:bg-slate-800" />
@@ -521,6 +528,7 @@ export function BillGenerationDialog({
                                     <div className="flex items-center gap-2">
                                         <span className="text-slate-600 dark:text-slate-400">Discount%</span>
                                         <Input
+                                            id="discount"
                                             type="number"
                                             className="w-16 h-7 text-right text-xs px-2"
                                             value={discount}

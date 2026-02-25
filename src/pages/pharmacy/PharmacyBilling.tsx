@@ -95,13 +95,13 @@ export default function PharmacyBilling() {
     const fetchBillHistory = async () => {
         setLoadingHistory(true);
         try {
-            // Fetching all bills for now (could filter by type if API supports it, but currently fetching all)
-            const result = await billingService.getBills({ limit: 50 }); // Fetch last 50
+            const result = await billingService.getBills({ limit: 50 });
             if (result && result.items) {
-                // Filter client side if needed, or assume all are relevant.
-                // For pharmacy specific, we might check notes or items, but currently all bills are treated same.
-                // Sorting by date desc
-                const sorted = result.items.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+                // Only show pharmacy bills (created with notes: 'Pharmacy Bill')
+                const pharmacyBills = result.items.filter(bill =>
+                    bill.notes?.toLowerCase().includes('pharmacy')
+                );
+                const sorted = pharmacyBills.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
                 setHistoryBills(sorted);
             }
         } catch (error) {
@@ -305,7 +305,7 @@ export default function PharmacyBilling() {
             notes: 'Pharmacy Purchase'
         };
 
-        printInvoice(billForPrint);
+        printInvoice(billForPrint, 'Pharmacy Invoice');
     };
 
     const handleDownloadHistory = async (bill: Bill) => {
@@ -313,7 +313,7 @@ export default function PharmacyBilling() {
     };
 
     const handlePrintHistory = (bill: Bill) => {
-        printInvoice(bill);
+        printInvoice(bill, 'Pharmacy Invoice');
     };
 
     return (

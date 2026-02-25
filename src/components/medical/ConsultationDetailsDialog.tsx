@@ -170,7 +170,7 @@ export function ConsultationDetailsDialog({
                                                 </div>
                                                 <div className="min-w-[100px]">
                                                     <p className="text-xs text-muted-foreground uppercase font-semibold tracking-wider">Record ID</p>
-                                                    <p className="font-medium font-mono text-sm text-muted-foreground tracking-tight">#{record.id}</p>
+                                                    <p className="font-medium font-mono text-sm text-muted-foreground tracking-tight">#{record.id.slice(0, 8).toUpperCase()}</p>
                                                 </div>
                                                 <Button variant="outline" size="sm" className="gap-2 shrink-0 hidden sm:flex" disabled>
                                                     <Activity className="h-4 w-4" />
