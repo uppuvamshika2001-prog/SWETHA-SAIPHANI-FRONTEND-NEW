@@ -22,8 +22,8 @@ export const downloadLabReportPDF = async (order: LabOrder, forceMasked: boolean
         // Handle patient name safely
         let patientName = (order as any).patient_name || 'Patient';
         if (!patientName || patientName === 'Patient') {
-            if (order.patient) {
-                patientName = `${order.patient.firstName || ''} ${order.patient.lastName || ''}`.trim() || 'Patient';
+            if ((order as any).patient) {
+                patientName = `${(order as any).patient.firstName || ''} ${(order as any).patient.lastName || ''}`.trim() || 'Patient';
             }
         }
 
@@ -70,7 +70,7 @@ export const downloadLabReportPDF = async (order: LabOrder, forceMasked: boolean
         doc.setFont('helvetica', 'bold');
         doc.text("Patient ID:", 14, startY + 5);
         doc.setFont('helvetica', 'normal');
-        doc.text((order as any).patient_id || (order as any).patientId || (order.patient as any)?.uhid || 'N/A', 45, startY + 5);
+        doc.text((order as any).patient_id || (order as any).patientId || ((order as any).patient as any)?.uhid || 'N/A', 45, startY + 5);
 
         // Order Details Section
         const rightColX = 120;
@@ -95,12 +95,12 @@ export const downloadLabReportPDF = async (order: LabOrder, forceMasked: boolean
         currentY += 15;
 
         // Safely extract parameters from the order.result object
-        const params = order.result?.result?.parameters || (order.result as any)?.parameters || [];
+        const params = (order as any).result?.result?.parameters || ((order as any).result as any)?.parameters || [];
 
         if (params.length > 0) {
             doc.setFontSize(12);
             doc.setFont('helvetica', 'bold');
-            doc.text(`Test: ${order.testName || 'Details'}`, 14, currentY);
+            doc.text(`Test: ${(order as any).testName || 'Details'}`, 14, currentY);
             currentY += 8;
 
             const tableData = params.map((p: any) => [
@@ -121,7 +121,7 @@ export const downloadLabReportPDF = async (order: LabOrder, forceMasked: boolean
                 }
             });
             currentY = (doc as any).lastAutoTable.finalY + 15;
-        } else if (order.result?.interpretation || (order as any).notes) {
+        } else if ((order as any).result?.interpretation || (order as any).notes) {
             // Has a result but no parameters table
             doc.setFontSize(10);
             doc.setFont('helvetica', 'normal');
