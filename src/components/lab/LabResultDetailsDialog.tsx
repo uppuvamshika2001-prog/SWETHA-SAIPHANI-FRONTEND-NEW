@@ -74,21 +74,25 @@ export function LabResultDetailsDialog({
                             <span className="text-xs text-muted-foreground">Patient</span>
                             <div className="font-medium flex items-center gap-2">
                                 <User className="h-4 w-4" />
-                                {order.patient.firstName} {order.patient.lastName}
+                                {order.patient?.firstName
+                                    ? `${order.patient.firstName} ${order.patient.lastName || ''}`
+                                    : order.patient_name || 'N/A'}
                             </div>
                         </div>
                         <div className="space-y-1">
                             <span className="text-xs text-muted-foreground">Doctor</span>
                             <div className="font-medium flex items-center gap-2">
                                 <User className="h-4 w-4" />
-                                Dr. {order.orderedBy.firstName} {order.orderedBy.lastName}
+                                {order.orderedBy?.firstName
+                                    ? `Dr. ${order.orderedBy.firstName} ${order.orderedBy.lastName || ''}`
+                                    : order.doctor_name || 'N/A'}
                             </div>
                         </div>
                         <div className="space-y-1">
                             <span className="text-xs text-muted-foreground">Date</span>
                             <div className="font-medium flex items-center gap-2">
                                 <Calendar className="h-4 w-4" />
-                                {new Date(order.createdAt).toLocaleDateString()}
+                                {new Date(order.createdAt || order.ordered_at).toLocaleDateString()}
                             </div>
                         </div>
                         <div className="space-y-1">
