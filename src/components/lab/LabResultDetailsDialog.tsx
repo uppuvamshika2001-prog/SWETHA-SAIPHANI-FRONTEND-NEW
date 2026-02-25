@@ -152,7 +152,9 @@ export function LabResultDetailsDialog({
                                 </h3>
                             </div>
                             <div className="p-4 space-y-3">
-                                {order.result.attachments.map((url: string, idx: number) => {
+                                {order.result.attachments.map((rawUrl: string, idx: number) => {
+                                    // Fix old URLs that were stored with wrong domain
+                                    const url = rawUrl.replace('api.swethasaiphani.com', 'api.swethasaiphani.clinic');
                                     const filename = url.split('/').pop() || `Document ${idx + 1}`;
                                     const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(url);
                                     return (
