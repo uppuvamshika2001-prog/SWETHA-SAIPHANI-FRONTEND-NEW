@@ -146,9 +146,11 @@ export const LabProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         const result = await api.post<LabResult>('/lab/results', input);
         // Refresh lists
         fetchLabOrders();
-        fetchMyLabOrders();
+        if (user?.role === 'doctor' || user?.role === 'admin') {
+            fetchMyLabOrders();
+        }
         return result;
-    }, [fetchLabOrders, fetchMyLabOrders]);
+    }, [fetchLabOrders, fetchMyLabOrders, user]);
 
     // Upload result file
     const uploadFile = useCallback(async (file: File): Promise<{ url: string; filename: string }> => {
@@ -161,8 +163,12 @@ export const LabProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const refreshOrders = useCallback(async () => {
         setHasFetchedOrders(false);
         setHasFetchedMyOrders(false);
-        await Promise.all([fetchLabOrders(), fetchMyLabOrders()]);
-    }, [fetchLabOrders, fetchMyLabOrders]);
+        const promises: Promise<void>[] = [fetchLabOrders()];
+        if (user?.role === 'doctor' || user?.role === 'admin') {
+            promises.push(fetchMyLabOrders());
+        }
+        await Promise.all(promises);
+    }, [fetchLabOrders, fetchMyLabOrders, user]);
 
     // Auto-fetch on mount based on user role (with hasFetched guard)
     useEffect(() => {
