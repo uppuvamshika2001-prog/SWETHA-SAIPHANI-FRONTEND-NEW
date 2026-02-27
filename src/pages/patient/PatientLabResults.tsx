@@ -9,22 +9,37 @@ import autoTable from "jspdf-autotable";
 import { addWatermark, drawClinicHeader, drawClinicFooter, getTransparentTableStyles, getBase64ImageFromUrl } from "@/utils/pdfUtils";
 import { useToast } from "@/components/ui/use-toast";
 import { useEffect, useState, useCallback } from "react";
+import { DatePicker } from "@/components/ui/date-picker";
 import { patientService } from "@/services/patientService";
 
 const PatientLabResults = () => {
     const [myLabOrders, setMyLabOrders] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [isRefreshing, setIsRefreshing] = useState(false);
+    const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
     const { toast } = useToast();
 
     // Fetch lab results - memoized for reuse
-    const fetchData = useCallback(async (showLoading = true) => {
+    const fetchData = useCallback(async (showLoading = true, date?: Date) => {
         try {
             if (showLoading) setLoading(true);
             setIsRefreshing(true);
 
             const profile = await patientService.getMyProfile();
-            const rawData = await patientService.getPatientLabResults(profile.uhid);
+
+            let startDate: string | undefined;
+            let endDate: string | undefined;
+
+            if (date) {
+                const start = new Date(date);
+                start.setHours(0, 0, 0, 0);
+                const end = new Date(date);
+                end.setHours(23, 59, 59, 999);
+                startDate = start.toISOString();
+                endDate = end.toISOString();
+            }
+
+            const rawData = await patientService.getPatientLabResults(profile.uhid, startDate, endDate);
 
             // Map backend data to frontend structure
             const mappedData = rawData.map(order => ({
@@ -54,38 +69,38 @@ const PatientLabResults = () => {
 
     // Manual refresh handler
     const handleRefresh = () => {
-        fetchData(false);
+        fetchData(false, selectedDate);
         toast({
             title: "Refreshing",
-            description: "Fetching latest lab results...",
+            description: "Fetching lab results for selected date...",
         });
     };
 
-    // Initial fetch on mount
+    // Initial fetch on mount or when date changes
     useEffect(() => {
-        fetchData();
-    }, [fetchData]);
+        fetchData(true, selectedDate);
+    }, [fetchData, selectedDate]);
 
     // Auto-refresh on page visibility (when user returns to tab)
     useEffect(() => {
         const handleVisibilityChange = () => {
             if (document.visibilityState === 'visible') {
-                fetchData(false);
+                fetchData(false, selectedDate);
             }
         };
         document.addEventListener('visibilitychange', handleVisibilityChange);
         return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-    }, [fetchData]);
+    }, [fetchData, selectedDate]);
 
     // Polling every 30 seconds for near real-time updates
     useEffect(() => {
         const interval = setInterval(() => {
             if (document.visibilityState === 'visible') {
-                fetchData(false);
+                fetchData(false, selectedDate);
             }
         }, 30000); // 30 seconds
         return () => clearInterval(interval);
-    }, [fetchData]);
+    }, [fetchData, selectedDate]);
 
     if (loading) {
         return <div className="p-8 text-center">Loading lab results...</div>;
@@ -166,16 +181,22 @@ const PatientLabResults = () => {
             <div className="space-y-6">
                 <div className="flex items-center justify-between">
                     <h1 className="text-3xl font-bold tracking-tight">Lab Results</h1>
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={handleRefresh}
-                        disabled={isRefreshing}
-                        className="gap-2"
-                    >
-                        <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-                        {isRefreshing ? 'Refreshing...' : 'Refresh'}
-                    </Button>
+                    <div className="flex items-center gap-4">
+                        <DatePicker
+                            date={selectedDate}
+                            setDate={setSelectedDate}
+                        />
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={handleRefresh}
+                            disabled={isRefreshing}
+                            className="gap-2"
+                        >
+                            <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+                            {isRefreshing ? 'Refreshing...' : 'Refresh'}
+                        </Button>
+                    </div>
                 </div>
 
                 {myLabOrders.map(order => (

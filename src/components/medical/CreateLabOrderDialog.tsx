@@ -19,7 +19,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { Plus, FlaskConical, Search, User, Loader2 } from "lucide-react";
+import { Plus, FlaskConical, Search, User, Loader2, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { useLab } from "@/contexts/LabContext";
 import { api } from "@/services/api";
@@ -43,7 +43,7 @@ export function CreateLabOrderDialog() {
     const [showResults, setShowResults] = useState(false);
 
     // Test state
-    const [testName, setTestName] = useState("");
+    const [testNames, setTestNames] = useState<string[]>([""]);
     const [priority, setPriority] = useState<"normal" | "urgent" | "stat">("normal");
     const [notes, setNotes] = useState("");
 
@@ -85,8 +85,10 @@ export function CreateLabOrderDialog() {
             toast.error("Please select a patient");
             return;
         }
-        if (!testName.trim()) {
-            toast.error("Please enter a lab test name");
+
+        const validTestNames = testNames.map(t => t.trim()).filter(t => t.length > 0);
+        if (validTestNames.length === 0) {
+            toast.error("Please enter at least one lab test name");
             return;
         }
 
@@ -94,7 +96,7 @@ export function CreateLabOrderDialog() {
         try {
             await createLabOrder({
                 patientId: selectedPatient.uhid,
-                testName: testName.trim(),
+                testName: validTestNames.join(', '),
                 priority,
                 notes: notes || undefined,
             });
@@ -110,7 +112,7 @@ export function CreateLabOrderDialog() {
 
     const resetForm = () => {
         setSelectedPatient(null);
-        setTestName("");
+        setTestNames([""]);
         setPriority("normal");
         setNotes("");
         setPatientSearch("");
@@ -218,15 +220,43 @@ export function CreateLabOrderDialog() {
                     </div>
 
                     {/* Lab Test - Manual Entry */}
-                    <div className="space-y-2">
-                        <Label>Lab Test Name *</Label>
-                        <Input
-                            placeholder="e.g., Complete Blood Count, Lipid Profile, Thyroid Test..."
-                            value={testName}
-                            onChange={(e) => setTestName(e.target.value)}
-                        />
-                        <p className="text-xs text-muted-foreground">
-                            Enter the name of the lab test to be performed
+                    <div className="space-y-4">
+                        <Label>Lab Test Names *</Label>
+                        {testNames.map((test, index) => (
+                            <div key={index} className="flex items-center gap-2">
+                                <Input
+                                    placeholder="e.g., Complete Blood Count..."
+                                    value={test}
+                                    onChange={(e) => {
+                                        const newTestNames = [...testNames];
+                                        newTestNames[index] = e.target.value;
+                                        setTestNames(newTestNames);
+                                    }}
+                                />
+                                {testNames.length > 1 && (
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={() => setTestNames(testNames.filter((_, i) => i !== index))}
+                                        className="h-10 w-10 text-red-500 hover:text-red-700 hover:bg-red-50 flex-shrink-0"
+                                    >
+                                        <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                )}
+                            </div>
+                        ))}
+
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            className="mt-2 w-full border-dashed"
+                            onClick={() => setTestNames([...testNames, ""])}
+                        >
+                            <Plus className="h-4 w-4 mr-2" />
+                            Add another test
+                        </Button>
+                        <p className="text-xs text-muted-foreground mt-1">
+                            Enter the names of the lab tests to be performed
                         </p>
                     </div>
 
@@ -261,7 +291,10 @@ export function CreateLabOrderDialog() {
                     <Button variant="outline" onClick={() => setOpen(false)}>
                         Cancel
                     </Button>
-                    <Button onClick={handleSubmit} disabled={loading || !selectedPatient || !testName.trim()}>
+                    <Button
+                        onClick={handleSubmit}
+                        disabled={loading || !selectedPatient || !testNames.some(t => t.trim().length > 0)}
+                    >
                         {loading ? (
                             <>
                                 <Loader2 className="h-4 w-4 animate-spin mr-2" />

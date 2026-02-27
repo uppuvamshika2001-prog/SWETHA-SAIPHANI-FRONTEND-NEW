@@ -69,8 +69,8 @@ interface LabContextType {
     error: string | null;
 
     // Actions
-    fetchLabOrders: (status?: string) => Promise<void>;
-    fetchMyLabOrders: () => Promise<void>;
+    fetchLabOrders: (status?: string, date?: Date) => Promise<void>;
+    fetchMyLabOrders: (date?: Date) => Promise<void>;
     createLabOrder: (input: CreateLabOrderInput) => Promise<LabOrder>;
     updateOrderStatus: (orderId: string, status: string) => Promise<LabOrder>;
     submitResult: (input: CreateLabResultInput) => Promise<LabResult>;
@@ -90,12 +90,21 @@ export const LabProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const [hasFetchedMyOrders, setHasFetchedMyOrders] = useState(false);
 
     // Fetch all lab orders (for lab technicians)
-    const fetchLabOrders = useCallback(async (status?: string) => {
+    const fetchLabOrders = useCallback(async (status?: string, date?: Date) => {
         setLoading(true);
         setError(null);
         try {
             const params = new URLSearchParams({ limit: '50' });
             if (status) params.append('status', status);
+
+            if (date) {
+                const start = new Date(date);
+                start.setHours(0, 0, 0, 0);
+                const end = new Date(date);
+                end.setHours(23, 59, 59, 999);
+                params.append('startDate', start.toISOString());
+                params.append('endDate', end.toISOString());
+            }
 
             const response = await api.get<{ items: LabOrder[] }>(`/lab/orders?${params}`);
             setLabOrders(response.items || []);
@@ -109,11 +118,21 @@ export const LabProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }, []);
 
     // Fetch doctor's own orders
-    const fetchMyLabOrders = useCallback(async () => {
+    const fetchMyLabOrders = useCallback(async (date?: Date) => {
         setLoading(true);
         setError(null);
         try {
-            const response = await api.get<{ items: LabOrder[] }>('/lab/orders/my-orders?limit=50');
+            const params = new URLSearchParams({ limit: '50' });
+            if (date) {
+                const start = new Date(date);
+                start.setHours(0, 0, 0, 0);
+                const end = new Date(date);
+                end.setHours(23, 59, 59, 999);
+                params.append('startDate', start.toISOString());
+                params.append('endDate', end.toISOString());
+            }
+
+            const response = await api.get<{ items: LabOrder[] }>(`/lab/orders/my-orders?${params}`);
             setMyLabOrders(response.items || []);
         } catch (err: any) {
             setError(err.message || 'Failed to fetch my lab orders');

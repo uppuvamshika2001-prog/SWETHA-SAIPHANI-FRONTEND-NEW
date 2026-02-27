@@ -52,6 +52,11 @@ export const labService = {
     async updateOrderStatus(id: string, status: string): Promise<any> {
         apiCache.invalidate('/lab');
         return api.patch(`/lab/orders/${id}/status`, { status });
+    },
+
+    async deleteLabResult(resultId: string): Promise<void> {
+        await api.delete(`/lab/results/${resultId}`);
+        apiCache.invalidate('/lab');
     }
 };
 

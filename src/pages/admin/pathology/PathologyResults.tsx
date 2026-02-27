@@ -1,7 +1,7 @@
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { DataTable } from "@/components/dashboard/DataTable";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { FileText, Eye, Download, Printer } from "lucide-react";
+import { FileText, Eye, Download, Printer, Trash2 } from "lucide-react";
 import { StatusBadge } from "@/components/dashboard/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
@@ -9,6 +9,7 @@ import { useSearchParams } from "react-router-dom";
 import { labService } from "@/services/labService";
 import { LabResultDetailsDialog } from "@/components/lab/LabResultDetailsDialog";
 import { downloadLabReportPDF } from "@/utils/downloadLabReport";
+import { useToast } from "@/components/ui/use-toast";
 
 export default function PathologyResults() {
     const [searchParams] = useSearchParams();
@@ -16,18 +17,21 @@ export default function PathologyResults() {
     const [loading, setLoading] = useState(true);
     const [selectedOrder, setSelectedOrder] = useState<any>(null);
     const [detailsOpen, setDetailsOpen] = useState(false);
+    const { toast } = useToast();
+
+    const fetchData = async () => {
+        try {
+            setLoading(true);
+            const data = await labService.getLabOrders();
+            setResults(data);
+        } catch (error) {
+            console.error("Failed to fetch lab orders:", error);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     useEffect(() => {
-        const fetchData = async () => {
-            try {
-                const data = await labService.getLabOrders();
-                setResults(data);
-            } catch (error) {
-                console.error("Failed to fetch lab orders:", error);
-            } finally {
-                setLoading(false);
-            }
-        };
         fetchData();
     }, []);
 
@@ -44,6 +48,60 @@ export default function PathologyResults() {
     const handleDownload = (order: any) => {
         // Use the utility
         downloadLabReportPDF(order);
+    };
+
+    const handleDeleteResult = async (order: any) => {
+        if (!order.tests || order.tests.length === 0) return;
+        const testId = order.tests[0].test_id; // Using the first test's ID since we mapped order ID to test ID
+
+        if (window.confirm("Are you sure you want to delete this test result? This action cannot be undone.")) {
+            try {
+                // To delete the result, we need the actual result ID rather than the order ID.
+                // However, the test ID we map on the frontend is the order ID. 
+                // But wait, the backend endpoint `deleteResult(id)` expects the Result ID.
+                // Assuming we can pass the order ID to another endpoint to get the result ID, or we need to fix it.
+                // Let's check how deleteLabResult works: it takes resultId.
+                // Since the labService getLabOrders doesn't expose result.id, we might need an order update or rely on a new parameter.
+
+                // For now, assume test_id holds the right ID or we fetch it.
+                // Actually the API mapped test_id = order.id. So we need to delete by Result ID.
+                // Wait, if we don't have Result ID, we can't easily call DELETE /results/:id
+                // Let me rewrite the delete action to pass the order ID to a new deleteByOrderId endpoint, OR I can fetch the order first.
+                // Let me fetch the order by ID, get the result ID, then delete it.
+                const fullOrder = await labService.getLabOrders({ patientId: order.patient_id }).then(res => res.find(o => o.id === order.id));
+                const resultId = fullOrder && fullOrder.id ? (fullOrder as any).result?.id : null;
+                // Wait, labService.getLabOrders maps the data and hides result.id. 
+                // Alternatively, I can just use order.test_id if backend was changed to find by orderId, OR I could use the test_id = order.id.
+                // Let's use the order ID and delete the result by fetching the order details via API directly here.
+
+                const response = await fetch(`/api/lab/orders/${order.id}`, {
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+                });
+                const orderData = await response.json();
+
+                if (orderData.data && orderData.data.result && orderData.data.result.id) {
+                    await labService.deleteLabResult(orderData.data.result.id);
+                    toast({
+                        title: "Result Deleted",
+                        description: "The pathology test result has been successfully deleted.",
+                    });
+                    fetchData();
+                } else {
+                    toast({
+                        title: "Delete Failed",
+                        description: "Could not find the associated result.",
+                        variant: "destructive"
+                    });
+                }
+            } catch (error) {
+                console.error("Failed to delete result:", error);
+                toast({
+                    title: "Delete Failed",
+                    description: "An error occurred while deleting the result.",
+                    variant: "destructive"
+                });
+            }
+        }
     };
 
     const dateFilter = searchParams.get('date');
@@ -84,6 +142,9 @@ export default function PathologyResults() {
                     </Button>
                     <Button size="icon" variant="ghost" className="h-8 w-8 text-green-600" onClick={() => handleDownload(o)}>
                         <Download className="h-4 w-4" />
+                    </Button>
+                    <Button size="icon" variant="ghost" className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50" onClick={() => handleDeleteResult(o)}>
+                        <Trash2 className="h-4 w-4" />
                     </Button>
                 </div>
             )

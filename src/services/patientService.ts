@@ -174,8 +174,12 @@ export const patientService = {
         return api.get<any[]>(`/patients/${uhid}/bills`);
     },
 
-    async getPatientLabResults(uhid: string): Promise<any[]> {
-        return api.get<any[]>(`/patients/${uhid}/lab-results`);
+    async getPatientLabResults(uhid: string, startDate?: string, endDate?: string): Promise<any[]> {
+        const params = new URLSearchParams();
+        if (startDate) params.append('startDate', startDate);
+        if (endDate) params.append('endDate', endDate);
+        const queryString = params.toString() ? `?${params.toString()}` : '';
+        return api.get<any[]>(`/patients/${uhid}/lab-results${queryString}`);
     },
 
     async getPatientMedicalRecords(uhid: string): Promise<any[]> {

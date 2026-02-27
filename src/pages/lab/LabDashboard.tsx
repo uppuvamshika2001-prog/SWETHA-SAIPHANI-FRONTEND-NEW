@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { Input } from '@/components/ui/input';
+import { DatePicker } from '@/components/ui/date-picker';
 import { LabResultEntryDialog } from '@/components/lab/LabResultEntryDialog';
 import { LabResultDetailsDialog } from '@/components/lab/LabResultDetailsDialog';
 import { useNavigate, Link } from 'react-router-dom';
@@ -36,11 +37,16 @@ export default function LabDashboard() {
   const [searchQuery, setSearchQuery] = useState('');
   const [showSearchResults, setShowSearchResults] = useState(false);
   const [activeFilter, setActiveFilter] = useState<'all' | 'pending' | 'in_progress' | 'completed' | 'urgent'>('all');
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const { labOrders: rawOrders, loading, fetchLabOrders } = useLab();
 
   useEffect(() => {
-    fetchLabOrders();
-  }, [fetchLabOrders]);
+    if (selectedDate) {
+      fetchLabOrders(undefined, selectedDate);
+    } else {
+      fetchLabOrders();
+    }
+  }, [fetchLabOrders, selectedDate]);
 
   const labOrders = rawOrders.map(order => ({
     id: order.id,
@@ -259,7 +265,11 @@ export default function LabDashboard() {
               {format(new Date(), 'EEEE, MMMM d, yyyy')}
             </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 items-center">
+            <DatePicker
+              date={selectedDate}
+              setDate={setSelectedDate}
+            />
             <Button variant="outline" size="sm" asChild>
               <Link to="/lab/test-catalog">
                 <Beaker className="h-4 w-4 mr-2" />

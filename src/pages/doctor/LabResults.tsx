@@ -6,7 +6,8 @@ import { StatusBadge } from "@/components/dashboard/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { CreateLabOrderDialog } from "@/components/medical/CreateLabOrderDialog";
 import { useLab, LabOrder } from "@/contexts/LabContext";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { DatePicker } from "@/components/ui/date-picker";
 import {
     Dialog,
     DialogContent,
@@ -20,6 +21,13 @@ export default function DoctorLabResults() {
     const { myLabOrders, loading, fetchMyLabOrders } = useLab();
     const [selectedOrder, setSelectedOrder] = useState<LabOrder | null>(null);
     const [detailsOpen, setDetailsOpen] = useState(false);
+    const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
+
+    useEffect(() => {
+        if (selectedDate) {
+            fetchMyLabOrders(selectedDate);
+        }
+    }, [selectedDate, fetchMyLabOrders]);
 
     const handleView = (order: LabOrder) => {
         setSelectedOrder(order);
@@ -89,7 +97,13 @@ export default function DoctorLabResults() {
                         <p className="text-muted-foreground">View and order laboratory tests</p>
                     </div>
                     <div className="flex gap-2">
-                        <Button variant="outline" size="icon" onClick={() => fetchMyLabOrders()}>
+                        <DatePicker
+                            date={selectedDate}
+                            setDate={setSelectedDate}
+                            placeholder="Filter by date"
+                            className="w-[200px]"
+                        />
+                        <Button variant="outline" size="icon" onClick={() => fetchMyLabOrders(selectedDate)}>
                             <RotateCcw className="h-4 w-4" />
                         </Button>
                         <CreateLabOrderDialog />
