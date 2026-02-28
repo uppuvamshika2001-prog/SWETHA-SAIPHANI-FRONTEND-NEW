@@ -342,7 +342,7 @@ export default function DoctorDashboard() {
                     <p className="text-sm text-muted-foreground">{order.testName}</p>
                   </div>
                   <div className="flex items-center gap-2">
-                    <StatusBadge status={order.status.toLowerCase()} />
+                    <StatusBadge status={order.status.toLowerCase() as any} />
                     <Button variant="ghost" size="sm">Review</Button>
                   </div>
                 </div>

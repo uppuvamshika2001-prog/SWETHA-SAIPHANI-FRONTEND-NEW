@@ -4,9 +4,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { FileText, Eye, Download, Printer, Trash2 } from "lucide-react";
 import { StatusBadge } from "@/components/dashboard/StatusBadge";
 import { Button } from "@/components/ui/button";
+import { DatePicker } from "@/components/ui/date-picker";
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { labService } from "@/services/labService";
+import { api } from "@/services/api";
 import { LabResultDetailsDialog } from "@/components/lab/LabResultDetailsDialog";
 import { downloadLabReportPDF } from "@/utils/downloadLabReport";
 import { useToast } from "@/components/ui/use-toast";
@@ -17,6 +19,7 @@ export default function PathologyResults() {
     const [loading, setLoading] = useState(true);
     const [selectedOrder, setSelectedOrder] = useState<any>(null);
     const [detailsOpen, setDetailsOpen] = useState(false);
+    const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
     const { toast } = useToast();
 
     const fetchData = async () => {
@@ -74,13 +77,10 @@ export default function PathologyResults() {
                 // Alternatively, I can just use order.test_id if backend was changed to find by orderId, OR I could use the test_id = order.id.
                 // Let's use the order ID and delete the result by fetching the order details via API directly here.
 
-                const response = await fetch(`/api/lab/orders/${order.id}`, {
-                    headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-                });
-                const orderData = await response.json();
+                const orderData = await api.get<any>(`/lab/orders/${order.id}`);
 
-                if (orderData.data && orderData.data.result && orderData.data.result.id) {
-                    await labService.deleteLabResult(orderData.data.result.id);
+                if (orderData && orderData.result && orderData.result.id) {
+                    await labService.deleteLabResult(orderData.result.id);
                     toast({
                         title: "Result Deleted",
                         description: "The pathology test result has been successfully deleted.",
@@ -104,14 +104,12 @@ export default function PathologyResults() {
         }
     };
 
-    const dateFilter = searchParams.get('date');
-
     const filteredResults = results.filter(o => {
         if (o.status !== 'completed') return false;
 
-        if (dateFilter === 'today') {
+        if (selectedDate) {
             if (!o.completed_at) return false;
-            return new Date(o.completed_at).toDateString() === new Date().toDateString();
+            return new Date(o.completed_at).toDateString() === selectedDate.toDateString();
         }
 
         return true;
@@ -154,19 +152,38 @@ export default function PathologyResults() {
     return (
         <DashboardLayout role="admin">
             <div className="space-y-6">
-                <div>
-                    <h1 className="text-2xl font-bold flex items-center gap-2">
-                        <FileText className="h-6 w-6" />
-                        {dateFilter === 'today' ? "Today's Results" : "Test Results"}
-                    </h1>
-                    <p className="text-muted-foreground">Completed pathology reports</p>
+                <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                    <div>
+                        <h1 className="text-2xl font-bold flex items-center gap-2">
+                            <FileText className="h-6 w-6" />
+                            {selectedDate && selectedDate.toDateString() === new Date().toDateString() ? "Today's Results" : "Test Results"}
+                        </h1>
+                        <p className="text-muted-foreground">Completed pathology reports</p>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                        <DatePicker
+                            date={selectedDate}
+                            setDate={setSelectedDate}
+                            placeholder="Filter by date..."
+                        />
+                        {selectedDate && (
+                            <Button variant="ghost" onClick={() => setSelectedDate(undefined)}>
+                                Clear Filter
+                            </Button>
+                        )}
+                    </div>
                 </div>
 
                 <Card>
                     <CardHeader>
                         <CardTitle>Result Archive</CardTitle>
                         <CardDescription>
-                            {dateFilter === 'today' ? "Reports finalized today" : "History of generated pathology reports"}
+                            {selectedDate ? (
+                                selectedDate.toDateString() === new Date().toDateString() ?
+                                    "Reports finalized today" :
+                                    `Reports finalized on ${selectedDate.toLocaleDateString()}`
+                            ) : "History of all generated pathology reports"}
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
