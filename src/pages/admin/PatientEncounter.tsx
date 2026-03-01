@@ -17,6 +17,19 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+    Command,
+    CommandEmpty,
+    CommandGroup,
+    CommandInput,
+    CommandItem,
+    CommandList,
+} from "@/components/ui/command";
+import {
     ArrowLeft,
     Plus,
     Trash2,
@@ -33,9 +46,12 @@ import {
     Phone,
     Droplets,
     AlertTriangle,
+    Check,
+    ChevronsUpDown,
 } from "lucide-react";
 import { patientService } from "@/services/patientService";
 import { medicalRecordService } from "@/services/medicalRecordService";
+import { labService } from "@/services/labService";
 import { Patient } from "@/types";
 import { toast } from "sonner";
 
@@ -89,19 +105,24 @@ export default function PatientEncounter() {
     const [diagnosis, setDiagnosis] = useState("");
     const [medications, setMedications] = useState<Medication[]>([]);
     const [labTests, setLabTests] = useState<LabTest[]>([]);
+    const [availableLabTests, setAvailableLabTests] = useState<any[]>([]);
     const [treatmentPlan, setTreatmentPlan] = useState("");
     const [followUpDate, setFollowUpDate] = useState<Date | undefined>(undefined);
     const [followUpInstructions, setFollowUpInstructions] = useState("");
     const [additionalNotes, setAdditionalNotes] = useState("");
 
-    // Load patient
+    // Load patient & lab tests
     useEffect(() => {
         if (!id) return;
         (async () => {
             setLoading(true);
             try {
-                const p = await patientService.getPatientById(id);
+                const [p, tests] = await Promise.all([
+                    patientService.getPatientById(id),
+                    labService.getLabTests().catch(() => [])
+                ]);
                 setPatient(p);
+                setAvailableLabTests((tests as any)?.items || tests || []);
             } catch (err) {
                 console.error("Failed to load patient", err);
                 toast.error("Failed to load patient data");
@@ -402,6 +423,62 @@ export default function PatientEncounter() {
         </div>
     );
 
+    const LabTestCombobox = ({ value, onChange }: { value: string, onChange: (val: string) => void }) => {
+        const [open, setOpen] = useState(false);
+        const [search, setSearch] = useState("");
+
+        return (
+            <Popover open={open} onOpenChange={setOpen}>
+                <PopoverTrigger asChild>
+                    <Button variant="outline" role="combobox" aria-expanded={open} className={`w-full justify-between font-normal px-3 py-2 h-auto min-h-10 ${!value && 'text-muted-foreground'}`}>
+                        <span className="truncate text-left whitespace-normal leading-snug">{value || "Select or type test name..."}</span>
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[300px] p-0" align="start">
+                    <Command>
+                        <CommandInput placeholder="Search or type custom test..." value={search} onValueChange={setSearch} />
+                        <CommandList>
+                            <CommandEmpty className="p-1">
+                                {search.trim().length > 0 ? (
+                                    <Button
+                                        variant="ghost"
+                                        className="w-full justify-start font-normal text-sm h-8 px-2"
+                                        onClick={() => {
+                                            onChange(search.trim());
+                                            setOpen(false);
+                                            setSearch("");
+                                        }}
+                                    >
+                                        Create "{search.trim()}"
+                                    </Button>
+                                ) : (
+                                    <p className="p-2 text-sm text-center text-muted-foreground">No test found.</p>
+                                )}
+                            </CommandEmpty>
+                            <CommandGroup>
+                                {availableLabTests.map(test => (
+                                    <CommandItem
+                                        key={test.id}
+                                        value={test.name}
+                                        onSelect={() => {
+                                            onChange(test.name);
+                                            setOpen(false);
+                                            setSearch("");
+                                        }}
+                                    >
+                                        <Check className={`mr-2 h-4 w-4 ${value === test.name ? "opacity-100" : "opacity-0"}`} />
+                                        {test.name}
+                                    </CommandItem>
+                                ))}
+                            </CommandGroup>
+                        </CommandList>
+                    </Command>
+                </PopoverContent>
+            </Popover>
+        );
+    };
+
     if (loading) {
         return (
             <DashboardLayout role={role}>
@@ -675,11 +752,10 @@ export default function PatientEncounter() {
                                     <tbody>
                                         {labTests.map((test, idx) => (
                                             <tr key={test.id} className="border-b">
-                                                <td className="p-1.5">
-                                                    <Input
-                                                        placeholder="Test name"
+                                                <td className="p-1.5 align-top">
+                                                    <LabTestCombobox
                                                         value={test.testName}
-                                                        onChange={(e) => updateLabTest(idx, "testName", e.target.value)}
+                                                        onChange={(val) => updateLabTest(idx, "testName", val)}
                                                     />
                                                 </td>
                                                 <td className="p-1.5">
