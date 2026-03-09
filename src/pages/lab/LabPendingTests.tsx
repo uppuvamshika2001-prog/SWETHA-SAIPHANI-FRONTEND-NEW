@@ -4,19 +4,21 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { FlaskConical, Search, Clock, CheckCircle, RotateCcw, Loader2, FileText } from "lucide-react";
+import { FlaskConical, Search, Clock, CheckCircle, RotateCcw, Loader2, FileText, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { useLab, LabOrder } from "@/contexts/LabContext";
 import { useNavigate } from "react-router-dom";
 import { LabResultDetailsDialog } from "@/components/lab/LabResultDetailsDialog";
+import { useAuth } from "@/contexts/AuthContext";
 
 const LabPendingTests = () => {
+    const { user } = useAuth();
     const [searchTerm, setSearchTerm] = useState("");
     const [updatingId, setUpdatingId] = useState<string | null>(null);
     const navigate = useNavigate();
 
-    const { labOrders, loading, fetchLabOrders, updateOrderStatus } = useLab();
+    const { labOrders, loading, fetchLabOrders, updateOrderStatus, deleteLabOrder } = useLab();
 
     // Filter for pending orders (including newly created orders from reception)
     const pendingOrders = labOrders.filter(order =>
@@ -83,6 +85,17 @@ const LabPendingTests = () => {
             toast.error(error.message || "Failed to update status");
         } finally {
             setUpdatingId(null);
+        }
+    };
+
+    const handleDeleteOrder = async (orderId: string) => {
+        if (!confirm("Are you sure you want to permanently delete this lab order? This action cannot be undone.")) return;
+
+        try {
+            await deleteLabOrder(orderId);
+            toast.success("Lab order deleted successfully");
+        } catch (error: any) {
+            toast.error(error.message || "Failed to delete lab order");
         }
     };
 
@@ -165,7 +178,7 @@ const LabPendingTests = () => {
                                             <TableCell className="text-muted-foreground text-sm">
                                                 {new Date(order.createdAt).toLocaleString()}
                                             </TableCell>
-                                            <TableCell className="text-right">
+                                            <TableCell className="text-right flex items-center justify-end gap-2">
                                                 <Button
                                                     size="sm"
                                                     onClick={() => handleUpdateStatus(order)}
@@ -177,6 +190,16 @@ const LabPendingTests = () => {
                                                     ) : null}
                                                     {getNextActionLabel(order.status)}
                                                 </Button>
+                                                {user?.role === 'admin' && (
+                                                    <Button
+                                                        size="icon"
+                                                        variant="ghost"
+                                                        className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                                        onClick={() => handleDeleteOrder(order.id)}
+                                                    >
+                                                        <Trash2 className="h-4 w-4" />
+                                                    </Button>
+                                                )}
                                             </TableCell>
                                         </TableRow>
                                     ))}

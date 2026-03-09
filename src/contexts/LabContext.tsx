@@ -73,6 +73,7 @@ interface LabContextType {
     fetchMyLabOrders: (date?: Date) => Promise<void>;
     createLabOrder: (input: CreateLabOrderInput) => Promise<LabOrder>;
     updateOrderStatus: (orderId: string, status: string) => Promise<LabOrder>;
+    deleteLabOrder: (orderId: string) => Promise<void>;
     submitResult: (input: CreateLabResultInput) => Promise<LabResult>;
     uploadFile: (file: File) => Promise<{ url: string; filename: string }>;
     refreshOrders: () => Promise<void>;
@@ -160,6 +161,14 @@ export const LabProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         return order;
     }, [fetchLabOrders]);
 
+    // Delete a lab order
+    const deleteLabOrder = useCallback(async (orderId: string): Promise<void> => {
+        await api.delete(`/lab/orders/${orderId}`);
+        // Refresh lists
+        fetchLabOrders();
+        fetchMyLabOrders();
+    }, [fetchLabOrders, fetchMyLabOrders]);
+
     // Submit lab result
     const submitResult = useCallback(async (input: CreateLabResultInput): Promise<LabResult> => {
         const result = await api.post<LabResult>('/lab/results', input);
@@ -235,6 +244,7 @@ export const LabProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             fetchMyLabOrders,
             createLabOrder,
             updateOrderStatus,
+            deleteLabOrder,
             submitResult,
             uploadFile,
             refreshOrders,
