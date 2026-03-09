@@ -31,6 +31,9 @@ const adaptPatient = (data: PatientResponse): Patient => {
         id: data.uhid || data.id, // Added based on instruction, assuming frontend Patient type has an 'id' field
         uhid: data.uhid || data.id, // Use uhid if available, otherwise fallback to id
         full_name: `${data.firstName} ${data.lastName}`,
+        patient_type: (data as any).patientType || 'REGISTERED',
+        referred_by: (data as any).referredBy || undefined,
+        created_from_module: (data as any).createdFromModule || undefined,
         date_of_birth: new Date(data.dateOfBirth).toISOString(),
         age: age,
         gender: data.gender.toLowerCase() as 'male' | 'female' | 'other',
@@ -205,5 +208,37 @@ export const patientService = {
 
     async deletePatient(uhid: string): Promise<void> {
         return api.delete(`/patients/${encodeURIComponent(uhid)}`);
+    },
+
+    async createWalkInPatient(data: {
+        firstName: string;
+        lastName?: string;
+        phone: string;
+        age?: number;
+        gender?: string;
+        referredBy?: string;
+    }): Promise<Patient> {
+        const payload = {
+            firstName: data.firstName,
+            lastName: data.lastName || '',
+            phone: data.phone,
+            dateOfBirth: data.age
+                ? new Date(new Date().getFullYear() - data.age, 0, 1).toISOString()
+                : new Date().toISOString(),
+            gender: data.gender?.toUpperCase() || 'OTHER',
+            patientType: 'WALKIN_LAB',
+            createdFromModule: 'lab_billing',
+            referredBy: data.referredBy || undefined,
+        };
+
+        console.log('[PatientService] Creating walk-in lab patient:', JSON.stringify(payload, null, 2));
+
+        try {
+            const response = await api.post<PatientResponse>('/patients', payload);
+            return adaptPatient(response);
+        } catch (error) {
+            console.error('[PatientService] Failed to create walk-in patient:', error);
+            throw error;
+        }
     },
 };

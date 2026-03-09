@@ -18,9 +18,9 @@ const LabPendingTests = () => {
 
     const { labOrders, loading, fetchLabOrders, updateOrderStatus } = useLab();
 
-    // Filter for pending orders (after payment is confirmed by reception)
+    // Filter for pending orders (including newly created orders from reception)
     const pendingOrders = labOrders.filter(order =>
-        order.status === 'READY_FOR_SAMPLE_COLLECTION' || order.status === 'SAMPLE_COLLECTED' || order.status === 'IN_PROGRESS'
+        order.status === 'ORDERED' || order.status === 'PAYMENT_PENDING' || order.status === 'READY_FOR_SAMPLE_COLLECTION' || order.status === 'SAMPLE_COLLECTED' || order.status === 'IN_PROGRESS'
     ).filter(order =>
         `${order.patient.firstName} ${order.patient.lastName}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
         order.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -46,6 +46,8 @@ const LabPendingTests = () => {
 
     const getNextStatus = (currentStatus: string): string | null => {
         switch (currentStatus) {
+            case 'ORDERED': return 'PAYMENT_PENDING';
+            case 'PAYMENT_PENDING': return null; // Payment must be confirmed by reception
             case 'READY_FOR_SAMPLE_COLLECTION': return 'SAMPLE_COLLECTED';
             case 'SAMPLE_COLLECTED': return 'IN_PROGRESS';
             case 'IN_PROGRESS': return null; // Need to go to results entry
@@ -55,6 +57,8 @@ const LabPendingTests = () => {
 
     const getNextActionLabel = (currentStatus: string): string => {
         switch (currentStatus) {
+            case 'ORDERED': return 'Mark for Billing';
+            case 'PAYMENT_PENDING': return 'Awaiting Payment';
             case 'READY_FOR_SAMPLE_COLLECTION': return 'Collect Sample';
             case 'SAMPLE_COLLECTED': return 'Start Processing';
             case 'IN_PROGRESS': return 'Enter Results';
@@ -84,6 +88,8 @@ const LabPendingTests = () => {
 
     const getStatusBadge = (status: string) => {
         switch (status) {
+            case 'ORDERED': return <Badge variant="outline" className="bg-slate-100 text-slate-800 border-slate-200">Ordered</Badge>;
+            case 'PAYMENT_PENDING': return <Badge variant="outline" className="bg-orange-100 text-orange-800 border-orange-200">Payment Pending</Badge>;
             case 'READY_FOR_SAMPLE_COLLECTION': return <Badge variant="outline" className="bg-green-100 text-green-800 border-green-200">Ready for Collection</Badge>;
             case 'SAMPLE_COLLECTED': return <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-200">Sample Collected</Badge>;
             case 'IN_PROGRESS': return <Badge variant="outline" className="bg-purple-100 text-purple-800 border-purple-200">Processing</Badge>;
@@ -163,7 +169,8 @@ const LabPendingTests = () => {
                                                 <Button
                                                     size="sm"
                                                     onClick={() => handleUpdateStatus(order)}
-                                                    disabled={updatingId === order.id}
+                                                    disabled={updatingId === order.id || order.status === 'PAYMENT_PENDING'}
+                                                    variant={order.status === 'PAYMENT_PENDING' ? 'outline' : 'default'}
                                                 >
                                                     {updatingId === order.id ? (
                                                         <Loader2 className="h-4 w-4 animate-spin mr-2" />

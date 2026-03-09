@@ -21,13 +21,14 @@ import {
 } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
-import { FileText, Plus, Trash2, Loader2, IndianRupee, TestTube2, Stethoscope, Microscope, Check } from "lucide-react";
+import { FileText, Plus, Trash2, Loader2, IndianRupee, TestTube2, Stethoscope, Microscope, Check, UserPlus } from "lucide-react";
 import { patientService } from "@/services/patientService";
 import { billingService } from "@/services/billingService";
 import { labService } from "@/services/labService";
 import { Patient } from "@/types";
 import { Separator } from "@/components/ui/separator";
 import { MultiSelect } from "@/components/ui/multi-select";
+import { WalkInLabPatientDialog } from "@/components/patients/WalkInLabPatientDialog";
 
 const DEFAULT_LAB_PRICE = 500;
 
@@ -291,7 +292,14 @@ export function BillGenerationDialog({
                 <div className="flex-1 overflow-y-auto p-6 space-y-6">
                     {/* Patient Selection - Searchable Combobox */}
                     <div className="space-y-2">
-                        <Label htmlFor="patient" className="text-sm font-medium text-slate-700 dark:text-slate-300">Select Patient</Label>
+                        <div className="flex items-center justify-between">
+                            <Label htmlFor="patient" className="text-sm font-medium text-slate-700 dark:text-slate-300">Select Patient</Label>
+                            <WalkInLabPatientDialog onPatientCreated={(patient) => {
+                                setPatientId(patient.uhid);
+                                setPatientSearch(`${patient.full_name} (${patient.uhid})`);
+                                setShowPatientResults(false);
+                            }} />
+                        </div>
                         <div className="relative">
                             <Input
                                 id="patient"
@@ -319,8 +327,17 @@ export function BillGenerationDialog({
                                         });
                                         if (filtered.length === 0) {
                                             return (
-                                                <div className="px-4 py-3 text-sm text-slate-500 text-center">
-                                                    No patients found
+                                                <div className="px-4 py-3 text-sm text-center space-y-2">
+                                                    <p className="text-slate-500">No patients found</p>
+                                                    <WalkInLabPatientDialog onPatientCreated={(patient) => {
+                                                        setPatientId(patient.uhid);
+                                                        setPatientSearch(`${patient.full_name} (${patient.uhid})`);
+                                                        setShowPatientResults(false);
+                                                    }}>
+                                                        <button className="text-blue-600 hover:text-blue-700 text-sm font-medium hover:underline">
+                                                            + Register Walk-in Lab Patient
+                                                        </button>
+                                                    </WalkInLabPatientDialog>
                                                 </div>
                                             );
                                         }

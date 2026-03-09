@@ -29,6 +29,9 @@ export interface Patient {
   uhid: string; // The primary identifier (Unique Health ID)
   id: string;   // Alias for uhid for compatibility (e.g., DataTable)
   full_name: string;
+  patient_type?: 'REGISTERED' | 'WALKIN_LAB';
+  referred_by?: string;
+  created_from_module?: string;
   date_of_birth?: string;
   age: string | number;
   gender: 'male' | 'female' | 'other';

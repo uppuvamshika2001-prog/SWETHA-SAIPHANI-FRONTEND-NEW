@@ -5,7 +5,7 @@ import { DataTable } from '@/components/dashboard/DataTable';
 import { StatusBadge } from '@/components/dashboard/StatusBadge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Users, UserPlus, Search, Download, Edit, Trash2 } from 'lucide-react';
+import { Users, UserPlus, Search, Download, Edit } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { PatientRegistrationDialog } from '@/components/patients/PatientRegistrationDialog';
 import { PatientDetailsDialog } from '@/components/patients/PatientDetailsDialog';
@@ -23,16 +23,6 @@ import {
 
 import { format } from 'date-fns';
 import { DatePicker } from '@/components/ui/date-picker';
-import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 
 export default function ReceptionPatients() {
@@ -46,9 +36,7 @@ export default function ReceptionPatients() {
     // Date Filtering State (Default: Today)
     const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
 
-    // Delete Confirmation State
-    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-    const [patientToDelete, setPatientToDelete] = useState<string | null>(null);
+
 
     const PAGE_SIZE = 100;
 
@@ -102,25 +90,7 @@ export default function ReceptionPatients() {
         setPage(1); // Reset to page 1 on new search
     };
 
-    const handleDeleteClick = (uhid: string) => {
-        setPatientToDelete(uhid);
-        setDeleteDialogOpen(true);
-    };
 
-    const confirmDelete = async () => {
-        if (!patientToDelete) return;
-        try {
-            await patientService.deletePatient(patientToDelete);
-            toast.success("Patient deleted successfully");
-            fetchPatients();
-        } catch (error) {
-            console.error("Failed to delete patient", error);
-            toast.error("Failed to delete patient");
-        } finally {
-            setDeleteDialogOpen(false);
-            setPatientToDelete(null);
-        }
-    };
 
     // Generate page numbers for pagination
     const getPageNumbers = (): number[] => {
@@ -177,14 +147,7 @@ export default function ReceptionPatients() {
                             <Edit className="h-4 w-4" />
                         </Button>
                     </PatientRegistrationDialog>
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                        onClick={() => handleDeleteClick(patient.uhid)}
-                    >
-                        <Trash2 className="h-4 w-4" />
-                    </Button>
+
                 </div>
             )
         }
@@ -293,20 +256,7 @@ export default function ReceptionPatients() {
                     </CardContent>
                 </Card>
 
-                <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-                    <AlertDialogContent>
-                        <AlertDialogHeader>
-                            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                                This action cannot be undone. This will permanently delete the patient record.
-                            </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction onClick={confirmDelete} className="bg-red-600 hover:bg-red-700">Delete</AlertDialogAction>
-                        </AlertDialogFooter>
-                    </AlertDialogContent>
-                </AlertDialog>
+
             </div>
         </DashboardLayout>
     );

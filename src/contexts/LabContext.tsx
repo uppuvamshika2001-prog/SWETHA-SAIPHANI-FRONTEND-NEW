@@ -214,6 +214,17 @@ export const LabProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
     }, [user, authLoading, hasFetchedOrders, hasFetchedMyOrders, fetchLabOrders, fetchMyLabOrders]);
 
+    // Auto-refresh for lab technicians to pick up new orders from reception
+    useEffect(() => {
+        if (!user || authLoading) return;
+        if (user.role === 'lab_technician') {
+            const interval = setInterval(() => {
+                fetchLabOrders();
+            }, 30000); // 30 seconds
+            return () => clearInterval(interval);
+        }
+    }, [user, authLoading, fetchLabOrders]);
+
     return (
         <LabContext.Provider value={{
             labOrders,

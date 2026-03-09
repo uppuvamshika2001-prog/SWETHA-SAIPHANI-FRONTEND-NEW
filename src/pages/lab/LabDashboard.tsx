@@ -88,7 +88,7 @@ export default function LabDashboard() {
   );
 
   // Lists for each category
-  const pendingTestsList = labOrders.filter((t) => t.status === 'ordered' || t.status === 'sample_collected' || t.status === 'payment_pending');
+  const pendingTestsList = labOrders.filter((t) => t.status === 'ordered' || t.status === 'sample_collected' || t.status === 'payment_pending' || t.status === 'ready_for_sample_collection');
   const inProgressList = labOrders.filter((t) => t.status === 'processing');
   const completedList = labOrders.filter((t) => t.status === 'completed');
   const urgentList = labOrders.filter((t) => t.priority === 'urgent' || t.priority === 'stat');

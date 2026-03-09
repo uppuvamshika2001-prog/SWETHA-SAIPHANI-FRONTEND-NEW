@@ -23,6 +23,7 @@ import { Plus, FlaskConical, Search, User, Loader2, Trash2 } from "lucide-react"
 import { toast } from "sonner";
 import { useLab } from "@/contexts/LabContext";
 import { api } from "@/services/api";
+import { WalkInLabPatientDialog } from "@/components/patients/WalkInLabPatientDialog";
 
 interface PatientInfo {
     uhid: string; // The primary identifier
@@ -145,7 +146,20 @@ export function CreateLabOrderDialog() {
                 <div className="grid gap-4 py-4">
                     {/* Patient Selection */}
                     <div className="space-y-2">
-                        <Label>Patient *</Label>
+                        <div className="flex items-center justify-between">
+                            <Label>Patient *</Label>
+                            {!selectedPatient && (
+                                <WalkInLabPatientDialog onPatientCreated={(patient) => {
+                                    setSelectedPatient({
+                                        uhid: patient.uhid,
+                                        firstName: patient.full_name.split(' ')[0],
+                                        lastName: patient.full_name.split(' ').slice(1).join(' '),
+                                        phone: patient.phone,
+                                    });
+                                    setShowResults(false);
+                                }} />
+                            )}
+                        </div>
                         {selectedPatient ? (
                             <div className="flex items-center justify-between p-3 bg-green-50 dark:bg-green-900/20 rounded-md border border-green-200 dark:border-green-800">
                                 <div className="flex items-center gap-3">
@@ -209,8 +223,21 @@ export function CreateLabOrderDialog() {
                                                 ))}
                                             </div>
                                         ) : (
-                                            <div className="p-4 text-center text-muted-foreground">
-                                                No patients found
+                                            <div className="p-4 text-center space-y-2">
+                                                <p className="text-muted-foreground">No patients found</p>
+                                                <WalkInLabPatientDialog onPatientCreated={(patient) => {
+                                                    setSelectedPatient({
+                                                        uhid: patient.uhid,
+                                                        firstName: patient.full_name.split(' ')[0],
+                                                        lastName: patient.full_name.split(' ').slice(1).join(' '),
+                                                        phone: patient.phone,
+                                                    });
+                                                    setShowResults(false);
+                                                }}>
+                                                    <button className="text-blue-600 hover:text-blue-700 text-sm font-medium hover:underline">
+                                                        + Register Walk-in Lab Patient
+                                                    </button>
+                                                </WalkInLabPatientDialog>
                                             </div>
                                         )}
                                     </div>
