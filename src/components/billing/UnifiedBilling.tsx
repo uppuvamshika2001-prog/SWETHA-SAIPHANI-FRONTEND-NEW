@@ -16,6 +16,8 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { AppRole } from '@/types';
+import { DatePicker } from '@/components/ui/date-picker';
+import { format } from 'date-fns';
 import {
     addWatermark,
     generatePdfFilename,
@@ -32,6 +34,7 @@ export function UnifiedBilling({ portalRole }: UnifiedBillingProps) {
     const [bills, setBills] = useState<Bill[]>([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
+    const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
     const [confirmingBillId, setConfirmingBillId] = useState<string | null>(null);
 
     const { hasPermission } = usePermissions();
@@ -39,7 +42,12 @@ export function UnifiedBilling({ portalRole }: UnifiedBillingProps) {
     const fetchBills = useCallback(async () => {
         setLoading(true);
         try {
-            const response = await billingService.getBills({ search });
+            const params: any = { search };
+            if (selectedDate) {
+                params.startDate = format(selectedDate, 'yyyy-MM-dd');
+                params.endDate = format(selectedDate, 'yyyy-MM-dd');
+            }
+            const response = await billingService.getBills(params);
             setBills(response.items || []);
         } catch (error) {
             console.error('Failed to fetch bills:', error);
@@ -48,7 +56,7 @@ export function UnifiedBilling({ portalRole }: UnifiedBillingProps) {
         } finally {
             setLoading(false);
         }
-    }, [search]);
+    }, [search, selectedDate]);
 
     // Debounced search
     useEffect(() => {
@@ -377,14 +385,17 @@ export function UnifiedBilling({ portalRole }: UnifiedBillingProps) {
                                 <CardTitle>All Invoices</CardTitle>
                                 <CardDescription>Billing history and transactions</CardDescription>
                             </div>
-                            <div className="relative w-64">
-                                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                                <Input
-                                    placeholder="Search bills..."
-                                    className="pl-8"
-                                    value={search}
-                                    onChange={(e) => setSearch(e.target.value)}
-                                />
+                            <div className="flex items-center gap-3">
+                                <DatePicker date={selectedDate} setDate={setSelectedDate} />
+                                <div className="relative w-64">
+                                    <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                                    <Input
+                                        placeholder="Search bills..."
+                                        className="pl-8"
+                                        value={search}
+                                        onChange={(e) => setSearch(e.target.value)}
+                                    />
+                                </div>
                             </div>
                         </div>
                     </CardHeader>
