@@ -13,20 +13,22 @@ export const labService = {
             id: order.id,
             order_id: `LAB-${order.id.slice(0, 4).toUpperCase()}`,
             patient_id: order.patientId,
-            patient_name: `${order.patient.firstName} ${order.patient.lastName}`,
+            patient_name: `${order.patient?.firstName || ''} ${order.patient?.lastName || ''}`.trim(),
             doctor_id: order.orderedById,
-            doctor_name: `Dr. ${order.orderedBy.firstName} ${order.orderedBy.lastName}`,
-            priority: order.priority.toLowerCase() as any,
-            status: order.status.toLowerCase() as any,
+            doctor_name: order.orderedBy ? `Dr. ${order.orderedBy.firstName} ${order.orderedBy.lastName}` : 'N/A',
+            test_name: order.testName || '',
+            testName: order.testName || '',
+            priority: (order.priority || 'routine').toLowerCase() as any,
+            status: (order.status || 'ordered').toLowerCase() as any,
             ordered_at: order.createdAt,
             completed_at: order.result?.completedAt,
             notes: order.notes,
             bill: order.bill,
             tests: [{
-                test_id: order.id, // Using order ID as test ID for now since it's 1:1
-                test_name: order.testName,
+                test_id: order.id,
+                test_name: order.testName || '',
                 result: order.result?.result?.parameters?.map((p: any) => `${p.name}: ${p.value} ${p.unit || ''}`).join(', '),
-                status: order.status.toLowerCase() as any
+                status: (order.status || 'ordered').toLowerCase() as any
             }]
         }));
 

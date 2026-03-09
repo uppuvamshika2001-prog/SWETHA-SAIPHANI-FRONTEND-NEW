@@ -127,22 +127,21 @@ export function BillGenerationDialog({
     const handleAddLabOrder = (order: any) => {
         if (selectedLabOrderIds.includes(order.id)) return;
 
-        // Add to items
-        const testNames = order.test_name;
+        // Add to items — use test_name or testName with fallback
+        const testNames = order.test_name || order.testName || 'Unknown Test';
         const description = `Lab: ${testNames} (Order #${order.order_id})`;
 
         // Determine price
         let amount = DEFAULT_LAB_PRICE;
         // Find matching test in catalog
         const matchingTest = availableTests.find(t =>
-            t.name.toLowerCase() === testNames.toLowerCase() ||
-            testNames.toLowerCase().includes(t.name.toLowerCase())
+            (t.name || '').toLowerCase() === testNames.toLowerCase() ||
+            testNames.toLowerCase().includes((t.name || '').toLowerCase())
         );
 
         if (matchingTest) {
             amount = matchingTest.price;
         }
-
 
         setItems([...items, { description, quantity: 1, unitPrice: Number(amount), total: Number(amount) }]);
         setSelectedLabOrderIds([...selectedLabOrderIds, order.id]);
@@ -378,12 +377,13 @@ export function BillGenerationDialog({
                                         <div>
                                             <div className="font-medium text-sm">{order.order_id}</div>
                                             <div className="text-xs text-muted-foreground flex items-center gap-2">
-                                                <span>{order.test_name}</span>
+                                                <span>{order.test_name || order.testName || 'Unknown Test'}</span>
                                                 <span className="font-semibold text-blue-600">
                                                     ₹{(() => {
+                                                        const orderTestName = order.test_name || order.testName || '';
                                                         const match = availableTests.find(t =>
-                                                            t.name.toLowerCase() === order.test_name.toLowerCase() ||
-                                                            order.test_name.toLowerCase().includes(t.name.toLowerCase())
+                                                            (t.name || '').toLowerCase() === orderTestName.toLowerCase() ||
+                                                            orderTestName.toLowerCase().includes((t.name || '').toLowerCase())
                                                         );
                                                         return match ? match.price : DEFAULT_LAB_PRICE;
                                                     })()}
