@@ -104,6 +104,7 @@ const getNavItems = (role: AppRole, basePath: string): NavItem[] => {
             return [
                 ...baseItems,
                 { title: 'Lab Results', href: `${basePath}/lab-results`, icon: <FlaskConical className="h-5 w-5" /> },
+                { title: 'Lab Tests Catalog', href: `${basePath}/lab-tests`, icon: <Activity className="h-5 w-5" /> },
                 { title: 'Patient Registration', href: `${basePath}/patients`, icon: <Users className="h-5 w-5" /> },
                 { title: 'Appointments', href: `${basePath}/appointments`, icon: <Calendar className="h-5 w-5" /> },
                 { title: 'Billing', href: `${basePath}/billing`, icon: <IndianRupee className="h-5 w-5" /> },

@@ -192,6 +192,7 @@ const App = () => {
                         <Route path="/reception/billing" element={<ReceptionBilling />} />
                         <Route path="/reception/lab-results" element={<ReceptionLabResults />} />
                         <Route path="/reception/staff" element={<Staff role="receptionist" />} />
+                        <Route path="/reception/lab-tests" element={<LabTestCatalog />} />
                         <Route path="/reception/settings" element={<ReceptionSettings />} />
                         <Route path="/reception/profile" element={<ReceptionSettings />} />
                       </Route>
