@@ -1,6 +1,6 @@
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { FlaskConical, Clock, CheckCircle, AlertTriangle, ClipboardList, FileText, Activity, ArrowRight, Loader2 } from "lucide-react";
+import { FlaskConical, Clock, CheckCircle, AlertTriangle, ClipboardList, FileText, Activity, ArrowRight, Loader2, Trash2 } from "lucide-react";
 import { StatsCard } from "@/components/dashboard/StatsCard";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,8 @@ import { DataTable } from "@/components/dashboard/DataTable";
 import { StatusBadge } from "@/components/dashboard/StatusBadge";
 import { format } from "date-fns";
 import { StatsCardSkeleton } from "@/components/ui/skeleton";
+import { toast } from "sonner";
+import { api } from "@/services/api";
 
 export default function PathologyDashboard() {
     const navigate = useNavigate();
@@ -30,6 +32,17 @@ export default function PathologyDashboard() {
         };
         fetchData();
     }, []);
+
+    const handleDeleteOrder = async (orderId: string) => {
+        if (!confirm("Are you sure you want to permanently delete this lab order? This action cannot be undone.")) return;
+        try {
+            await api.delete(`/lab/orders/${orderId}`);
+            toast.success("Lab order deleted successfully");
+            setLabOrders(prev => prev.filter(o => o.id !== orderId));
+        } catch (error: any) {
+            toast.error(error.message || "Failed to delete lab order");
+        }
+    };
 
     // Calculate stats
     const pendingCount = labOrders.filter(o => o.status === 'ordered' || o.status === 'sample_collected').length;
@@ -71,6 +84,20 @@ export default function PathologyDashboard() {
         { key: "priority", header: "Priority", render: (o: LabOrder) => <StatusBadge status={o.priority} /> },
         { key: "status", header: "Status", render: (o: LabOrder) => <StatusBadge status={o.status} /> },
         { key: "ordered_at", header: "Date", render: (o: LabOrder) => format(new Date(o.ordered_at), 'dd MMM yyyy') },
+        {
+            key: "actions",
+            header: "",
+            render: (o: LabOrder) => (
+                <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
+                    onClick={(e) => { e.stopPropagation(); handleDeleteOrder(o.id); }}
+                >
+                    <Trash2 className="h-4 w-4" />
+                </Button>
+            )
+        },
     ];
 
     return (

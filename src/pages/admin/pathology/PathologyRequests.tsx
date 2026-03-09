@@ -1,7 +1,7 @@
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { DataTable } from "@/components/dashboard/DataTable";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ClipboardList, FlaskConical, CheckCircle, Loader2 } from "lucide-react";
+import { ClipboardList, FlaskConical, CheckCircle, Loader2, Trash2 } from "lucide-react";
 import { StatusBadge } from "@/components/dashboard/StatusBadge";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,8 @@ import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { labService } from "@/services/labService";
 import { useToast } from "@/hooks/use-toast";
+import { api } from "@/services/api";
+import { toast as sonnerToast } from "sonner";
 
 export default function PathologyRequests() {
     const [searchParams] = useSearchParams();
@@ -54,6 +56,17 @@ export default function PathologyRequests() {
             });
         } finally {
             setUpdating(null);
+        }
+    };
+
+    const handleDeleteOrder = async (orderId: string) => {
+        if (!confirm("Are you sure you want to permanently delete this lab order? This action cannot be undone.")) return;
+        try {
+            await api.delete(`/lab/orders/${orderId}`);
+            sonnerToast.success("Lab order deleted successfully");
+            setRequests(prev => prev.filter(o => o.id !== orderId));
+        } catch (error: any) {
+            sonnerToast.error(error.message || "Failed to delete lab order");
         }
     };
 
@@ -124,47 +137,86 @@ export default function PathologyRequests() {
 
                 if (o.status === 'ordered') {
                     return (
-                        <Button
-                            size="sm"
-                            variant="outline"
-                            className="text-blue-600 border-blue-200 hover:bg-blue-50"
-                            onClick={() => handleStatusUpdate(o.id, 'sample_collected')}
-                            disabled={isUpdating}
-                        >
-                            {isUpdating ? <Loader2 className="h-3 w-3 animate-spin" /> : <FlaskConical className="h-3 w-3 mr-1" />}
-                            Collect Sample
-                        </Button>
+                        <div className="flex items-center gap-1">
+                            <Button
+                                size="sm"
+                                variant="outline"
+                                className="text-blue-600 border-blue-200 hover:bg-blue-50"
+                                onClick={() => handleStatusUpdate(o.id, 'sample_collected')}
+                                disabled={isUpdating}
+                            >
+                                {isUpdating ? <Loader2 className="h-3 w-3 animate-spin" /> : <FlaskConical className="h-3 w-3 mr-1" />}
+                                Collect Sample
+                            </Button>
+                            <Button
+                                size="icon"
+                                variant="ghost"
+                                className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                onClick={() => handleDeleteOrder(o.id)}
+                            >
+                                <Trash2 className="h-4 w-4" />
+                            </Button>
+                        </div>
                     );
                 }
                 if (o.status === 'sample_collected') {
                     return (
-                        <Button
-                            size="sm"
-                            variant="outline"
-                            className="text-orange-600 border-orange-200 hover:bg-orange-50"
-                            onClick={() => handleStatusUpdate(o.id, 'processing')}
-                            disabled={isUpdating}
-                        >
-                            {isUpdating ? <Loader2 className="h-3 w-3 animate-spin" /> : <Loader2 className="h-3 w-3 mr-1" />}
-                            Start Processing
-                        </Button>
+                        <div className="flex items-center gap-1">
+                            <Button
+                                size="sm"
+                                variant="outline"
+                                className="text-orange-600 border-orange-200 hover:bg-orange-50"
+                                onClick={() => handleStatusUpdate(o.id, 'processing')}
+                                disabled={isUpdating}
+                            >
+                                {isUpdating ? <Loader2 className="h-3 w-3 animate-spin" /> : <Loader2 className="h-3 w-3 mr-1" />}
+                                Start Processing
+                            </Button>
+                            <Button
+                                size="icon"
+                                variant="ghost"
+                                className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                onClick={() => handleDeleteOrder(o.id)}
+                            >
+                                <Trash2 className="h-4 w-4" />
+                            </Button>
+                        </div>
                     );
                 }
                 if (o.status === 'processing') {
                     return (
-                        <Button
-                            size="sm"
-                            variant="outline"
-                            className="text-green-600 border-green-200 hover:bg-green-50"
-                            onClick={() => handleStatusUpdate(o.id, 'completed')}
-                            disabled={isUpdating}
-                        >
-                            {isUpdating ? <Loader2 className="h-3 w-3 animate-spin" /> : <CheckCircle className="h-3 w-3 mr-1" />}
-                            Complete
-                        </Button>
+                        <div className="flex items-center gap-1">
+                            <Button
+                                size="sm"
+                                variant="outline"
+                                className="text-green-600 border-green-200 hover:bg-green-50"
+                                onClick={() => handleStatusUpdate(o.id, 'completed')}
+                                disabled={isUpdating}
+                            >
+                                {isUpdating ? <Loader2 className="h-3 w-3 animate-spin" /> : <CheckCircle className="h-3 w-3 mr-1" />}
+                                Complete
+                            </Button>
+                            <Button
+                                size="icon"
+                                variant="ghost"
+                                className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                onClick={() => handleDeleteOrder(o.id)}
+                            >
+                                <Trash2 className="h-4 w-4" />
+                            </Button>
+                        </div>
                     );
                 }
-                return <span className="text-xs text-muted-foreground">-</span>;
+                return (
+                    <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
+                        onClick={() => handleDeleteOrder(o.id)}
+                    >
+                        <Trash2 className="h-4 w-4" />
+                    </Button>
+                );
             }
         },
     ];
