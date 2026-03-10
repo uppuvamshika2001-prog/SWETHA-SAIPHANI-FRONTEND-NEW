@@ -364,10 +364,17 @@ export const downloadPatientTemplatePDF = async (patient: any) => {
 
         // Row 3: Doctor Name & Department — at ~64mm from top
         const row3Y = 64;
-        // Wrap doctor name to fit within available width (57mm to ~165mm = 108mm max)
-        const maxDoctorWidth = 108;
+        // Wrap doctor name to fit within 57mm to ~137mm (80mm max) to avoid right column labels
+        const maxDoctorWidth = 80;
         doc.setFontSize(9);
-        const wrappedDoctor = doc.splitTextToSize(doctorName.toUpperCase(), maxDoctorWidth);
+
+        // Format doctor name to put degrees on a new line (replace first '(' with '\n(')
+        let formattedDoctorName = doctorName.toUpperCase();
+        if (formattedDoctorName.includes('(')) {
+            formattedDoctorName = formattedDoctorName.replace('(', '\n(');
+        }
+
+        const wrappedDoctor = doc.splitTextToSize(formattedDoctorName, maxDoctorWidth);
         doc.text(wrappedDoctor, 57, row3Y);
         doc.setFontSize(11);
         doc.text(deptName.toUpperCase(), 168, row3Y);
