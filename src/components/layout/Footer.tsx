@@ -42,7 +42,7 @@ export const Footer = () => {
                             <div className="flex items-center gap-3">
                                 <Mail className="w-5 h-5 text-blue-500" />
                                 <a href="mailto:Info@swethasaiphani.clinic" className="hover:text-blue-400 transition-colors">
-                                    swethasaiphaniclinic@gmail.com
+                                    Info@swethasaiphani.clinic
                                 </a>
                             </div>
                             <div className="flex items-center gap-3">
