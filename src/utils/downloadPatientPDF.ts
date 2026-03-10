@@ -9,6 +9,7 @@ import {
     getTransparentTableStyles,
     getBase64ImageFromUrl
 } from "./pdfUtils";
+import { appointmentService } from "@/services/appointmentService";
 
 /**
  * Download Patient Card PDF using standard vector approach
@@ -273,6 +274,24 @@ export const downloadMaskedPatientCardPDF = async (patient: any, medicalRecords:
 };
 
 /**
+ * Fetch the doctor name from the patient's latest appointment
+ */
+const getLatestDoctorName = async (uhid: string): Promise<string> => {
+    try {
+        const appointments = await appointmentService.getAppointments({ patientId: uhid });
+        if (appointments.length > 0) {
+            const latest = appointments.sort((a, b) =>
+                new Date(b.created_at || b.date).getTime() - new Date(a.created_at || a.date).getTime()
+            )[0];
+            return latest.doctor_name || 'OPD';
+        }
+    } catch (e) {
+        console.warn('Could not fetch appointments for doctor name', e);
+    }
+    return 'OPD';
+};
+
+/**
  * Download Patient Template PDF (Clinic letterhead with patient info only)
  * - Uses the 2.jpg clinic template background (same as printPatientCard)
  * - No masking, no download count restrictions — can be downloaded unlimited times
@@ -317,8 +336,12 @@ export const downloadPatientTemplatePDF = async (patient: any) => {
             : 'N/A';
         const dateDisplay = new Date().toLocaleDateString();
 
+        // 2b. Resolve doctor name: consulting_doctor → latest appointment → 'OPD'
+        const doctorName = patient.consulting_doctor
+            || await getLatestDoctorName(patient.uhid || patient.id);
+        const deptName = patient.department || 'OPD';
+
         // 3. Position patient info on the template (matching printPatientCard positions)
-        // Convert mm to jsPDF points (jsPDF uses mm by default)
         doc.setFontSize(11);
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(0, 0, 0);
@@ -339,10 +362,10 @@ export const downloadPatientTemplatePDF = async (patient: any) => {
         );
         doc.text(patient.phone || 'N/A', 168, row2Y);
 
-        // Row 3: Doctor/Dept — at ~64mm from top
+        // Row 3: Doctor Name & Department — at ~64mm from top
         const row3Y = 64;
-        doc.text('OPD', 57, row3Y);
-        doc.text('OPD', 168, row3Y);
+        doc.text(doctorName.toUpperCase(), 57, row3Y);
+        doc.text(deptName.toUpperCase(), 168, row3Y);
 
         // Row 4: Address — at ~79mm from top
         const row4Y = 79;
