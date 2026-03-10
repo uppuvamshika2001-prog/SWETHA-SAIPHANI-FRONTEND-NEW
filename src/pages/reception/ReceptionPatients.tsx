@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { PatientRegistrationDialog } from '@/components/patients/PatientRegistrationDialog';
 import { PatientDetailsDialog } from '@/components/patients/PatientDetailsDialog';
 import { printPatientCard } from '@/utils/printPatientCard';
+import { downloadPatientCardPDF } from '@/utils/downloadPatientPDF';
 import { patientService } from '@/services/patientService';
 import { Patient } from '@/types';
 import {
@@ -147,7 +148,14 @@ export default function ReceptionPatients() {
                             <Edit className="h-4 w-4" />
                         </Button>
                     </PatientRegistrationDialog>
-
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => downloadPatientCardPDF(patient)}
+                        title="Download Patient Template"
+                    >
+                        <Download className="h-4 w-4" />
+                    </Button>
                 </div>
             )
         }
