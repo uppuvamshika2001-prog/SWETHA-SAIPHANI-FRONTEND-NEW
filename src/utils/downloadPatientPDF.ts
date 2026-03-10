@@ -364,7 +364,12 @@ export const downloadPatientTemplatePDF = async (patient: any) => {
 
         // Row 3: Doctor Name & Department — at ~64mm from top
         const row3Y = 64;
-        doc.text(doctorName.toUpperCase(), 57, row3Y);
+        // Wrap doctor name to fit within available width (57mm to ~165mm = 108mm max)
+        const maxDoctorWidth = 108;
+        doc.setFontSize(9);
+        const wrappedDoctor = doc.splitTextToSize(doctorName.toUpperCase(), maxDoctorWidth);
+        doc.text(wrappedDoctor, 57, row3Y);
+        doc.setFontSize(11);
         doc.text(deptName.toUpperCase(), 168, row3Y);
 
         // Row 4: Address — at ~79mm from top
