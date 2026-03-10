@@ -271,3 +271,96 @@ export const downloadPatientCardPDF = async (patient: any, medicalRecords: Medic
 export const downloadMaskedPatientCardPDF = async (patient: any, medicalRecords: MedicalRecord[] = []) => {
     await downloadPatientCardPDF(patient, medicalRecords, true);
 };
+
+/**
+ * Download Patient Template PDF (Clinic letterhead with patient info only)
+ * - Uses the 2.jpg clinic template background (same as printPatientCard)
+ * - No masking, no download count restrictions — can be downloaded unlimited times
+ * - No medical records / medications / lab results — just the template with patient info
+ */
+export const downloadPatientTemplatePDF = async (patient: any) => {
+    try {
+        const doc = new jsPDF();
+        const pageWidth = doc.internal.pageSize.getWidth();
+        const pageHeight = doc.internal.pageSize.getHeight();
+
+        // 1. Add the clinic template background (2.jpg — same as printPatientCard)
+        try {
+            const templateUrl = '/2.jpg';
+            const templateBase64 = await getBase64ImageFromUrl(templateUrl);
+            doc.addImage(templateBase64, 'JPEG', 0, 0, pageWidth, pageHeight);
+        } catch (error) {
+            console.error("Failed to load template background", error);
+            // Fallback: try the other template
+            try {
+                const fallbackUrl = '/templete%20new.jpeg';
+                const fallbackBase64 = await getBase64ImageFromUrl(fallbackUrl);
+                doc.addImage(fallbackBase64, 'JPEG', 0, 0, 210, 297);
+            } catch (e2) {
+                console.error("Failed to load fallback template", e2);
+            }
+        }
+
+        // 2. Calculate patient details
+        let ageDisplay = 'N/A';
+        if (patient.age) {
+            ageDisplay = patient.age.toString();
+        } else if (patient.date_of_birth) {
+            const dob = new Date(patient.date_of_birth);
+            const diff_ms = Date.now() - dob.getTime();
+            const age_dt = new Date(diff_ms);
+            ageDisplay = Math.abs(age_dt.getUTCFullYear() - 1970).toString();
+        }
+
+        const genderDisplay = patient.gender
+            ? patient.gender.charAt(0).toUpperCase()
+            : 'N/A';
+        const dateDisplay = new Date().toLocaleDateString();
+
+        // 3. Position patient info on the template (matching printPatientCard positions)
+        // Convert mm to jsPDF points (jsPDF uses mm by default)
+        doc.setFontSize(11);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(0, 0, 0);
+
+        // Row 1: Patient Name (with Age/Gender) & Date — at ~51mm from top
+        const row1Y = 51;
+        doc.text(
+            `${(patient.full_name || 'N/A').toUpperCase()} (${ageDisplay}/${genderDisplay})`,
+            57, row1Y
+        );
+        doc.text(dateDisplay, 168, row1Y);
+
+        // Row 2: Patient ID & Mobile — at ~58mm from top
+        const row2Y = 58;
+        doc.text(
+            (patient.uhid || patient.id || 'N/A').toUpperCase(),
+            57, row2Y
+        );
+        doc.text(patient.phone || 'N/A', 168, row2Y);
+
+        // Row 3: Doctor/Dept — at ~64mm from top
+        const row3Y = 64;
+        doc.text('OPD', 57, row3Y);
+        doc.text('OPD', 168, row3Y);
+
+        // Row 4: Address — at ~79mm from top
+        const row4Y = 79;
+        const address = patient.address || 'N/A';
+        const splitAddr = doc.splitTextToSize(address.toUpperCase(), 125);
+        doc.text(splitAddr, 57, row4Y);
+
+        // 4. Generate filename (no masking, no download count)
+        const sanitizedName = (patient.full_name || 'Patient')
+            .replace(/[^a-zA-Z0-9]/g, '_')
+            .substring(0, 30);
+        const filename = `Template_${sanitizedName}_${patient.uhid || 'unknown'}.pdf`;
+
+        doc.save(filename);
+        toast.success("Template downloaded successfully!");
+
+    } catch (e) {
+        console.error("Template download failed", e);
+        toast.error("Failed to generate template PDF");
+    }
+};
