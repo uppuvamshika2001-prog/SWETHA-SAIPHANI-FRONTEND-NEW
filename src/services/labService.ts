@@ -57,7 +57,7 @@ export const labService = {
     },
 
     async getOrderParameters(orderId: string): Promise<any[]> {
-        return await api.get<any[]>(`/lab-orders/${orderId}/parameters`);
+        return await api.get<any[]>(`/lab/orders/${orderId}/parameters`);
     },
 
     async deleteLabResult(resultId: string): Promise<void> {
