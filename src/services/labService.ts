@@ -56,6 +56,10 @@ export const labService = {
         return api.patch(`/lab/orders/${id}/status`, { status });
     },
 
+    async getOrderParameters(orderId: string): Promise<any[]> {
+        return await api.get<any[]>(`/lab-orders/${orderId}/parameters`);
+    },
+
     async deleteLabResult(resultId: string): Promise<void> {
         await api.delete(`/lab/results/${resultId}`);
         apiCache.invalidate('/lab');

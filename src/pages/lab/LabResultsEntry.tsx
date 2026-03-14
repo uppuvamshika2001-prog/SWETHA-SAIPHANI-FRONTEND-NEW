@@ -11,19 +11,22 @@ import { useLab, LabOrder } from "@/contexts/LabContext";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+    Alert,
+    AlertDescription
+} from "@/components/ui/alert";
+
+import { labService } from "@/services/labService";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 interface TestParameter {
+    id?: string;
     name: string;
     value: string;
     unit: string;
     normalRange: string;
+    normalMin?: number;
+    normalMax?: number;
+    flag?: 'NORMAL' | 'LOW' | 'HIGH';
 }
 
 const LabResultsEntry = () => {
@@ -35,9 +38,8 @@ const LabResultsEntry = () => {
     const [submitting, setSubmitting] = useState(false);
     const [interpretation, setInterpretation] = useState("");
     const [selectedOrderId, setSelectedOrderId] = useState<string>(orderId || "");
-    const [parameters, setParameters] = useState<TestParameter[]>([
-        { name: "", value: "", unit: "", normalRange: "" }
-    ]);
+    const [parameters, setParameters] = useState<TestParameter[]>([]);
+    const [loadingParameters, setLoadingParameters] = useState(false);
 
     // File upload state
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -53,19 +55,54 @@ const LabResultsEntry = () => {
         }
     }, [orderId]);
 
-    const addParameter = () => {
-        setParameters([...parameters, { name: "", value: "", unit: "", normalRange: "" }]);
+    useEffect(() => {
+        const fetchParameters = async () => {
+            if (!selectedOrderId) {
+                setParameters([]);
+                return;
+            }
+
+            setLoadingParameters(true);
+            try {
+                const data = await labService.getOrderParameters(selectedOrderId);
+                if (data && data.length > 0) {
+                    setParameters(data.map(p => ({
+                        id: p.id,
+                        name: p.parameter_name || p.name,
+                        unit: p.unit,
+                        normalRange: p.normal_range || `${p.normal_min}-${p.normal_max}`,
+                        normalMin: p.normal_min,
+                        normalMax: p.normal_max,
+                        value: "",
+                        flag: "NORMAL"
+                    })));
+                } else {
+                    // Fallback to empty if no parameters defined
+                    setParameters([{ name: "", value: "", unit: "", normalRange: "" }]);
+                }
+            } catch (error) {
+                console.error("Failed to fetch parameters", error);
+                setParameters([{ name: "", value: "", unit: "", normalRange: "" }]);
+            } finally {
+                setLoadingParameters(false);
+            }
+        };
+
+        fetchParameters();
+    }, [selectedOrderId]);
+
+    const calculateFlag = (value: string, min?: number, max?: number): 'NORMAL' | 'LOW' | 'HIGH' => {
+        const numValue = parseFloat(value);
+        if (isNaN(numValue) || min === undefined || max === undefined) return 'NORMAL';
+        if (numValue < min) return 'LOW';
+        if (numValue > max) return 'HIGH';
+        return 'NORMAL';
     };
 
-    const removeParameter = (index: number) => {
-        if (parameters.length > 1) {
-            setParameters(parameters.filter((_, i) => i !== index));
-        }
-    };
-
-    const updateParameter = (index: number, field: keyof TestParameter, value: string) => {
+    const updateParameter = (index: number, value: string) => {
         const updated = [...parameters];
-        updated[index][field] = value;
+        updated[index].value = value;
+        updated[index].flag = calculateFlag(value, updated[index].normalMin, updated[index].normalMax);
         setParameters(updated);
     };
 
@@ -110,10 +147,12 @@ const LabResultsEntry = () => {
                 orderId: selectedOrderId,
                 result: {
                     parameters: validParams.map(p => ({
+                        parameterId: p.id,
                         name: p.name,
                         value: p.value,
                         unit: p.unit || undefined,
                         normalRange: p.normalRange || undefined,
+                        flag: p.flag
                     })),
                 },
                 interpretation: interpretation || undefined,
@@ -166,43 +205,48 @@ const LabResultsEntry = () => {
                                     <p className="text-sm">Process orders from the Pending Tests queue first</p>
                                 </div>
                             ) : (
-                                <Select value={selectedOrderId} onValueChange={setSelectedOrderId}>
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Select an order..." />
-                                    </SelectTrigger>
-                                    <SelectContent>
+                                <div className="space-y-4">
+                                    <Label>Pending Lab Orders</Label>
+                                    <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2">
                                         {inProgressOrders.map((order) => (
-                                            <SelectItem key={order.id} value={order.id}>
-                                                <div className="flex flex-col">
-                                                    <span>{order.patient.firstName} {order.patient.lastName}</span>
-                                                    <span className="text-xs text-muted-foreground">{order.testName}</span>
+                                            <div
+                                                key={order.id}
+                                                onClick={() => setSelectedOrderId(order.id)}
+                                                className={`p-3 rounded-lg border cursor-pointer transition-colors hover:bg-muted/50 ${selectedOrderId === order.id ? 'border-primary bg-primary/5 ring-1 ring-primary' : 'bg-card'
+                                                    }`}
+                                            >
+                                                <div className="flex justify-between items-start mb-1">
+                                                    <span className="font-semibold text-sm">{order.patient.firstName} {order.patient.lastName}</span>
+                                                    <Badge variant={order.priority === 'urgent' ? 'destructive' : 'secondary'} className="text-[10px] h-4">
+                                                        {order.priority.toUpperCase()}
+                                                    </Badge>
                                                 </div>
-                                            </SelectItem>
+                                                <div className="text-xs text-muted-foreground truncate">{order.testName}</div>
+                                                <div className="text-[10px] text-muted-foreground mt-2 flex justify-between">
+                                                    <span>{new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                                    <span>#{order.id.slice(-4).toUpperCase()}</span>
+                                                </div>
+                                            </div>
                                         ))}
-                                    </SelectContent>
-                                </Select>
+                                    </div>
+                                </div>
                             )}
 
                             {selectedOrder && (
-                                <div className="mt-4 p-3 bg-muted rounded-lg space-y-2">
-                                    <div className="flex justify-between">
-                                        <span className="text-sm text-muted-foreground">Patient:</span>
-                                        <span className="font-medium">{selectedOrder.patient.firstName} {selectedOrder.patient.lastName}</span>
-                                    </div>
-                                    <div className="flex justify-between">
-                                        <span className="text-sm text-muted-foreground">Test:</span>
-                                        <span className="font-medium">{selectedOrder.testName}</span>
-                                    </div>
-                                    <div className="flex justify-between">
-                                        <span className="text-sm text-muted-foreground">Priority:</span>
-                                        <Badge variant={selectedOrder.priority === 'urgent' ? 'destructive' : 'secondary'}>
-                                            {selectedOrder.priority.toUpperCase()}
-                                        </Badge>
+                                <div className="mt-6 p-4 bg-muted/50 rounded-lg space-y-3 border">
+                                    <h4 className="font-medium text-sm border-b pb-2">Order Details</h4>
+                                    <div className="grid grid-cols-2 gap-2 text-xs">
+                                        <span className="text-muted-foreground">Patient:</span>
+                                        <span className="font-medium text-right">{selectedOrder.patient.firstName} {selectedOrder.patient.lastName}</span>
+                                        <span className="text-muted-foreground">Test:</span>
+                                        <span className="font-medium text-right">{selectedOrder.testName}</span>
+                                        <span className="text-muted-foreground">ID:</span>
+                                        <span className="font-medium text-right">#{selectedOrder.id.slice(-6).toUpperCase()}</span>
                                     </div>
                                     {selectedOrder.notes && (
-                                        <div className="pt-2 border-t">
-                                            <span className="text-sm text-muted-foreground">Notes:</span>
-                                            <p className="text-sm">{selectedOrder.notes}</p>
+                                        <div className="pt-2 border-t mt-2">
+                                            <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Doctor Notes:</span>
+                                            <p className="text-xs mt-1 text-muted-foreground italic">"{selectedOrder.notes}"</p>
                                         </div>
                                     )}
                                 </div>
@@ -258,58 +302,64 @@ const LabResultsEntry = () => {
                             </div>
 
                             <div className="space-y-4">
-                                <Label>Test Parameters (Optional if File Uploaded)</Label>
-                                {parameters.map((param, index) => (
-                                    <div key={index} className="grid grid-cols-12 gap-2 items-end">
-                                        <div className="col-span-4">
-                                            <Label className={index === 0 ? "" : "sr-only"}>Parameter Name</Label>
-                                            <Input
-                                                placeholder="e.g., Hemoglobin"
-                                                value={param.name}
-                                                onChange={(e) => updateParameter(index, 'name', e.target.value)}
-                                            />
-                                        </div>
-                                        <div className="col-span-3">
-                                            <Label className={index === 0 ? "" : "sr-only"}>Value</Label>
-                                            <Input
-                                                placeholder="e.g., 14.5"
-                                                value={param.value}
-                                                onChange={(e) => updateParameter(index, 'value', e.target.value)}
-                                            />
-                                        </div>
-                                        <div className="col-span-2">
-                                            <Label className={index === 0 ? "" : "sr-only"}>Unit</Label>
-                                            <Input
-                                                placeholder="g/dL"
-                                                value={param.unit}
-                                                onChange={(e) => updateParameter(index, 'unit', e.target.value)}
-                                            />
-                                        </div>
-                                        <div className="col-span-2">
-                                            <Label className={index === 0 ? "" : "sr-only"}>Normal Range</Label>
-                                            <Input
-                                                placeholder="12-16"
-                                                value={param.normalRange}
-                                                onChange={(e) => updateParameter(index, 'normalRange', e.target.value)}
-                                            />
-                                        </div>
-                                        <div className="col-span-1">
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                onClick={() => removeParameter(index)}
-                                                disabled={parameters.length === 1}
-                                            >
-                                                <Trash2 className="h-4 w-4 text-red-500" />
-                                            </Button>
-                                        </div>
+                                <Label className="text-base">Test Parameters</Label>
+                                {loadingParameters ? (
+                                    <div className="flex items-center justify-center py-10 border rounded-lg">
+                                        <Loader2 className="h-6 w-6 animate-spin mr-2" />
+                                        <span>Loading test parameters...</span>
                                     </div>
-                                ))}
-
-                                <Button variant="outline" onClick={addParameter} className="w-full">
-                                    <Plus className="h-4 w-4 mr-2" />
-                                    Add Parameter
-                                </Button>
+                                ) : !selectedOrderId ? (
+                                    <Alert>
+                                        <AlertDescription>
+                                            Please select a lab order to enter parameters.
+                                        </AlertDescription>
+                                    </Alert>
+                                ) : (
+                                    <div className="border rounded-md">
+                                        <Table>
+                                            <TableHeader>
+                                                <TableRow>
+                                                    <TableHead className="w-[200px]">Parameter</TableHead>
+                                                    <TableHead className="w-[150px]">Result</TableHead>
+                                                    <TableHead>Unit</TableHead>
+                                                    <TableHead>Normal Range</TableHead>
+                                                    <TableHead className="text-right">Status</TableHead>
+                                                </TableRow>
+                                            </TableHeader>
+                                            <TableBody>
+                                                {parameters.map((param, index) => (
+                                                    <TableRow key={index}>
+                                                        <TableCell className="font-medium">{param.name}</TableCell>
+                                                        <TableCell>
+                                                            <Input
+                                                                className={`h-8 ${param.flag === 'HIGH' ? 'border-red-500 focus-visible:ring-red-500' :
+                                                                    param.flag === 'LOW' ? 'border-orange-500 focus-visible:ring-orange-500' : ''
+                                                                    }`}
+                                                                placeholder="Enter value"
+                                                                value={param.value}
+                                                                onChange={(e) => updateParameter(index, e.target.value)}
+                                                            />
+                                                        </TableCell>
+                                                        <TableCell className="text-muted-foreground text-sm">{param.unit}</TableCell>
+                                                        <TableCell className="text-muted-foreground text-sm">{param.normalRange}</TableCell>
+                                                        <TableCell className="text-right">
+                                                            {param.value && (
+                                                                <Badge
+                                                                    variant={param.flag === 'NORMAL' ? 'secondary' : 'destructive'}
+                                                                    className={param.flag === 'NORMAL' ? 'bg-green-100 text-green-800 hover:bg-green-100' :
+                                                                        param.flag === 'LOW' ? 'bg-orange-100 text-orange-800 hover:bg-orange-100 border-none' : ''
+                                                                    }
+                                                                >
+                                                                    {param.flag}
+                                                                </Badge>
+                                                            )}
+                                                        </TableCell>
+                                                    </TableRow>
+                                                ))}
+                                            </TableBody>
+                                        </Table>
+                                    </div>
+                                )}
                             </div>
 
                             <div className="pt-4 border-t">
