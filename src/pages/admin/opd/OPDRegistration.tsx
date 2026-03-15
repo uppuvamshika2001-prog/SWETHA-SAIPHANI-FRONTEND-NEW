@@ -10,7 +10,8 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/components/ui/use-toast";
 import { PatientDetailsDialog } from "@/components/patients/PatientDetailsDialog";
 import { usePatients } from "@/contexts/PatientContext";
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
+import { staffService } from "@/services/staffService";
 
 export default function OPDRegistration() {
     const { toast } = useToast();
@@ -22,8 +23,34 @@ export default function OPDRegistration() {
         lastName: '',
         phone: '',
         gender: '',
-        department: ''
+        department: '',
+        consultingDoctor: ''
     });
+
+    const [doctorsList, setDoctorsList] = useState<any[]>([]);
+
+    useEffect(() => {
+        const fetchDoctors = async () => {
+            try {
+                const staff = await staffService.getStaff();
+                const doctors = staff.filter((s: any) => s.role === 'doctor');
+                setDoctorsList(doctors);
+            } catch (error) {
+                console.error("Failed to fetch doctors:", error);
+            }
+        };
+        fetchDoctors();
+    }, []);
+
+    const availableDepartments = useMemo(() => {
+        const departments = new Set<string>();
+        doctorsList.forEach(doctor => {
+            if (doctor.department) {
+                departments.add(doctor.department);
+            }
+        });
+        return Array.from(departments).sort();
+    }, [doctorsList]);
 
     const handleRegister = () => {
         if (!formData.firstName || !formData.lastName || !formData.phone || !formData.gender) {
@@ -44,7 +71,8 @@ export default function OPDRegistration() {
             phone: formData.phone,
             created_at: new Date().toISOString(),
             status: 'active',
-            department: formData.department
+            department: formData.department,
+            consulting_doctor: formData.consultingDoctor
         };
 
         addPatient(newPatient);
@@ -60,7 +88,8 @@ export default function OPDRegistration() {
             lastName: '',
             phone: '',
             gender: '',
-            department: ''
+            department: '',
+            consultingDoctor: ''
         });
     };
 
@@ -149,22 +178,47 @@ export default function OPDRegistration() {
                                     </Select>
                                 </div>
                             </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="department">Department</Label>
-                                <Select
-                                    value={formData.department}
-                                    onValueChange={(v) => setFormData({ ...formData, department: v })}
-                                >
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Select Department" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="general">General Medicine</SelectItem>
-                                        <SelectItem value="ortho">Orthopedics</SelectItem>
-                                        <SelectItem value="cardio">Cardiology</SelectItem>
-                                        <SelectItem value="derma">Dermatology</SelectItem>
-                                    </SelectContent>
-                                </Select>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="department">Department</Label>
+                                    <Select
+                                        value={formData.department}
+                                        onValueChange={(v) => setFormData({ ...formData, department: v, consultingDoctor: '' })}
+                                    >
+                                        <SelectTrigger id="department">
+                                            <SelectValue placeholder="Select Department" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {availableDepartments.map(dept => (
+                                                <SelectItem key={dept} value={dept}>{dept}</SelectItem>
+                                            ))}
+                                            {availableDepartments.length === 0 && (
+                                                <SelectItem value="none" disabled>No departments found</SelectItem>
+                                            )}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="doctor">Consulting Doctor</Label>
+                                    <Select
+                                        value={formData.consultingDoctor}
+                                        onValueChange={(v) => setFormData({ ...formData, consultingDoctor: v })}
+                                        disabled={!formData.department}
+                                    >
+                                        <SelectTrigger id="doctor">
+                                            <SelectValue placeholder="Select Doctor" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {doctorsList
+                                                .filter(d => d.department === formData.department)
+                                                .map((doctor) => (
+                                                    <SelectItem key={doctor.id} value={doctor.full_name}>
+                                                        {doctor.full_name}
+                                                    </SelectItem>
+                                                ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
                             </div>
                             <Button className="w-full" onClick={handleRegister}>Register Patient</Button>
                         </CardContent>

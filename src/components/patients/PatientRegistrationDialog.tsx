@@ -312,17 +312,18 @@ export function PatientRegistrationDialog({ children, onRegister, patientToEdit 
             handleChange('idNumber', value);
         }
     };
-    const PREDEFINED_DEPARTMENTS = [
-        "Orthopaedics",
-        "Neurosurgeon",
-        "General Physician",
-        "Paediatric Orthopaedics",
-        "Pulmonology",
-        "Oncology",
-        "Paediatric Hemato-Oncology"
-    ];
-
     const [doctorsList, setDoctorsList] = useState<any[]>([]);
+
+    // Dynamically derive departments from the staff list
+    const availableDepartments = useMemo(() => {
+        const departments = new Set<string>();
+        doctorsList.forEach(doctor => {
+            if (doctor.department) {
+                departments.add(doctor.department);
+            }
+        });
+        return Array.from(departments).sort();
+    }, [doctorsList]);
 
     // Department mapping for staff/doctors that may have different department names
 
@@ -1172,9 +1173,12 @@ export function PatientRegistrationDialog({ children, onRegister, patientToEdit 
                                                 <SelectValue placeholder="Select Department" />
                                             </SelectTrigger>
                                             <SelectContent>
-                                                {PREDEFINED_DEPARTMENTS.map(dept => (
+                                                {availableDepartments.map(dept => (
                                                     <SelectItem key={dept} value={dept}>{dept}</SelectItem>
                                                 ))}
+                                                {availableDepartments.length === 0 && (
+                                                    <SelectItem value="none" disabled>No departments found</SelectItem>
+                                                )}
                                             </SelectContent>
                                         </Select>
                                     </div>
@@ -1186,10 +1190,10 @@ export function PatientRegistrationDialog({ children, onRegister, patientToEdit 
                                             </SelectTrigger>
                                             <SelectContent>
                                                 {doctorsList
-                                                    .filter(d => !formData.department || getDepartmentMapping(d.department) === formData.department)
+                                                    .filter(d => !formData.department || d.department === formData.department)
                                                     .map((doctor) => (
                                                         <SelectItem key={doctor.id} value={doctor.full_name}>
-                                                            {doctor.full_name} ({doctor.specialization})
+                                                            {doctor.full_name} ({doctor.specialization || doctor.department})
                                                         </SelectItem>
                                                     ))}
                                             </SelectContent>
