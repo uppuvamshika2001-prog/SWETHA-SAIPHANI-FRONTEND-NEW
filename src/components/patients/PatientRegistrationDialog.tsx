@@ -256,7 +256,14 @@ export function PatientRegistrationDialog({ children, onRegister, patientToEdit 
     }, [open, patientToEdit]);
 
     const handleChange = (field: string, value: string) => {
-        setFormData(prev => ({ ...prev, [field]: value }));
+        setFormData(prev => {
+            const newState = { ...prev, [field]: value };
+            // If payment mode is changed to FOC, set fee to 100
+            if (field === 'paymentMode' && value === 'foc') {
+                newState.registrationFee = '100';
+            }
+            return newState;
+        });
     };
 
     const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>, field: string = 'phone') => {
@@ -1218,6 +1225,7 @@ export function PatientRegistrationDialog({ children, onRegister, patientToEdit 
                                                     <SelectItem value="cash">Cash</SelectItem>
                                                     <SelectItem value="card">Card</SelectItem>
                                                     <SelectItem value="upi">UPI</SelectItem>
+                                                    <SelectItem value="foc">Free Of Cost (FOC)</SelectItem>
                                                     <SelectItem value="pay_at_clinic">Pay at Clinic</SelectItem>
                                                 </SelectContent>
                                             </Select>
