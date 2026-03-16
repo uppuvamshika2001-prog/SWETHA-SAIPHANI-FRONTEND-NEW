@@ -40,6 +40,7 @@ const LabResultsEntry = () => {
     const [selectedOrderId, setSelectedOrderId] = useState<string>(orderId || "");
     const [parameters, setParameters] = useState<TestParameter[]>([]);
     const [loadingParameters, setLoadingParameters] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
     // File upload state
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -63,16 +64,19 @@ const LabResultsEntry = () => {
             }
 
             setLoadingParameters(true);
+            setError(null);
             try {
-                const data = await labService.getOrderParameters(selectedOrderId);
+                const response = await labService.getOrderParameters(selectedOrderId);
+                const data = response.parameters || [];
+                
                 if (data && data.length > 0) {
-                    setParameters(data.map(p => ({
+                    setParameters(data.map((p: any) => ({
                         id: p.id,
-                        name: p.parameter_name || p.name,
+                        name: p.parameter || p.parameter_name || p.name,
                         unit: p.unit,
-                        normalRange: p.normal_range || `${p.normal_min}-${p.normal_max}`,
-                        normalMin: p.normal_min,
-                        normalMax: p.normal_max,
+                        normalRange: p.normalRange || p.normal_range || `${p.normal_min}-${p.normal_max}`,
+                        normalMin: p.normalMin !== undefined ? p.normalMin : p.normal_min,
+                        normalMax: p.normalMax !== undefined ? p.normalMax : p.normal_max,
                         value: "",
                         flag: "NORMAL"
                     })));
@@ -80,8 +84,9 @@ const LabResultsEntry = () => {
                     // Fallback to empty if no parameters defined
                     setParameters([{ name: "", value: "", unit: "", normalRange: "" }]);
                 }
-            } catch (error) {
+            } catch (error: any) {
                 console.error("Failed to fetch parameters", error);
+                setError(error.message || "Failed to load test parameters. The database might be missing templates for this test.");
                 setParameters([{ name: "", value: "", unit: "", normalRange: "" }]);
             } finally {
                 setLoadingParameters(false);
@@ -104,6 +109,20 @@ const LabResultsEntry = () => {
         updated[index].value = value;
         updated[index].flag = calculateFlag(value, updated[index].normalMin, updated[index].normalMax);
         setParameters(updated);
+    };
+
+    const handleKeyDown = (e: React.KeyboardEvent, index: number) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            const nextInput = document.querySelector(`input[data-index="${index + 1}"]`) as HTMLInputElement;
+            if (nextInput) {
+                nextInput.focus();
+            } else {
+                // If it's the last one, maybe focus the interpretation or submit?
+                const textarea = document.querySelector('textarea') as HTMLTextAreaElement;
+                if (textarea) textarea.focus();
+            }
+        }
     };
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -308,6 +327,12 @@ const LabResultsEntry = () => {
                                         <Loader2 className="h-6 w-6 animate-spin mr-2" />
                                         <span>Loading test parameters...</span>
                                     </div>
+                                ) : error ? (
+                                    <Alert variant="destructive">
+                                        <AlertDescription>
+                                            {error}
+                                        </AlertDescription>
+                                    </Alert>
                                 ) : !selectedOrderId ? (
                                     <Alert>
                                         <AlertDescription>
@@ -337,7 +362,9 @@ const LabResultsEntry = () => {
                                                                     }`}
                                                                 placeholder="Enter value"
                                                                 value={param.value}
+                                                                data-index={index}
                                                                 onChange={(e) => updateParameter(index, e.target.value)}
+                                                                onKeyDown={(e) => handleKeyDown(e, index)}
                                                             />
                                                         </TableCell>
                                                         <TableCell className="text-muted-foreground text-sm">{param.unit}</TableCell>
