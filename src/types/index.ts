@@ -190,9 +190,28 @@ export interface Medicine {
   min_stock_level: number;
   batch_number: string;
   expiry_date: string;
+  distributor?: string;
+  purchase_price?: number;
+  sale_price?: number;
+  mrp?: number;
+  gst?: number;
+  unit?: string;
   storage_conditions?: string;
   status: 'in_stock' | 'low_stock' | 'out_of_stock' | 'expired';
   discount?: number;
+  batches?: Array<{
+    id: string;
+    batchNumber: string;
+    distributorName: string;
+    manufacturingDate: string | null;
+    expiryDate: string;
+    purchasePrice: number;
+    salePrice: number;
+    mrp: number | null;
+    gst: number;
+    stockQuantity: number;
+    isActive: boolean;
+  }>;
 }
 
 export interface PharmacyOrder {

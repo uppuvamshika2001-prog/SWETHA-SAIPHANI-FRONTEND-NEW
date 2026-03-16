@@ -1,6 +1,4 @@
 import { useState, useEffect } from 'react';
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -14,80 +12,70 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
-import {
-    Command,
-    CommandEmpty,
-    CommandGroup,
-    CommandInput,
-    CommandItem,
-    CommandList,
-} from "@/components/ui/command";
-import {
-    Popover,
-    PopoverContent,
-    PopoverTrigger,
-} from "@/components/ui/popover";
 import { useToast } from '@/components/ui/use-toast';
-import { Plus, Trash2, Printer, Save, Check, ChevronsUpDown, FileText, Download, History } from 'lucide-react';
-import { medicines } from '@/data/mockData';
-import { usePatients } from '@/contexts/PatientContext';
-import { cn } from "@/lib/utils";
+import { Plus, Trash2, Printer, Save, History, Search, User, Pill, CreditCard } from 'lucide-react';
+import { patientService } from "@/services/patientService";
+import { pharmacyService } from "@/services/pharmacyService";
 import { billingService, Bill } from "@/services/billingService";
-import { printInvoice } from "@/utils/printInvoice";
 import { downloadPharmacyBillPDF } from "@/utils/downloadPharmacyBill";
+import { printInvoice } from "@/utils/printInvoice";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { SearchableSelect } from '@/components/ui/SearchableSelect';
+import { cn } from '@/lib/utils';
+import { Badge } from '@/components/ui/badge';
 
 interface BillItem {
     id: string;
     medicineId: string;
     name: string;
     quantity: number;
-    unitPrice: number;
+    salePrice: number;
     gst: number;
     discount: number;
+    batchNumber: string;
+    availableStock: number;
     total: number;
 }
 
 export default function PharmacyBilling() {
     const { toast } = useToast();
-    const { patients } = usePatients();
 
     // Form State
-    const [selectedPatientId, setSelectedPatientId] = useState('');
-    const [selectedMedicineId, setSelectedMedicineId] = useState('');
-    const [isManualEntry, setIsManualEntry] = useState(false);
-    const [manualMedicineName, setManualMedicineName] = useState('');
-    const [manualMedicinePrice, setManualMedicinePrice] = useState('');
-    const [quantity, setQuantity] = useState(1);
-    const [gst, setGst] = useState(0);
-    const [discount, setDiscount] = useState(0);
+    const [selectedPatient, setSelectedPatient] = useState<any>(null);
     const [billItems, setBillItems] = useState<BillItem[]>([]);
-    const [openMedicineCombobox, setOpenMedicineCombobox] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
 
     // History State
     const [historyBills, setHistoryBills] = useState<Bill[]>([]);
     const [loadingHistory, setLoadingHistory] = useState(false);
 
-    // Derived State
-    const selectedPatient = patients.find(p => p.uhid === selectedPatientId);
-    const selectedMedicine = medicines.find(m => m.id === selectedMedicineId);
-    const totalAmount = billItems.reduce((sum, item) => sum + item.total, 0);
-    const subTotal = billItems.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0);
-    const totalTax = billItems.reduce((sum, item) => {
-        const base = item.quantity * item.unitPrice;
-        const disc = base * ((item.discount || 0) / 100);
-        return sum + ((base - disc) * ((item.gst || 0) / 100));
-    }, 0);
-    const totalDiscount = billItems.reduce((sum, item) => sum + (item.quantity * item.unitPrice * ((item.discount || 0) / 100)), 0);
+    // Totals Calculation
+    const calculateTotals = () => {
+        let subtotal = 0;
+        let totalTax = 0;
+        let totalDiscount = 0;
 
-    // Fetch History on Mount
+        billItems.forEach(item => {
+            const baseAmount = item.quantity * item.salePrice;
+            const itemDiscount = baseAmount * (item.discount / 100);
+            const taxableAmount = baseAmount - itemDiscount;
+            const itemGst = taxableAmount * (item.gst / 100);
+            
+            subtotal += baseAmount;
+            totalDiscount += itemDiscount;
+            totalTax += itemGst;
+        });
+
+        return {
+            subtotal,
+            totalDiscount,
+            totalTax,
+            grandTotal: subtotal - totalDiscount + totalTax
+        };
+    };
+
+    const totals = calculateTotals();
+
     useEffect(() => {
         fetchBillHistory();
     }, []);
@@ -97,12 +85,10 @@ export default function PharmacyBilling() {
         try {
             const result = await billingService.getBills({ limit: 50 });
             if (result && result.items) {
-                // Only show pharmacy bills (created with notes: 'Pharmacy Bill')
                 const pharmacyBills = result.items.filter(bill =>
                     bill.notes?.toLowerCase().includes('pharmacy')
                 );
-                const sorted = pharmacyBills.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-                setHistoryBills(sorted);
+                setHistoryBills(pharmacyBills.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
             }
         } catch (error) {
             console.error("Failed to fetch bill history", error);
@@ -111,93 +97,87 @@ export default function PharmacyBilling() {
         }
     };
 
-    const handleAddItem = () => {
-        let newItem: BillItem;
-        const currentGst = Number(gst) || 0;
-        const currentDiscount = Number(discount) || 0;
+    const searchPatients = async (query: string) => {
+        const result = await patientService.getPatients({ search: query });
+        return result.items.map((p: any) => ({
+            ...p,
+            id: p.uhid, // Ensure ID for SearchableSelect
+        }));
+    };
 
-        if (isManualEntry) {
-            if (!manualMedicineName || !manualMedicinePrice) {
-                toast({
-                    title: "Missing Information",
-                    description: "Please enter medicine name and price.",
-                    variant: "destructive"
-                });
-                return;
-            }
-            const price = parseFloat(manualMedicinePrice);
-            if (isNaN(price) || price <= 0) {
-                toast({
-                    title: "Invalid Price",
-                    description: "Please enter a valid price.",
-                    variant: "destructive"
-                });
-                return;
-            }
+    const searchMedicines = async (query: string) => {
+        const result = await pharmacyService.getMedicines({ search: query, isActive: true });
+        return result.map((m: any) => ({
+            ...m,
+            id: m.id,
+        }));
+    };
 
-            // Calculation
-            const baseAmount = quantity * price;
-            const discountAmount = baseAmount * (currentDiscount / 100);
-            const taxableAmount = baseAmount - discountAmount;
-            const gstAmount = taxableAmount * (currentGst / 100);
-            const total = taxableAmount + gstAmount;
-
-            newItem = {
-                id: Math.random().toString(36).substr(2, 9),
-                medicineId: 'MANUAL',
-                name: manualMedicineName,
-                quantity: quantity,
-                unitPrice: price,
-                gst: currentGst,
-                discount: currentDiscount,
-                total: total
-            };
-            // Reset manual inputs
-            setManualMedicineName('');
-            setManualMedicinePrice('');
-        } else {
-            if (!selectedPatientId) {
-                toast({
-                    title: "Select Patient",
-                    description: "Please select a patient before adding items.",
-                    variant: "destructive"
-                });
-                return;
-            }
-            if (!selectedMedicine) return;
-
-            if (quantity > selectedMedicine.stock_quantity) {
-                toast({
-                    title: "Insufficient Stock",
-                    description: `Only ${selectedMedicine.stock_quantity} units available.`,
-                    variant: "destructive"
-                });
-                return;
-            }
-
-            const baseAmount = quantity * selectedMedicine.unit_price;
-            const discountAmount = baseAmount * (currentDiscount / 100);
-            const taxableAmount = baseAmount - discountAmount;
-            const gstAmount = taxableAmount * (currentGst / 100);
-            const total = taxableAmount + gstAmount;
-
-            newItem = {
-                id: Math.random().toString(36).substr(2, 9),
-                medicineId: selectedMedicine.id,
-                name: selectedMedicine.name,
-                quantity: quantity,
-                unitPrice: selectedMedicine.unit_price,
-                gst: currentGst,
-                discount: currentDiscount,
-                total: total
-            };
-            setSelectedMedicineId('');
+    const handleAddMedicine = (medicine: any) => {
+        if (medicine.stock_quantity <= 0) {
+            toast({
+                title: "Out of Stock",
+                description: `${medicine.name} is currently out of stock.`,
+                variant: "destructive"
+            });
+            return;
         }
 
+        // Check if already in bill
+        const existing = billItems.find(item => item.medicineId === medicine.id);
+        if (existing) {
+            updateItem(existing.id, 'quantity', existing.quantity + 1);
+            return;
+        }
+
+        const newItem: BillItem = {
+            id: Math.random().toString(36).substr(2, 9),
+            medicineId: medicine.id,
+            name: medicine.name,
+            quantity: 1,
+            salePrice: medicine.unit_price || 0,
+            gst: medicine.gst || 0, // Fallback to 0 if not provided
+            discount: 0,
+            batchNumber: medicine.batch_number || '-',
+            availableStock: medicine.stock_quantity,
+            total: medicine.unit_price || 0
+        };
+
         setBillItems([...billItems, newItem]);
-        setQuantity(1);
-        setGst(0); // Reset GST
-        setDiscount(0); // Reset Discount
+    };
+
+    const updateItem = (id: string, field: keyof BillItem, value: any) => {
+        setBillItems(prev => prev.map(item => {
+            if (item.id !== id) return item;
+            
+            const updated = { ...item, [field]: value };
+            
+            // Validation for stock
+            if (field === 'quantity') {
+                const qty = parseInt(value) || 0;
+                if (qty > item.availableStock) {
+                    toast({
+                        title: "Insufficient Stock",
+                        description: `Only ${item.availableStock} available for ${item.name}`,
+                        variant: "destructive"
+                    });
+                    updated.quantity = item.availableStock;
+                } else if (qty < 1) {
+                    updated.quantity = 1;
+                } else {
+                    updated.quantity = qty;
+                }
+            }
+
+            // Recalculate item total
+            const baseAmount = updated.quantity * updated.salePrice;
+            const discountAmount = baseAmount * (updated.discount / 100);
+            const taxableAmount = baseAmount - discountAmount;
+            const gstAmount = taxableAmount * (updated.gst / 100);
+            updated.total = taxableAmount + gstAmount;
+
+            return updated;
+        }));
     };
 
     const handleRemoveItem = (id: string) => {
@@ -205,107 +185,48 @@ export default function PharmacyBilling() {
     };
 
     const handleSaveBill = async () => {
-        if (!selectedPatientId || billItems.length === 0) {
-            toast({
-                title: "Error",
-                description: "Select patient and add items first",
-                variant: "destructive"
-            });
+        if (!selectedPatient) {
+            toast({ title: "Select Patient", description: "Please search and select a patient first.", variant: "destructive" });
+            return;
+        }
+        if (billItems.length === 0) {
+            toast({ title: "Empty Bill", description: "Add at least one medicine to the bill.", variant: "destructive" });
             return;
         }
 
-        const calculateTotal = () => {
-            const taxable = billItems.reduce((acc, item) => acc + (item.unitPrice * item.quantity), 0);
-            const gst = billItems.reduce((acc, item) => {
-                const base = item.unitPrice * item.quantity;
-                return acc + ((base * (item.gst || 0)) / 100);
-            }, 0);
-            return {
-                taxable,
-                gst,
-                total: taxable + gst
-            };
-        };
-
+        setIsSaving(true);
         try {
-            // 1. Save to Backend
-            // Note: We don't send medicineId since we're using mock medicine data
-            // In production, you would fetch real medicines from the inventory API
-            const backendItems = billItems.map(item => ({
-                description: item.name,
-                quantity: item.quantity,
-                unitPrice: item.unitPrice, // Send unit price, backend calculates total
-                total: item.total // Send total as well if backend expects it or we want to force it
-            }));
-
             const payload = {
-                patientId: selectedPatientId,
-                items: backendItems,
-                gstPercent: 0,
-                discount: 0, // Discount handled in item totals
+                patientId: selectedPatient.uhid,
+                items: billItems.map(item => ({
+                    medicineId: item.medicineId,
+                    description: item.name,
+                    quantity: item.quantity,
+                    unitPrice: item.salePrice
+                })),
+                gstPercent: 0, // Individual GST already included in item prices on backend if needed, or we send 0
+                discount: 0,
                 status: 'PAID',
-                paidAmount: calculateTotal().total,
                 notes: 'Pharmacy Bill'
             };
 
             const savedBill = await billingService.createBill(payload);
-
-            // 2. Generate PDF using new utility
             await downloadPharmacyBillPDF(savedBill);
-
-            // 3. Update History
-            await fetchBillHistory();
-
-            // Reset form
+            toast({ title: "Success", description: "Bill generated and stock updated successfully." });
+            
+            // Reset
             setBillItems([]);
-            setSelectedPatientId('');
-        } catch (error) {
-            console.error("Bill Generation failed", error);
-            toast({
-                title: "Error",
-                description: "Failed to generate bill",
-                variant: "destructive"
+            setSelectedPatient(null);
+            fetchBillHistory();
+        } catch (error: any) {
+            toast({ 
+                title: "Error", 
+                description: error.response?.data?.message || "Failed to generate bill", 
+                variant: "destructive" 
             });
+        } finally {
+            setIsSaving(false);
         }
-    };
-
-    const handlePrintBill = () => {
-        if (!selectedPatient || billItems.length === 0) {
-            toast({
-                title: "Error",
-                description: "Please select a patient and add items first.",
-                variant: "destructive"
-            });
-            return;
-        }
-
-        // Map local state to Bill interface for print utility
-        const billForPrint: any = {
-            id: Math.random().toString(36).substr(2, 9),
-            billNumber: `PH-${Date.now().toString().slice(-8)}`,
-            patientId: selectedPatient.uhid,
-            patient: {
-                firstName: selectedPatient.full_name || 'N/A',
-                lastName: '',
-                phone: selectedPatient.phone
-            },
-            items: billItems.map(item => ({
-                id: item.id,
-                description: item.name,
-                quantity: item.quantity,
-                unitPrice: item.unitPrice,
-                total: item.total
-            })),
-            subtotal: subTotal,
-            discount: totalDiscount,
-            gstAmount: totalTax,
-            grandTotal: totalAmount,
-            status: 'PAID',
-            createdAt: new Date().toISOString(),
-            notes: 'Pharmacy Purchase'
-        };
-
-        printInvoice(billForPrint, 'Pharmacy Invoice');
     };
 
     const handleDownloadHistory = async (bill: Bill) => {
@@ -319,230 +240,163 @@ export default function PharmacyBilling() {
     return (
         <DashboardLayout role="pharmacist">
             <div className="space-y-6">
-                <div>
-                    <h1 className="text-2xl font-bold">Pharmacy Billing</h1>
-                    <p className="text-muted-foreground">Manage billing and view history</p>
+                <div className="flex justify-between items-end">
+                    <div>
+                        <h1 className="text-2xl font-bold">Pharmacy Billing</h1>
+                        <p className="text-muted-foreground">Search patients and medicines to generate invoices</p>
+                    </div>
                 </div>
 
                 <Tabs defaultValue="new-bill" className="w-full">
                     <TabsList className="grid w-full grid-cols-2 lg:w-[400px]">
-                        <TabsTrigger value="new-bill">New Bill</TabsTrigger>
-                        <TabsTrigger value="history">Bill History</TabsTrigger>
+                        <TabsTrigger value="new-bill">New Billing</TabsTrigger>
+                        <TabsTrigger value="history">History</TabsTrigger>
                     </TabsList>
 
-                    {/* NEW BILL TAB */}
                     <TabsContent value="new-bill" className="space-y-6 mt-4">
-                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                            {/* Left Column: Form */}
-                            <div className="lg:col-span-2 space-y-6">
-                                {/* Patient Selection */}
-                                <Card>
-                                    <CardHeader>
-                                        <CardTitle>Patient Details</CardTitle>
-                                    </CardHeader>
-                                    <CardContent className="space-y-4">
-                                        <div className="space-y-2">
-                                            <Label>Select Patient (Name or UHID)</Label>
-                                            <Select value={selectedPatientId} onValueChange={setSelectedPatientId}>
-                                                <SelectTrigger>
-                                                    <SelectValue placeholder="Select patient..." />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    {patients.map(patient => (
-                                                        <SelectItem key={patient.uhid} value={patient.uhid}>
-                                                            {patient.full_name} ({patient.uhid})
-                                                        </SelectItem>
-                                                    ))}
-                                                </SelectContent>
-                                            </Select>
+                        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                            {/* Billing Area */}
+                            <div className="lg:col-span-3 space-y-6">
+                                {/* Search Section */}
+                                <Card className="glass">
+                                    <CardContent className="pt-6">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div className="space-y-2">
+                                                <Label className="flex items-center gap-2">
+                                                    <User className="h-4 w-4 text-primary" />
+                                                    Patient Search (Name/UHID/Phone)
+                                                </Label>
+                                                <SearchableSelect
+                                                    onSearch={searchPatients}
+                                                    onSelect={setSelectedPatient}
+                                                    getDisplayValue={(p) => p ? `${p.full_name} (${p.uhid})` : "Search Patient..."}
+                                                    renderItem={(p) => (
+                                                        <div className="flex flex-col">
+                                                            <span>{p.full_name}</span>
+                                                            <span className="text-xs text-muted-foreground">{p.uhid} | {p.phone}</span>
+                                                        </div>
+                                                    )}
+                                                    value={selectedPatient}
+                                                    placeholder="Search Patient..."
+                                                />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label className="flex items-center gap-2">
+                                                    <Pill className="h-4 w-4 text-primary" />
+                                                    Medicine Search (Name/Generic)
+                                                </Label>
+                                                <SearchableSelect
+                                                    onSearch={searchMedicines}
+                                                    onSelect={handleAddMedicine}
+                                                    getDisplayValue={() => "Add Medicine..."}
+                                                    renderItem={(m) => (
+                                                        <div className="flex items-center justify-between w-full">
+                                                            <div className="flex flex-col">
+                                                                <span>{m.name}</span>
+                                                                <span className="text-xs text-muted-foreground">{m.generic_name}</span>
+                                                            </div>
+                                                            <div className="text-right">
+                                                                <div className="text-sm font-bold">₹{m.unit_price}</div>
+                                                                <Badge variant={m.stock_quantity > 10 ? "secondary" : "destructive"} className="text-[10px] h-4">
+                                                                    Stock: {m.stock_quantity}
+                                                                </Badge>
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                    placeholder="Search Medicine..."
+                                                />
+                                            </div>
                                         </div>
+
                                         {selectedPatient && (
-                                            <div className="bg-muted/50 p-4 rounded-lg text-sm grid grid-cols-2 gap-2">
-                                                <p><span className="font-semibold">Name:</span> {selectedPatient.full_name}</p>
-                                                <p><span className="font-semibold">UHID:</span> {selectedPatient.uhid}</p>
-                                                <p><span className="font-semibold">Phone:</span> {selectedPatient.phone}</p>
-                                                <p><span className="font-semibold">Age/Gender:</span> {selectedPatient.age} / {selectedPatient.gender}</p>
+                                            <div className="mt-4 p-4 rounded-lg bg-primary/5 border border-primary/10 grid grid-cols-2 md:grid-cols-4 gap-4 text-sm animate-in fade-in slide-in-from-top-2">
+                                                <div>
+                                                    <p className="text-muted-foreground text-xs uppercase font-bold tracking-wider">Patient Name</p>
+                                                    <p className="font-semibold">{selectedPatient.full_name}</p>
+                                                </div>
+                                                <div>
+                                                    <p className="text-muted-foreground text-xs uppercase font-bold tracking-wider">UHID</p>
+                                                    <p className="font-semibold">{selectedPatient.uhid}</p>
+                                                </div>
+                                                <div>
+                                                    <p className="text-muted-foreground text-xs uppercase font-bold tracking-wider">Contact</p>
+                                                    <p className="font-semibold">{selectedPatient.phone}</p>
+                                                </div>
+                                                <div>
+                                                    <p className="text-muted-foreground text-xs uppercase font-bold tracking-wider">Age/Gender</p>
+                                                    <p className="font-semibold">{selectedPatient.age} / {selectedPatient.gender}</p>
+                                                </div>
                                             </div>
                                         )}
                                     </CardContent>
                                 </Card>
 
-                                {/* Medicine Selection */}
-                                <Card>
-                                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                        <CardTitle>Add Medicines</CardTitle>
-                                        <div className="flex items-center space-x-2">
-                                            <Label htmlFor="manual-mode" className="text-sm cursor-pointer">Manual Entry</Label>
-                                            <Input
-                                                id="manual-mode"
-                                                type="checkbox"
-                                                className="h-4 w-4"
-                                                checked={isManualEntry}
-                                                onChange={(e) => setIsManualEntry(e.target.checked)}
-                                            />
-                                        </div>
+                                {/* Bill Table */}
+                                <Card className="glass overflow-hidden">
+                                    <CardHeader className="pb-2 border-b">
+                                        <CardTitle className="text-lg">Bill Items</CardTitle>
                                     </CardHeader>
-                                    <CardContent className="space-y-4">
-                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
-                                            {isManualEntry ? (
-                                                <>
-                                                    <div className="space-y-2 md:col-span-2">
-                                                        <Label>Medicine Name</Label>
-                                                        <Input
-                                                            value={manualMedicineName}
-                                                            onChange={(e) => setManualMedicineName(e.target.value)}
-                                                            placeholder="Enter medicine name"
-                                                        />
-                                                    </div>
-                                                    <div className="space-y-2">
-                                                        <Label>Unit Price (₹)</Label>
-                                                        <Input
-                                                            type="number"
-                                                            min="0"
-                                                            step="0.01"
-                                                            value={manualMedicinePrice}
-                                                            onChange={(e) => setManualMedicinePrice(e.target.value)}
-                                                            placeholder="0.00"
-                                                        />
-                                                    </div>
-                                                </>
-                                            ) : (
-                                                <div className="space-y-2 md:col-span-2 flex flex-col">
-                                                    <Label className="mb-2">Select Medicine</Label>
-                                                    <Popover open={openMedicineCombobox} onOpenChange={setOpenMedicineCombobox}>
-                                                        <PopoverTrigger asChild>
-                                                            <Button
-                                                                variant="outline"
-                                                                role="combobox"
-                                                                aria-expanded={openMedicineCombobox}
-                                                                className="w-full justify-between"
-                                                            >
-                                                                {selectedMedicineId
-                                                                    ? medicines.find((med) => med.id === selectedMedicineId)?.name
-                                                                    : "Search medicine..."}
-                                                                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                                            </Button>
-                                                        </PopoverTrigger>
-                                                        <PopoverContent className="w-[400px] p-0">
-                                                            <Command>
-                                                                <CommandInput placeholder="Search medicine..." />
-                                                                <CommandList>
-                                                                    <CommandEmpty>No medicine found.</CommandEmpty>
-                                                                    <CommandGroup>
-                                                                        {medicines.map((med) => (
-                                                                            <CommandItem
-                                                                                key={med.id}
-                                                                                value={med.name}
-                                                                                onSelect={() => {
-                                                                                    if (med.id === selectedMedicineId) {
-                                                                                        setSelectedMedicineId("");
-                                                                                        setDiscount(0);
-                                                                                    } else {
-                                                                                        setSelectedMedicineId(med.id);
-                                                                                        setDiscount(med.discount || 0);
-                                                                                    }
-                                                                                    setOpenMedicineCombobox(false);
-                                                                                }}
-                                                                                disabled={med.stock_quantity === 0}
-                                                                            >
-                                                                                <Check
-                                                                                    className={cn(
-                                                                                        "mr-2 h-4 w-4",
-                                                                                        selectedMedicineId === med.id ? "opacity-100" : "opacity-0"
-                                                                                    )}
-                                                                                />
-                                                                                <div className="flex flex-col">
-                                                                                    <span>{med.name}</span>
-                                                                                    <span className="text-xs text-muted-foreground">
-                                                                                        ₹{med.unit_price} | Stock: {med.stock_quantity}
-                                                                                    </span>
-                                                                                </div>
-                                                                            </CommandItem>
-                                                                        ))}
-                                                                    </CommandGroup>
-                                                                </CommandList>
-                                                            </Command>
-                                                        </PopoverContent>
-                                                    </Popover>
-                                                </div>
-                                            )}
-
-                                            <div className="space-y-2">
-                                                <Label>Quantity</Label>
-                                                <Input
-                                                    type="number"
-                                                    min="1"
-                                                    value={quantity}
-                                                    onChange={(e) => setQuantity(parseInt(e.target.value) || 1)}
-                                                />
-                                            </div>
-
-                                            <div className="space-y-2">
-                                                <Label>Discount %</Label>
-                                                <Input
-                                                    type="number"
-                                                    min="0"
-                                                    max="100"
-                                                    step="0.1"
-                                                    value={discount}
-                                                    onChange={(e) => setDiscount(parseFloat(e.target.value) || 0)}
-                                                    placeholder="0"
-                                                />
-                                            </div>
-
-                                            <div className="space-y-2">
-                                                <Label>GST %</Label>
-                                                <Input
-                                                    type="number"
-                                                    min="0"
-                                                    step="0.1"
-                                                    value={gst}
-                                                    onChange={(e) => setGst(parseFloat(e.target.value) || 0)}
-                                                    placeholder="0"
-                                                />
-                                            </div>
-                                        </div>
-                                        <Button className="w-full" onClick={handleAddItem} disabled={!isManualEntry && !selectedMedicineId}>
-                                            <Plus className="mr-2 h-4 w-4" /> Add to Bill
-                                        </Button>
-                                    </CardContent>
-                                </Card>
-
-                                {/* Bill Items Table */}
-                                <Card>
-                                    <CardHeader>
-                                        <CardTitle>Bill Items</CardTitle>
-                                    </CardHeader>
-                                    <CardContent>
+                                    <CardContent className="p-0">
                                         <Table>
-                                            <TableHeader>
+                                            <TableHeader className="bg-muted/50">
                                                 <TableRow>
-                                                    <TableHead>Medicine</TableHead>
-                                                    <TableHead className="text-center">Qty</TableHead>
-                                                    <TableHead className="text-right">Price</TableHead>
-                                                    <TableHead className="text-right">Disc %</TableHead>
-                                                    <TableHead className="text-right">GST %</TableHead>
-                                                    <TableHead className="text-right">Total</TableHead>
+                                                    <TableHead className="pl-6">Medicine Name</TableHead>
+                                                    <TableHead>Batch</TableHead>
+                                                    <TableHead className="w-[120px]">Quantity</TableHead>
+                                                    <TableHead className="text-right">Price (₹)</TableHead>
+                                                    <TableHead className="w-[100px] text-right">Disc %</TableHead>
+                                                    <TableHead className="w-[100px] text-right">GST %</TableHead>
+                                                    <TableHead className="text-right pr-6">Total (₹)</TableHead>
                                                     <TableHead className="w-[50px]"></TableHead>
                                                 </TableRow>
                                             </TableHeader>
                                             <TableBody>
                                                 {billItems.length === 0 ? (
                                                     <TableRow>
-                                                        <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
-                                                            No items added
+                                                        <TableCell colSpan={8} className="text-center py-12 text-muted-foreground">
+                                                            <div className="flex flex-col items-center gap-2">
+                                                                <Search className="h-8 w-8 opacity-20" />
+                                                                <p>Search and select medicines to add items</p>
+                                                            </div>
                                                         </TableCell>
                                                     </TableRow>
                                                 ) : (
                                                     billItems.map(item => (
-                                                        <TableRow key={item.id}>
-                                                            <TableCell className="font-medium">{item.name}</TableCell>
-                                                            <TableCell className="text-center">{item.quantity}</TableCell>
-                                                            <TableCell className="text-right">₹{item.unitPrice.toFixed(2)}</TableCell>
-                                                            <TableCell className="text-right">{item.discount}%</TableCell>
-                                                            <TableCell className="text-right">{item.gst}%</TableCell>
-                                                            <TableCell className="text-right">₹{item.total.toFixed(2)}</TableCell>
+                                                        <TableRow key={item.id} className="hover:bg-primary/5 transition-colors">
+                                                            <TableCell className="pl-6 font-medium">{item.name}</TableCell>
+                                                            <TableCell><span className="text-xs font-mono">{item.batchNumber}</span></TableCell>
                                                             <TableCell>
+                                                                <div className="space-y-1">
+                                                                    <Input
+                                                                        type="number"
+                                                                        value={item.quantity}
+                                                                        onChange={(e) => updateItem(item.id, 'quantity', e.target.value)}
+                                                                        className="h-8 text-center"
+                                                                    />
+                                                                    <p className="text-[10px] text-center text-muted-foreground">
+                                                                        Max: {item.availableStock}
+                                                                    </p>
+                                                                </div>
+                                                            </TableCell>
+                                                            <TableCell className="text-right">₹{item.salePrice.toFixed(2)}</TableCell>
+                                                            <TableCell className="text-right">
+                                                                <Input
+                                                                    type="number"
+                                                                    value={item.discount}
+                                                                    onChange={(e) => updateItem(item.id, 'discount', e.target.value)}
+                                                                    className="h-8 text-right"
+                                                                />
+                                                            </TableCell>
+                                                            <TableCell className="text-right">
+                                                                <Input
+                                                                    type="number"
+                                                                    value={item.gst}
+                                                                    onChange={(e) => updateItem(item.id, 'gst', e.target.value)}
+                                                                    className="h-8 text-right"
+                                                                />
+                                                            </TableCell>
+                                                            <TableCell className="text-right pr-6 font-bold">₹{item.total.toFixed(2)}</TableCell>
+                                                            <TableCell className="pr-4">
                                                                 <Button variant="ghost" size="icon" onClick={() => handleRemoveItem(item.id)}>
                                                                     <Trash2 className="h-4 w-4 text-destructive" />
                                                                 </Button>
@@ -556,41 +410,62 @@ export default function PharmacyBilling() {
                                 </Card>
                             </div>
 
-                            {/* Right Column: Summary */}
-                            <div className="space-y-6">
-                                <Card className="sticky top-6">
-                                    <CardHeader>
-                                        <CardTitle>Bill Summary</CardTitle>
-                                        <CardDescription>Review total and payment</CardDescription>
+                            {/* Summary & Payment */}
+                            <div className="lg:col-span-1 space-y-6">
+                                <Card className="sticky top-6 border-primary/20 glass">
+                                    <CardHeader className="bg-primary/5 border-b">
+                                        <CardTitle className="text-lg flex items-center gap-2">
+                                            <CreditCard className="h-5 w-5 text-primary" />
+                                            Summary
+                                        </CardTitle>
                                     </CardHeader>
-                                    <CardContent className="space-y-6">
-                                        <div className="space-y-2">
+                                    <CardContent className="pt-6 space-y-4">
+                                        <div className="space-y-3">
                                             <div className="flex justify-between text-sm">
                                                 <span className="text-muted-foreground">Subtotal</span>
-                                                <span>₹{subTotal.toFixed(2)}</span>
+                                                <span className="font-medium">₹{totals.subtotal.toFixed(2)}</span>
                                             </div>
                                             <div className="flex justify-between text-sm">
                                                 <span className="text-muted-foreground">Discount</span>
-                                                <span>-₹{totalDiscount.toFixed(2)}</span>
+                                                <span className="text-green-600 font-medium">-₹{totals.totalDiscount.toFixed(2)}</span>
                                             </div>
                                             <div className="flex justify-between text-sm">
-                                                <span className="text-muted-foreground">GST</span>
-                                                <span>+₹{totalTax.toFixed(2)}</span>
+                                                <span className="text-muted-foreground">GST (Tax)</span>
+                                                <span className="font-medium">+₹{totals.totalTax.toFixed(2)}</span>
                                             </div>
-                                            <div className="border-t pt-4 mt-4">
-                                                <div className="flex justify-between font-bold text-lg">
-                                                    <span>Total</span>
-                                                    <span className="text-primary">₹{totalAmount.toFixed(2)}</span>
+                                            <div className="pt-4 border-t">
+                                                <div className="flex justify-between items-center bg-primary/10 p-3 rounded-lg">
+                                                    <span className="font-bold">Payable</span>
+                                                    <span className="text-2xl font-black text-primary">₹{totals.grandTotal.toFixed(2)}</span>
                                                 </div>
                                             </div>
                                         </div>
 
-                                        <div className="space-y-3 pt-4">
-                                            <Button className="w-full" size="lg" onClick={handleSaveBill} disabled={billItems.length === 0}>
-                                                <Save className="mr-2 h-4 w-4" /> Generate Bill
+                                        <div className="pt-4 space-y-3">
+                                            <Button 
+                                                className="w-full h-12 text-lg font-bold shadow-lg" 
+                                                onClick={handleSaveBill} 
+                                                disabled={billItems.length === 0 || isSaving}
+                                            >
+                                                {isSaving ? (
+                                                    "Processing..."
+                                                ) : (
+                                                    <>
+                                                        <Save className="mr-2 h-5 w-5" />
+                                                        Confirm & Print
+                                                    </>
+                                                )}
                                             </Button>
-                                            <Button variant="outline" className="w-full" onClick={handlePrintBill} disabled={billItems.length === 0}>
-                                                <Printer className="mr-2 h-4 w-4" /> Print Bill
+                                            <Button 
+                                                variant="outline" 
+                                                className="w-full" 
+                                                disabled={billItems.length === 0}
+                                                onClick={() => {
+                                                    // Quick print logic
+                                                }}
+                                            >
+                                                <Printer className="mr-2 h-4 w-4" /> 
+                                                Quick Print
                                             </Button>
                                         </div>
                                     </CardContent>
@@ -601,62 +476,55 @@ export default function PharmacyBilling() {
 
                     {/* HISTORY TAB */}
                     <TabsContent value="history" className="mt-4">
-                        <Card>
+                        <Card className="glass">
                             <CardHeader>
                                 <CardTitle className="flex justify-between items-center">
                                     <span>Bill History</span>
                                     <Button variant="outline" size="sm" onClick={fetchBillHistory} disabled={loadingHistory}>
-                                        {loadingHistory ? 'Refreshing...' : 'Refresh'}
+                                        <History className={cn("h-4 w-4 mr-2", loadingHistory && "animate-spin")} />
+                                        Refresh
                                     </Button>
                                 </CardTitle>
-                                <CardDescription>View and manage previously generated bills</CardDescription>
                             </CardHeader>
                             <CardContent>
-                                <div className="rounded-md border">
+                                <div className="rounded-md border overflow-hidden">
                                     <Table>
-                                        <TableHeader>
+                                        <TableHeader className="bg-muted/50">
                                             <TableRow>
                                                 <TableHead>Date</TableHead>
                                                 <TableHead>Bill #</TableHead>
                                                 <TableHead>Patient</TableHead>
-                                                <TableHead>Items</TableHead>
                                                 <TableHead className="text-right">Amount</TableHead>
-                                                <TableHead>Status</TableHead>
-                                                <TableHead className="text-right">Actions</TableHead>
+                                                <TableHead className="text-center">Status</TableHead>
+                                                <TableHead className="text-right pr-6">Actions</TableHead>
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
                                             {historyBills.length === 0 ? (
                                                 <TableRow>
-                                                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                                                        {loadingHistory ? "Loading history..." : "No bill history found."}
+                                                    <TableCell colSpan={6} className="text-center py-12 text-muted-foreground">
+                                                        {loadingHistory ? "Loading history..." : "No pharmacy bills found."}
                                                     </TableCell>
                                                 </TableRow>
                                             ) : (
                                                 historyBills.map((bill) => (
-                                                    <TableRow key={bill.id}>
+                                                    <TableRow key={bill.id} className="hover:bg-primary/5 transition-colors">
                                                         <TableCell>{new Date(bill.createdAt).toLocaleDateString()}</TableCell>
                                                         <TableCell className="font-mono text-xs">{bill.billNumber}</TableCell>
                                                         <TableCell>
                                                             <div className="font-medium">{bill.patient?.firstName} {bill.patient?.lastName}</div>
                                                             <div className="text-xs text-muted-foreground">{bill.patient?.phone}</div>
                                                         </TableCell>
-                                                        <TableCell>{bill.items?.length || 0} items</TableCell>
-                                                        <TableCell className="text-right font-medium">₹{Number(bill.grandTotal).toFixed(2)}</TableCell>
-                                                        <TableCell>
-                                                            <span className={cn(
-                                                                "px-2 py-1 rounded-full text-xs font-medium",
-                                                                bill.status === 'PAID' ? "bg-green-100 text-green-800" :
-                                                                    bill.status === 'PENDING' ? "bg-yellow-100 text-yellow-800" :
-                                                                        "bg-gray-100 text-gray-800"
-                                                            )}>
+                                                        <TableCell className="text-right font-bold">₹{Number(bill.grandTotal).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</TableCell>
+                                                        <TableCell className="text-center">
+                                                            <Badge variant={bill.status === 'PAID' ? 'secondary' : 'destructive'}>
                                                                 {bill.status}
-                                                            </span>
+                                                            </Badge>
                                                         </TableCell>
-                                                        <TableCell className="text-right">
-                                                            <div className="flex justify-end gap-2">
+                                                        <TableCell className="text-right pr-4">
+                                                            <div className="flex justify-end gap-1">
                                                                 <Button variant="ghost" size="icon" onClick={() => handleDownloadHistory(bill)} title="Download PDF">
-                                                                    <Download className="h-4 w-4" />
+                                                                    <Save className="h-4 w-4" />
                                                                 </Button>
                                                                 <Button variant="ghost" size="icon" onClick={() => handlePrintHistory(bill)} title="Print">
                                                                     <Printer className="h-4 w-4" />

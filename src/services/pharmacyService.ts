@@ -3,14 +3,31 @@ import { Medicine, PharmacyOrder } from '@/types';
 import { apiCache, CACHE_TTL, getCacheKey } from '@/utils/cache';
 
 export const pharmacyService = {
-    async getMedicines(): Promise<Medicine[]> {
-        const cacheKey = getCacheKey('/pharmacy/medicines');
-        const cached = apiCache.get<Medicine[]>(cacheKey);
-        if (cached) return cached;
+    async getMedicines(params?: any): Promise<Medicine[]> {
+        const queryParams = new URLSearchParams();
+        if (params) {
+            Object.entries(params).forEach(([key, value]) => {
+                if (value !== undefined && value !== null && value !== '') {
+                    queryParams.append(key, String(value));
+                }
+            });
+        }
+        const endpoint = `/pharmacy/medicines${queryParams.toString() ? '?' + queryParams.toString() : ''}`;
+        
+        // Skip cache for search queries
+        if (!params || Object.keys(params).length === 0) {
+            const cacheKey = getCacheKey('/pharmacy/medicines');
+            const cached = apiCache.get<Medicine[]>(cacheKey);
+            if (cached) return cached;
+        }
 
-        const response: any = await api.get('/pharmacy/medicines');
+        const response: any = await api.get(endpoint);
         const result = Array.isArray(response) ? response : (response.items || response.data || []);
-        apiCache.set(cacheKey, result, CACHE_TTL.MEDICINES);
+        
+        if (!params || Object.keys(params).length === 0) {
+            const cacheKey = getCacheKey('/pharmacy/medicines');
+            apiCache.set(cacheKey, result, CACHE_TTL.MEDICINES);
+        }
         return result;
     },
 
@@ -19,17 +36,33 @@ export const pharmacyService = {
         genericName?: string;
         manufacturer?: string;
         category?: string;
-        pricePerUnit: number;
-        stockQuantity?: number;
-        reorderLevel?: number;
-        expiryDate?: string;
-        batchNumber?: string;
+        distributorName: string;
+        batchNumber: string;
+        manufacturingDate?: string;
+        expiryDate: string;
+        purchasePrice: number;
+        salePrice: number;
+        mrp?: number;
         gst?: number;
+        stockQuantity: number;
+        reorderLevel: number;
+        invoiceNumber?: string;
+        amountPaid?: number;
+        paymentDate?: string;
+        paymentMethod?: string;
     }): Promise<Medicine> {
         // Invalidate cache after creation
         apiCache.invalidate('/pharmacy/medicines');
         const response: any = await api.post('/pharmacy/medicines', medicine);
         return response;
+    },
+
+    async getPurchases(params?: any): Promise<any> {
+        return api.get('/pharmacy/purchases', { params });
+    },
+
+    async getDistributorReport(): Promise<any> {
+        return api.get('/pharmacy/distributor-report');
     },
 
     async deleteMedicine(id: string): Promise<any> {
@@ -70,6 +103,29 @@ export const pharmacyService = {
     async deleteBill(id: string): Promise<any> {
         apiCache.invalidate('/pharmacy/bills');
         return api.delete(`/pharmacy/bills/${id}`);
+    },
+
+    async processReturn(data: any) {
+        const response: any = await api.post('/pharmacy/returns', data);
+        return response.data;
+    },
+
+    async getReturns(params: any) {
+        const response: any = await api.get('/pharmacy/returns', { params });
+        return response.data;
+    },
+
+    async processStockReturn(data: any) {
+        const response: any = await api.post('/pharmacy/stock-returns', data);
+        return response.data;
+    },
+
+    async getStockReturns(params: any) {
+        const response: any = await api.get('/pharmacy/stock-returns', { params });
+        return response.data;
+    },
+    
+    async getMarginReport(params: { startDate?: string; endDate?: string }): Promise<any> {
+        return api.get('/pharmacy/margin-report', { params });
     }
 };
-

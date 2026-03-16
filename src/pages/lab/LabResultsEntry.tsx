@@ -4,12 +4,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { FileText, Save, Plus, Trash2, CheckCircle, Loader2, Upload, X } from "lucide-react";
-import { useState, useEffect } from "react";
+import { FileText, Save, Plus, Trash2, CheckCircle, Loader2, Upload, X, ChevronRight, AlertTriangle } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { useLab, LabOrder } from "@/contexts/LabContext";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 import {
     Alert,
     AlertDescription
@@ -27,6 +28,7 @@ interface TestParameter {
     normalMin?: number;
     normalMax?: number;
     flag?: 'NORMAL' | 'LOW' | 'HIGH';
+    department?: string;
 }
 
 const LabResultsEntry = () => {
@@ -41,14 +43,17 @@ const LabResultsEntry = () => {
     const [parameters, setParameters] = useState<TestParameter[]>([]);
     const [loadingParameters, setLoadingParameters] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [isReportVisible, setIsReportVisible] = useState(true);
 
     // File upload state
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [uploadProgress, setUploadProgress] = useState(false);
 
     // Filter orders that are in progress (ready for results)
-    const inProgressOrders = labOrders.filter(o => o.status === 'IN_PROGRESS');
+    const inProgressOrders = labOrders.filter(o => o.status === 'IN_PROGRESS' || o.status === 'SAMPLE_COLLECTED');
     const selectedOrder = labOrders.find(o => o.id === selectedOrderId);
+
+    const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
     useEffect(() => {
         if (orderId) {
@@ -78,16 +83,16 @@ const LabResultsEntry = () => {
                         normalMin: p.normalMin !== undefined ? p.normalMin : p.normal_min,
                         normalMax: p.normalMax !== undefined ? p.normalMax : p.normal_max,
                         value: "",
-                        flag: "NORMAL"
+                        flag: "NORMAL",
+                        department: p.department || response.department || "General"
                     })));
                 } else {
-                    // Fallback to empty if no parameters defined
-                    setParameters([{ name: "", value: "", unit: "", normalRange: "" }]);
+                    setParameters([{ name: "", value: "", unit: "", normalRange: "", department: "General" }]);
                 }
             } catch (error: any) {
                 console.error("Failed to fetch parameters", error);
-                setError(error.message || "Failed to load test parameters. The database might be missing templates for this test.");
-                setParameters([{ name: "", value: "", unit: "", normalRange: "" }]);
+                setError(error.message || "Failed to load test parameters.");
+                setParameters([{ name: "", value: "", unit: "", normalRange: "", department: "General" }]);
             } finally {
                 setLoadingParameters(false);
             }
@@ -96,29 +101,48 @@ const LabResultsEntry = () => {
         fetchParameters();
     }, [selectedOrderId]);
 
-    const calculateFlag = (value: string, min?: number, max?: number): 'NORMAL' | 'LOW' | 'HIGH' => {
+    const parseRange = (rangeStr: string) => {
+        if (!rangeStr) return { min: undefined, max: undefined };
+        const parts = rangeStr.split('-').map(s => parseFloat(s.trim()));
+        if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
+            return { min: parts[0], max: parts[1] };
+        }
+        return { min: undefined, max: undefined };
+    };
+
+    const calculateFlag = (value: string, rangeStr: string, min?: number, max?: number): 'NORMAL' | 'LOW' | 'HIGH' => {
         const numValue = parseFloat(value);
-        if (isNaN(numValue) || min === undefined || max === undefined) return 'NORMAL';
-        if (numValue < min) return 'LOW';
-        if (numValue > max) return 'HIGH';
+        if (isNaN(numValue)) return 'NORMAL';
+        
+        let targetMin = min;
+        let targetMax = max;
+
+        if (targetMin === undefined || targetMax === undefined) {
+            const parsed = parseRange(rangeStr);
+            targetMin = parsed.min;
+            targetMax = parsed.max;
+        }
+
+        if (targetMin === undefined || targetMax === undefined) return 'NORMAL';
+        if (numValue < targetMin) return 'LOW';
+        if (numValue > targetMax) return 'HIGH';
         return 'NORMAL';
     };
 
     const updateParameter = (index: number, value: string) => {
         const updated = [...parameters];
         updated[index].value = value;
-        updated[index].flag = calculateFlag(value, updated[index].normalMin, updated[index].normalMax);
+        updated[index].flag = calculateFlag(value, updated[index].normalRange, updated[index].normalMin, updated[index].normalMax);
         setParameters(updated);
     };
 
     const handleKeyDown = (e: React.KeyboardEvent, index: number) => {
         if (e.key === 'Enter') {
             e.preventDefault();
-            const nextInput = document.querySelector(`input[data-index="${index + 1}"]`) as HTMLInputElement;
+            const nextInput = inputRefs.current[index + 1];
             if (nextInput) {
                 nextInput.focus();
             } else {
-                // If it's the last one, maybe focus the interpretation or submit?
                 const textarea = document.querySelector('textarea') as HTMLTextAreaElement;
                 if (textarea) textarea.focus();
             }
@@ -128,7 +152,6 @@ const LabResultsEntry = () => {
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
             const file = e.target.files[0];
-            // Validate file size (5MB)
             if (file.size > 5 * 1024 * 1024) {
                 toast.error("File size must be less than 5MB");
                 return;
@@ -143,7 +166,6 @@ const LabResultsEntry = () => {
             return;
         }
 
-        // Validate at least one parameter OR a file
         const validParams = parameters.filter(p => p.name.trim() && p.value.trim());
         if (validParams.length === 0 && !selectedFile) {
             toast.error("Please enter at least one test parameter or upload a result document");
@@ -154,7 +176,6 @@ const LabResultsEntry = () => {
         try {
             const attachments: string[] = [];
 
-            // Upload file if selected
             if (selectedFile) {
                 setUploadProgress(true);
                 const uploadResponse = await uploadFile(selectedFile);
@@ -175,14 +196,14 @@ const LabResultsEntry = () => {
                     })),
                 },
                 interpretation: interpretation || undefined,
-                attachments: attachments.length > 0 ? attachments : undefined
-            });
+                attachments: attachments.length > 0 ? attachments : undefined,
+                isReportVisibleToPatient: isReportVisible
+            } as any);
 
-            toast.success("Lab result submitted successfully! Order marked as COMPLETED.");
-            // Refresh and reset
+            toast.success("Lab result submitted successfully!");
             await fetchLabOrders();
             setSelectedOrderId("");
-            setParameters([{ name: "", value: "", unit: "", normalRange: "" }]);
+            setParameters([{ name: "", value: "", unit: "", normalRange: "", department: "General" }]);
             setInterpretation("");
             setSelectedFile(null);
             navigate('/lab/pending-tests');
@@ -194,235 +215,290 @@ const LabResultsEntry = () => {
         }
     };
 
+    // Group parameters by department
+    const groups = parameters.reduce((acc, p) => {
+        const dept = p.department || "General";
+        if (!acc[dept]) acc[dept] = [];
+        acc[dept].push(p);
+        return acc;
+    }, {} as Record<string, TestParameter[]>);
+
     return (
         <DashboardLayout role="lab_technician">
-            <div className="space-y-6">
-                <div>
-                    <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
-                        <FileText className="h-8 w-8" />
-                        Results Entry
-                    </h1>
-                    <p className="text-muted-foreground mt-1">Enter and submit lab test results</p>
+            <div className="space-y-6 max-w-[1200px] mx-auto">
+                <div className="flex justify-between items-end">
+                    <div>
+                        <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2 text-slate-900">
+                            <FileText className="h-8 w-8 text-blue-600" />
+                            Lab Results Entry
+                        </h1>
+                        <p className="text-muted-foreground mt-1 text-base">Enter observed values from machine output</p>
+                    </div>
+                    {selectedOrder && (
+                        <div className="flex items-center gap-4 bg-blue-50 px-4 py-2 rounded-lg border border-blue-100">
+                            <div className="text-sm font-medium text-blue-900">
+                                Patient: <span className="font-bold">{selectedOrder.patient.firstName} {selectedOrder.patient.lastName}</span>
+                            </div>
+                            <div className="h-4 w-px bg-blue-200"></div>
+                            <div className="text-sm font-medium text-blue-900">
+                                Test: <span className="font-bold">{selectedOrder.testName}</span>
+                            </div>
+                        </div>
+                    )}
                 </div>
 
-                <div className="grid gap-6 lg:grid-cols-3">
-                    {/* Order Selection */}
-                    <Card className="lg:col-span-1">
-                        <CardHeader>
-                            <CardTitle>Select Order</CardTitle>
-                            <CardDescription>Choose an order to enter results</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            {loading ? (
-                                <div className="flex items-center justify-center h-20">
-                                    <Loader2 className="h-6 w-6 animate-spin" />
-                                </div>
-                            ) : inProgressOrders.length === 0 ? (
-                                <div className="text-center py-8 text-muted-foreground">
-                                    <CheckCircle className="h-12 w-12 mx-auto mb-4 text-green-500" />
-                                    <p>No orders ready for results entry</p>
-                                    <p className="text-sm">Process orders from the Pending Tests queue first</p>
-                                </div>
-                            ) : (
-                                <div className="space-y-4">
-                                    <Label>Pending Lab Orders</Label>
-                                    <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2">
+                <div className="grid gap-6 lg:grid-cols-4">
+                    {/* Left Sidebar: Select Order */}
+                    <div className="lg:col-span-1 space-y-6">
+                        <Card className="shadow-sm border-slate-200">
+                            <CardHeader className="pb-3 bg-slate-50/50">
+                                <CardTitle className="text-base">Pending Orders</CardTitle>
+                            </CardHeader>
+                            <CardContent className="p-0">
+                                {loading ? (
+                                    <div className="flex items-center justify-center h-32">
+                                        <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
+                                    </div>
+                                ) : inProgressOrders.length === 0 ? (
+                                    <div className="text-center py-10 text-muted-foreground">
+                                        <CheckCircle className="h-10 w-10 mx-auto mb-3 text-green-500 opacity-50" />
+                                        <p className="text-sm">No pending tests</p>
+                                    </div>
+                                ) : (
+                                    <div className="divide-y max-h-[600px] overflow-y-auto">
                                         {inProgressOrders.map((order) => (
                                             <div
                                                 key={order.id}
                                                 onClick={() => setSelectedOrderId(order.id)}
-                                                className={`p-3 rounded-lg border cursor-pointer transition-colors hover:bg-muted/50 ${selectedOrderId === order.id ? 'border-primary bg-primary/5 ring-1 ring-primary' : 'bg-card'
+                                                className={`p-4 cursor-pointer transition-all hover:bg-blue-50/50 ${selectedOrderId === order.id ? 'bg-blue-50 border-l-4 border-l-blue-600 shadow-inner' : 'bg-white'
                                                     }`}
                                             >
                                                 <div className="flex justify-between items-start mb-1">
-                                                    <span className="font-semibold text-sm">{order.patient.firstName} {order.patient.lastName}</span>
-                                                    <Badge variant={order.priority === 'urgent' ? 'destructive' : 'secondary'} className="text-[10px] h-4">
-                                                        {order.priority.toUpperCase()}
+                                                    <span className={`text-sm font-semibold ${selectedOrderId === order.id ? 'text-blue-900' : 'text-slate-700'}`}>
+                                                        {order.patient.firstName} {order.patient.lastName}
+                                                    </span>
+                                                    <Badge variant={order.priority === 'urgent' ? 'destructive' : 'secondary'} className="text-[10px] px-1 h-4 uppercase">
+                                                        {order.priority}
                                                     </Badge>
                                                 </div>
-                                                <div className="text-xs text-muted-foreground truncate">{order.testName}</div>
-                                                <div className="text-[10px] text-muted-foreground mt-2 flex justify-between">
+                                                <div className="text-xs text-muted-foreground font-medium">{order.testName}</div>
+                                                <div className="flex justify-between mt-2 text-[10px] text-slate-400">
                                                     <span>{new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                                                     <span>#{order.id.slice(-4).toUpperCase()}</span>
                                                 </div>
                                             </div>
                                         ))}
                                     </div>
-                                </div>
-                            )}
+                                )}
+                            </CardContent>
+                        </Card>
 
-                            {selectedOrder && (
-                                <div className="mt-6 p-4 bg-muted/50 rounded-lg space-y-3 border">
-                                    <h4 className="font-medium text-sm border-b pb-2">Order Details</h4>
-                                    <div className="grid grid-cols-2 gap-2 text-xs">
-                                        <span className="text-muted-foreground">Patient:</span>
-                                        <span className="font-medium text-right">{selectedOrder.patient.firstName} {selectedOrder.patient.lastName}</span>
-                                        <span className="text-muted-foreground">Test:</span>
-                                        <span className="font-medium text-right">{selectedOrder.testName}</span>
-                                        <span className="text-muted-foreground">ID:</span>
-                                        <span className="font-medium text-right">#{selectedOrder.id.slice(-6).toUpperCase()}</span>
+                        {selectedOrder && (
+                            <Card className="shadow-sm border-slate-200 overflow-hidden">
+                                <CardHeader className="pb-3 bg-slate-50/50">
+                                    <CardTitle className="text-base">Report Settings</CardTitle>
+                                </CardHeader>
+                                <CardContent className="p-4 space-y-4">
+                                    <div className="flex items-center justify-between">
+                                        <div className="space-y-0.5">
+                                            <Label className="text-sm">Visible to Patient</Label>
+                                            <p className="text-[10px] text-muted-foreground">Show report in patient portal</p>
+                                        </div>
+                                        <Switch 
+                                            checked={isReportVisible}
+                                            onCheckedChange={setIsReportVisible}
+                                        />
                                     </div>
-                                    {selectedOrder.notes && (
-                                        <div className="pt-2 border-t mt-2">
-                                            <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Doctor Notes:</span>
-                                            <p className="text-xs mt-1 text-muted-foreground italic">"{selectedOrder.notes}"</p>
+                                    <div className="pt-4 border-t">
+                                        <Label className="text-sm mb-2 block">Optional PDF Upload</Label>
+                                        {selectedFile ? (
+                                            <div className="flex items-center justify-between p-2 bg-slate-50 border rounded text-xs">
+                                                <span className="truncate flex-1 mr-2">{selectedFile.name}</span>
+                                                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setSelectedFile(null)}>
+                                                    <X className="h-3 w-3" />
+                                                </Button>
+                                            </div>
+                                        ) : (
+                                            <div className="relative">
+                                                <Button variant="outline" size="sm" className="w-full text-xs h-8">
+                                                    <Upload className="h-3 w-3 mr-2" /> Upload Report
+                                                </Button>
+                                                <Input
+                                                    type="file"
+                                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                                    onChange={handleFileChange}
+                                                    accept=".pdf,.jpg,.jpeg,.png"
+                                                />
+                                            </div>
+                                        )}
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        )}
+                    </div>
+
+                    {/* Main Content: Results Entry Table */}
+                    <div className="lg:col-span-3 space-y-6">
+                        {!selectedOrderId ? (
+                            <Card className="h-full border-dashed flex flex-col items-center justify-center p-12 text-center bg-slate-50/30">
+                                <div className="h-16 w-16 bg-blue-100 rounded-full flex items-center justify-center mb-4">
+                                    <ChevronRight className="h-8 w-8 text-blue-600" />
+                                </div>
+                                <h3 className="text-xl font-semibold text-slate-900">Get Started</h3>
+                                <p className="text-muted-foreground mt-2 max-w-sm">
+                                    Select an order from the sidebar to begin entering machine-generated test results.
+                                </p>
+                            </Card>
+                        ) : (
+                            <Card className="shadow-md border-slate-200 overflow-hidden min-h-[500px] flex flex-col">
+                                <CardHeader className="bg-slate-900 text-white pb-6 pt-6">
+                                    <div className="flex justify-between items-center">
+                                        <div>
+                                            <CardTitle className="text-xl">Observed Values Entry</CardTitle>
+                                            <CardDescription className="text-slate-400">
+                                                Enter machine results. Use [Enter] to move to the next field.
+                                            </CardDescription>
+                                        </div>
+                                        <div className="text-right">
+                                            <div className="text-xs uppercase tracking-widest text-slate-500 font-bold mb-1">Standard Reference</div>
+                                            <Badge variant="outline" className="text-white border-slate-700 bg-slate-800">
+                                                {selectedOrder?.patient.firstName}'s History
+                                            </Badge>
+                                        </div>
+                                    </div>
+                                </CardHeader>
+                                <CardContent className="p-0 flex-1 flex flex-col">
+                                    {loadingParameters ? (
+                                        <div className="flex-1 flex flex-col items-center justify-center py-20">
+                                            <Loader2 className="h-10 w-10 animate-spin text-blue-600 mb-4" />
+                                            <p className="text-slate-500 animate-pulse">Loading test parameters from catalog...</p>
+                                        </div>
+                                    ) : error ? (
+                                        <div className="p-6">
+                                            <Alert variant="destructive" className="bg-red-50">
+                                                <AlertTriangle className="h-4 w-4" />
+                                                <AlertDescription className="ml-2 font-medium">{error}</AlertDescription>
+                                            </Alert>
+                                        </div>
+                                    ) : (
+                                        <div className="flex-1 overflow-auto">
+                                            <Table className="border-b">
+                                                <TableHeader className="bg-slate-50 sticky top-0 z-10">
+                                                    <TableRow className="hover:bg-transparent">
+                                                        <TableHead className="w-[30%] font-bold text-slate-700">Test Parameter</TableHead>
+                                                        <TableHead className="w-[20%] font-bold text-slate-700">Observed Value</TableHead>
+                                                        <TableHead className="w-[15%] font-bold text-slate-700">Unit</TableHead>
+                                                        <TableHead className="w-[25%] font-bold text-slate-700">Reference Range</TableHead>
+                                                        <TableHead className="w-[10%] text-right font-bold text-slate-700">Flag</TableHead>
+                                                    </TableRow>
+                                                </TableHeader>
+                                                <TableBody>
+                                                    {Object.entries(groups).map(([dept, deptParams]) => (
+                                                        <React.Fragment key={dept}>
+                                                            <TableRow className="bg-slate-100/50 hover:bg-slate-100/50 border-y-2 border-slate-200">
+                                                                <TableCell colSpan={5} className="py-2.5 font-bold text-slate-900 text-xs uppercase tracking-wider bg-slate-100">
+                                                                    {dept}
+                                                                </TableCell>
+                                                            </TableRow>
+                                                            {deptParams.map((param, index) => {
+                                                                const globalIndex = parameters.indexOf(param);
+                                                                return (
+                                                                    <TableRow key={globalIndex} className={`group ${param.flag !== 'NORMAL' ? 'bg-orange-50/30' : ''}`}>
+                                                                        <TableCell className="font-medium text-slate-700 py-3">{param.name}</TableCell>
+                                                                        <TableCell>
+                                                                            <Input
+                                                                                ref={el => inputRefs.current[globalIndex] = el}
+                                                                                className={`h-9 font-bold text-base transition-all ${
+                                                                                    param.flag === 'HIGH' ? 'border-red-500 bg-red-50 focus-visible:ring-red-500 text-red-900' :
+                                                                                    param.flag === 'LOW' ? 'border-orange-500 bg-orange-50 focus-visible:ring-orange-500 text-orange-900' : 
+                                                                                    'focus-visible:ring-blue-600 text-slate-900'
+                                                                                }`}
+                                                                                placeholder="0.0"
+                                                                                value={param.value}
+                                                                                onChange={(e) => updateParameter(globalIndex, e.target.value)}
+                                                                                onKeyDown={(e) => handleKeyDown(e, globalIndex)}
+                                                                                autoFocus={globalIndex === 0}
+                                                                            />
+                                                                        </TableCell>
+                                                                        <TableCell className="text-slate-500 text-sm italic">{param.unit}</TableCell>
+                                                                        <TableCell className="text-slate-600 text-sm font-medium">{param.normalRange}</TableCell>
+                                                                        <TableCell className="text-right">
+                                                                            {param.value && (
+                                                                                <Badge
+                                                                                    variant={param.flag === 'NORMAL' ? 'secondary' : 'destructive'}
+                                                                                    className={`text-[10px] font-bold px-1.5 py-0 ${
+                                                                                        param.flag === 'NORMAL' ? 'bg-green-100 text-green-700' :
+                                                                                        param.flag === 'LOW' ? 'bg-orange-100 text-orange-700 border-orange-200' : 
+                                                                                        'bg-red-100 text-red-700 border-red-200'
+                                                                                    }`}
+                                                                                >
+                                                                                    {param.flag}
+                                                                                </Badge>
+                                                                            )}
+                                                                        </TableCell>
+                                                                    </TableRow>
+                                                                );
+                                                            })}
+                                                        </React.Fragment>
+                                                    ))}
+                                                </TableBody>
+                                            </Table>
                                         </div>
                                     )}
-                                </div>
-                            )}
-                        </CardContent>
-                    </Card>
 
-                    {/* Results Entry Form */}
-                    <Card className="lg:col-span-2">
-                        <CardHeader>
-                            <CardTitle>Test Parameters & Report</CardTitle>
-                            <CardDescription>Enter values or upload result document</CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-6">
-
-                            {/* File Upload Section */}
-                            <div className="border-2 border-dashed border-input rounded-lg p-6 flex flex-col items-center justify-center bg-muted/30">
-                                {selectedFile ? (
-                                    <div className="w-full flex items-center justify-between p-3 bg-background border rounded-md">
-                                        <div className="flex items-center gap-3 overflow-hidden">
-                                            <div className="h-10 w-10 bg-primary/10 rounded flex items-center justify-center flex-shrink-0">
-                                                <FileText className="h-5 w-5 text-primary" />
-                                            </div>
-                                            <div className="truncate">
-                                                <p className="text-sm font-medium truncate">{selectedFile.name}</p>
-                                                <p className="text-xs text-muted-foreground">{(selectedFile.size / 1024).toFixed(1)} KB</p>
-                                            </div>
-                                        </div>
-                                        <Button variant="ghost" size="icon" onClick={() => setSelectedFile(null)}>
-                                            <X className="h-4 w-4" />
-                                        </Button>
-                                    </div>
-                                ) : (
-                                    <div className="text-center">
-                                        <div className="h-12 w-12 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-3">
-                                            <Upload className="h-6 w-6 text-primary" />
-                                        </div>
-                                        <h3 className="text-lg font-semibold mb-1">Upload Report Document</h3>
-                                        <p className="text-sm text-muted-foreground mb-4">
-                                            Drag and drop or click to upload PDF/Image
-                                        </p>
-                                        <div className="relative">
-                                            <Button variant="outline">Choose File</Button>
-                                            <Input
-                                                type="file"
-                                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                                                onChange={handleFileChange}
-                                                accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                                    <div className="p-6 bg-slate-50 border-t space-y-4">
+                                        <div>
+                                            <Label className="text-sm font-bold text-slate-700">Clinical Interpretation / Lab Comments</Label>
+                                            <Textarea
+                                                placeholder="Add diagnostic comments or interpretation here..."
+                                                value={interpretation}
+                                                onChange={(e) => setInterpretation(e.target.value)}
+                                                rows={3}
+                                                className="mt-2 bg-white resize-none focus-visible:ring-blue-600 border-slate-300"
                                             />
                                         </div>
-                                    </div>
-                                )}
-                            </div>
 
-                            <div className="space-y-4">
-                                <Label className="text-base">Test Parameters</Label>
-                                {loadingParameters ? (
-                                    <div className="flex items-center justify-center py-10 border rounded-lg">
-                                        <Loader2 className="h-6 w-6 animate-spin mr-2" />
-                                        <span>Loading test parameters...</span>
+                                        <div className="flex justify-between items-center pt-2">
+                                            <div className="text-xs text-muted-foreground flex items-center gap-2">
+                                                <Badge variant="outline" className="bg-white text-slate-400 border-slate-200 font-normal">
+                                                    Esc: Reset
+                                                </Badge>
+                                                <Badge variant="outline" className="bg-white text-slate-400 border-slate-200 font-normal">
+                                                    Ent: Next
+                                                </Badge>
+                                            </div>
+                                            <div className="flex gap-3">
+                                                <Button 
+                                                    variant="ghost" 
+                                                    className="text-slate-500 hover:text-slate-700"
+                                                    onClick={() => navigate('/lab/pending-tests')}
+                                                >
+                                                    Discard
+                                                </Button>
+                                                <Button
+                                                    onClick={handleSubmit}
+                                                    disabled={submitting || !selectedOrderId}
+                                                    className="bg-blue-600 hover:bg-blue-700 text-white min-w-[140px] shadow-md shadow-blue-200"
+                                                >
+                                                    {submitting ? (
+                                                        <>
+                                                            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                                            {uploadProgress ? "Uploading..." : "Saving..."}
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <Save className="h-4 w-4 mr-2" />
+                                                            Submit Results
+                                                        </>
+                                                    )}
+                                                </Button>
+                                            </div>
+                                        </div>
                                     </div>
-                                ) : error ? (
-                                    <Alert variant="destructive">
-                                        <AlertDescription>
-                                            {error}
-                                        </AlertDescription>
-                                    </Alert>
-                                ) : !selectedOrderId ? (
-                                    <Alert>
-                                        <AlertDescription>
-                                            Please select a lab order to enter parameters.
-                                        </AlertDescription>
-                                    </Alert>
-                                ) : (
-                                    <div className="border rounded-md">
-                                        <Table>
-                                            <TableHeader>
-                                                <TableRow>
-                                                    <TableHead className="w-[200px]">Parameter</TableHead>
-                                                    <TableHead className="w-[150px]">Result</TableHead>
-                                                    <TableHead>Unit</TableHead>
-                                                    <TableHead>Normal Range</TableHead>
-                                                    <TableHead className="text-right">Status</TableHead>
-                                                </TableRow>
-                                            </TableHeader>
-                                            <TableBody>
-                                                {parameters.map((param, index) => (
-                                                    <TableRow key={index}>
-                                                        <TableCell className="font-medium">{param.name}</TableCell>
-                                                        <TableCell>
-                                                            <Input
-                                                                className={`h-8 ${param.flag === 'HIGH' ? 'border-red-500 focus-visible:ring-red-500' :
-                                                                    param.flag === 'LOW' ? 'border-orange-500 focus-visible:ring-orange-500' : ''
-                                                                    }`}
-                                                                placeholder="Enter value"
-                                                                value={param.value}
-                                                                data-index={index}
-                                                                onChange={(e) => updateParameter(index, e.target.value)}
-                                                                onKeyDown={(e) => handleKeyDown(e, index)}
-                                                            />
-                                                        </TableCell>
-                                                        <TableCell className="text-muted-foreground text-sm">{param.unit}</TableCell>
-                                                        <TableCell className="text-muted-foreground text-sm">{param.normalRange}</TableCell>
-                                                        <TableCell className="text-right">
-                                                            {param.value && (
-                                                                <Badge
-                                                                    variant={param.flag === 'NORMAL' ? 'secondary' : 'destructive'}
-                                                                    className={param.flag === 'NORMAL' ? 'bg-green-100 text-green-800 hover:bg-green-100' :
-                                                                        param.flag === 'LOW' ? 'bg-orange-100 text-orange-800 hover:bg-orange-100 border-none' : ''
-                                                                    }
-                                                                >
-                                                                    {param.flag}
-                                                                </Badge>
-                                                            )}
-                                                        </TableCell>
-                                                    </TableRow>
-                                                ))}
-                                            </TableBody>
-                                        </Table>
-                                    </div>
-                                )}
-                            </div>
-
-                            <div className="pt-4 border-t">
-                                <Label>Interpretation / Comments (Optional)</Label>
-                                <Textarea
-                                    placeholder="Enter clinical interpretation or additional comments..."
-                                    value={interpretation}
-                                    onChange={(e) => setInterpretation(e.target.value)}
-                                    rows={3}
-                                    className="mt-2"
-                                />
-                            </div>
-
-                            <div className="flex justify-end gap-2 pt-4">
-                                <Button variant="outline" onClick={() => navigate('/lab/pending-tests')}>
-                                    Cancel
-                                </Button>
-                                <Button
-                                    onClick={handleSubmit}
-                                    disabled={submitting || !selectedOrderId}
-                                >
-                                    {submitting ? (
-                                        <>
-                                            <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                                            {uploadProgress ? "Uploading File..." : "Submitting..."}
-                                        </>
-                                    ) : (
-                                        <>
-                                            <Save className="h-4 w-4 mr-2" />
-                                            Submit Results
-                                        </>
-                                    )}
-                                </Button>
-                            </div>
-                        </CardContent>
-                    </Card>
+                                </CardContent>
+                            </Card>
+                        )}
+                    </div>
                 </div>
             </div>
         </DashboardLayout>

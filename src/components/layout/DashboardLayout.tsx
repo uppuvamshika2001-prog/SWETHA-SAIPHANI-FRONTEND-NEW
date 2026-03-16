@@ -36,6 +36,8 @@ import {
     MapPin,
     ChevronDown,
     Package,
+    RotateCcw,
+    TrendingUp,
 } from 'lucide-react';
 import {
     Collapsible,
@@ -115,9 +117,14 @@ const getNavItems = (role: AppRole, basePath: string): NavItem[] => {
                 ...baseItems,
                 { title: 'Pending Orders', href: `${basePath}/orders`, icon: <ClipboardList className="h-5 w-5" /> },
                 { title: 'Inventory', href: `${basePath}/inventory`, icon: <Pill className="h-5 w-5" /> },
+                { title: 'Distributor Payments', href: `${basePath}/purchases`, icon: <IndianRupee className="h-5 w-5" /> },
                 { title: 'Dispensing', href: `${basePath}/dispensing`, icon: <Package className="h-5 w-5" /> },
                 { title: 'Billing', href: `${basePath}/billing`, icon: <IndianRupee className="h-5 w-5" /> },
+                { title: 'Medicine Returns', href: `${basePath}/returns`, icon: <RotateCcw className="h-5 w-5" /> },
+                { title: 'Stock Returns', href: `${basePath}/stock-returns`, icon: <RotateCcw className="h-5 w-5" /> },
                 { title: 'Low Stock Alerts', href: `${basePath}/alerts`, icon: <Bell className="h-5 w-5" /> },
+                { title: 'Margin Reports', href: `${basePath}/margin-reports`, icon: <TrendingUp className="h-5 w-5" /> },
+                { title: 'Reports', href: `${basePath}/reports`, icon: <FileText className="h-5 w-5" /> },
             ];
         case 'lab_technician':
             return [

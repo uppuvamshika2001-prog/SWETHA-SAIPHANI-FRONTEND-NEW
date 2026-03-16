@@ -59,6 +59,7 @@ export interface CreateLabResultInput {
     };
     interpretation?: string;
     attachments?: string[];
+    isReportVisibleToPatient?: boolean;
 }
 
 interface LabContextType {

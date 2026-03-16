@@ -78,6 +78,10 @@ const PharmacyDispensing = lazy(() => import("./pages/pharmacy/PharmacyDispensin
 const PharmacyAlerts = lazy(() => import("./pages/pharmacy/PharmacyAlerts"));
 const PharmacyBilling = lazy(() => import("./pages/pharmacy/PharmacyBilling"));
 const PharmacySettings = lazy(() => import("./pages/pharmacy/PharmacySettings"));
+const PharmacyReturns = lazy(() => import("./pages/pharmacy/MedicineReturns"));
+const PharmacyStockReturns = lazy(() => import("./pages/pharmacy/StockReturns"));
+const MarginReports = lazy(() => import("@/pages/pharmacy/PharmacyMarginReports"));
+const DistributorPayments = lazy(() => import("@/pages/pharmacy/PharmacyDistributorPayments"));
 
 // Lab
 const LabLogin = lazy(() => import("./pages/lab/LabLogin"));
@@ -207,6 +211,10 @@ const App = () => {
                         <Route path="/pharmacy/dispensing" element={<PharmacyDispensing />} />
                         <Route path="/pharmacy/alerts" element={<PharmacyAlerts />} />
                         <Route path="/pharmacy/billing" element={<PharmacyBilling />} />
+                        <Route path="/pharmacy/returns" element={<PharmacyReturns />} />
+                        <Route path="/pharmacy/stock-returns" element={<PharmacyStockReturns />} />
+                        <Route path="/pharmacy/margin-reports" element={<MarginReports />} />
+                        <Route path="/pharmacy/purchases" element={<DistributorPayments />} />
                         <Route path="/pharmacy/profile" element={<PharmacySettings />} />
                       </Route>
 

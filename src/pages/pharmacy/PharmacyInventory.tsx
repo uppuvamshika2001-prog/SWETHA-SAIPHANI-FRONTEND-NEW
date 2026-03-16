@@ -138,10 +138,11 @@ const PharmacyInventory = () => {
                                         <TableHead>Medicine Name</TableHead>
                                         <TableHead>Category</TableHead>
                                         <TableHead>Batch No.</TableHead>
+                                        <TableHead>Distributor</TableHead>
                                         <TableHead>Stock</TableHead>
                                         <TableHead>Status</TableHead>
                                         <TableHead>Expiry</TableHead>
-                                        <TableHead className="text-right">Price</TableHead>
+                                        <TableHead className="text-right">Sale Price</TableHead>
                                         <TableHead className="text-right">Action</TableHead>
                                     </TableRow>
                                 </TableHeader>
@@ -150,10 +151,36 @@ const PharmacyInventory = () => {
                                         // Handle both snake_case (frontend type) and camelCase (backend response)
                                         const genericName = med.generic_name || (med as any).genericName || '-';
                                         const batchNumber = med.batch_number || (med as any).batchNumber || '-';
+                                        const distributor = med.distributor || (med as any).distributorName || '-';
                                         const stockQty = med.stock_quantity ?? (med as any).stockQuantity ?? 0;
-                                        const unitPrice = med.unit_price ?? (med as any).pricePerUnit ?? 0;
+                                        const salePrice = med.unit_price ?? (med as any).salePrice ?? 0;
                                         const expiryDate = med.expiry_date || (med as any).expiryDate;
                                         const status = med.status || 'in_stock';
+
+                                        const getStatusBadge = (status: string, expiry: any) => {
+                                            const now = new Date();
+                                            const expiryDate = expiry ? new Date(expiry) : null;
+                                            
+                                            if (expiryDate && expiryDate < now) {
+                                                return <Badge variant="outline" className="bg-red-100 text-red-800 border-red-200">EXPIRED</Badge>;
+                                            }
+                                            
+                                            if (expiryDate) {
+                                                const daysToExpiry = Math.ceil((expiryDate.getTime() - now.getTime()) / (1000 * 3600 * 24));
+                                                if (daysToExpiry <= 30) {
+                                                    return <Badge variant="outline" className="bg-orange-100 text-orange-800 border-orange-200">EXPIRING SOON</Badge>;
+                                                }
+                                                if (daysToExpiry <= 90) {
+                                                    return <Badge variant="outline" className="bg-yellow-100 text-yellow-800 border-yellow-200">EXPIRING (90D)</Badge>;
+                                                }
+                                            }
+
+                                            switch (status) {
+                                                case 'out_of_stock': return <Badge variant="outline" className="bg-red-100 text-red-800">OUT OF STOCK</Badge>;
+                                                case 'low_stock': return <Badge variant="outline" className="bg-yellow-100 text-yellow-800">LOW STOCK</Badge>;
+                                                default: return <Badge variant="outline" className="bg-green-100 text-green-800 border-green-200">VALID</Badge>;
+                                            }
+                                        };
 
                                         return (
                                             <TableRow key={med.id}>
@@ -165,21 +192,20 @@ const PharmacyInventory = () => {
                                                 </TableCell>
                                                 <TableCell>{med.category || '-'}</TableCell>
                                                 <TableCell className="font-mono text-xs">{batchNumber}</TableCell>
+                                                <TableCell className="text-xs">{distributor}</TableCell>
                                                 <TableCell>
                                                     <div className="flex items-center gap-2">
-                                                        <span className="font-medium">{stockQty}</span>
-                                                        <span className="text-xs text-muted-foreground">units</span>
+                                                        <span className="font-medium text-purple-700">{stockQty}</span>
+                                                        <span className="text-[10px] text-muted-foreground uppercase">{med.unit || 'units'}</span>
                                                     </div>
                                                 </TableCell>
                                                 <TableCell>
-                                                    <Badge variant="outline" className={getStatusColor(status)}>
-                                                        {status.replace('_', ' ').toUpperCase()}
-                                                    </Badge>
+                                                    {getStatusBadge(status, expiryDate)}
                                                 </TableCell>
                                                 <TableCell className="text-sm">
                                                     {expiryDate ? new Date(expiryDate).toLocaleDateString() : '-'}
                                                 </TableCell>
-                                                <TableCell className="text-right">{formatCurrency(unitPrice)}</TableCell>
+                                                <TableCell className="text-right font-medium">{formatCurrency(salePrice)}</TableCell>
                                                 <TableCell className="text-right">
                                                     <MedicineDetailsDialog
                                                         medicine={med}
