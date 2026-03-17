@@ -11,6 +11,7 @@ import { PatientProvider } from "./contexts/PatientContext";
 import { PrescriptionProvider } from "./contexts/PrescriptionContext";
 import { LabProvider } from "./contexts/LabContext";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 // Eagerly loaded pages (landing, error, common)
 import Index from "./pages/Index";
@@ -223,7 +224,7 @@ const App = () => {
                         <Route path="/lab/dashboard" element={<LabDashboard />} />
                         <Route path="/lab/pending-tests" element={<LabPendingTests />} />
                         <Route path="/lab/sample-collection" element={<LabSampleCollection />} />
-                        <Route path="/lab/results-entry" element={<LabResultsEntry />} />
+                        <Route path="/lab/results-entry" element={<ErrorBoundary><LabResultsEntry /></ErrorBoundary>} />
                         <Route path="/lab/test-catalog" element={<LabTestCatalog />} />
                         <Route path="/lab/profile" element={<LabSettings />} />
                       </Route>

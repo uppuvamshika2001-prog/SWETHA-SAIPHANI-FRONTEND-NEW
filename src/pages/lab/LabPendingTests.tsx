@@ -20,9 +20,9 @@ const LabPendingTests = () => {
 
     const { labOrders, loading, fetchLabOrders, updateOrderStatus, deleteLabOrder } = useLab();
 
-    // Filter for pending orders (including newly created orders from reception)
+    // Filter for pending orders (excluding payment pending orders as per requirement)
     const pendingOrders = labOrders.filter(order =>
-        order.status === 'PENDING' || order.status === 'ORDERED' || order.status === 'PAYMENT_PENDING' || order.status === 'READY_FOR_SAMPLE_COLLECTION' || order.status === 'SAMPLE_COLLECTED' || order.status === 'IN_PROGRESS'
+        (order.status === 'PENDING' || order.status === 'ORDERED' || order.status === 'READY_FOR_SAMPLE_COLLECTION' || order.status === 'SAMPLE_COLLECTED' || order.status === 'IN_PROGRESS')
     ).filter(order =>
         `${order.patient.firstName} ${order.patient.lastName}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
         order.id.toLowerCase().includes(searchTerm.toLowerCase()) ||

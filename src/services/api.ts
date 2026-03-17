@@ -323,6 +323,10 @@ class ApiService {
     async changePassword(data: any) {
         return this.post<void>('/auth/change-password', data);
     }
+
+    async confirmLabPayment(id: string) {
+        return this.patch<any>(`/lab/orders/${id}/confirm-payment`, {});
+    }
 }
 
 export const api = new ApiService();

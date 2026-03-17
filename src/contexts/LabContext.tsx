@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import { createContext, useContext, useState, useCallback, useEffect, ReactNode, FC } from 'react';
 import { api } from '@/services/api';
 import { useAuth } from './AuthContext';
 
@@ -74,6 +74,7 @@ interface LabContextType {
     fetchMyLabOrders: (date?: Date) => Promise<void>;
     createLabOrder: (input: CreateLabOrderInput) => Promise<LabOrder>;
     updateOrderStatus: (orderId: string, status: string) => Promise<LabOrder>;
+    confirmPayment: (orderId: string) => Promise<LabOrder>;
     deleteLabOrder: (orderId: string) => Promise<void>;
     submitResult: (input: CreateLabResultInput) => Promise<LabResult>;
     uploadFile: (file: File) => Promise<{ url: string; filename: string }>;
@@ -82,7 +83,7 @@ interface LabContextType {
 
 const LabContext = createContext<LabContextType | undefined>(undefined);
 
-export const LabProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const LabProvider: FC<{ children: ReactNode }> = ({ children }) => {
     const { user, loading: authLoading } = useAuth();
     const [labOrders, setLabOrders] = useState<LabOrder[]>([]);
     const [myLabOrders, setMyLabOrders] = useState<LabOrder[]>([]);
@@ -161,6 +162,14 @@ export const LabProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     // Update order status
     const updateOrderStatus = useCallback(async (orderId: string, status: string): Promise<LabOrder> => {
         const order = await api.patch<LabOrder>(`/lab/orders/${orderId}/status`, { status });
+        // Refresh lists
+        fetchLabOrders();
+        return order;
+    }, [fetchLabOrders]);
+
+    // Confirm lab payment
+    const confirmPayment = useCallback(async (orderId: string): Promise<LabOrder> => {
+        const order = await api.confirmLabPayment(orderId);
         // Refresh lists
         fetchLabOrders();
         return order;
@@ -249,6 +258,7 @@ export const LabProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             fetchMyLabOrders,
             createLabOrder,
             updateOrderStatus,
+            confirmPayment,
             deleteLabOrder,
             submitResult,
             uploadFile,

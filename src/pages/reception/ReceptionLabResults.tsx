@@ -20,7 +20,7 @@ import { Badge } from "@/components/ui/badge";
 
 export default function ReceptionLabResults() {
     // Receptionists view ALL lab orders, not just "my" orders
-    const { labOrders, loading, fetchLabOrders, updateOrderStatus } = useLab();
+    const { labOrders, loading, fetchLabOrders, confirmPayment } = useLab();
     const [selectedOrder, setSelectedOrder] = useState<LabOrder | null>(null);
     const [detailsOpen, setDetailsOpen] = useState(false);
     const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
@@ -62,7 +62,12 @@ export default function ReceptionLabResults() {
         {
             key: "status",
             header: "Status",
-            render: (order: LabOrder) => <StatusBadge status={order.status === 'READY_FOR_SAMPLE_COLLECTION' ? 'paid' : order.status.toLowerCase() as any} />
+            render: (order: LabOrder) => {
+                if (order.status === 'READY_FOR_SAMPLE_COLLECTION') {
+                    return <Badge variant="outline" className="bg-emerald-100 text-emerald-800 border-emerald-200">Paid</Badge>;
+                }
+                return <StatusBadge status={order.status.toLowerCase() as any} />;
+            }
         },
         {
             key: "createdAt",
@@ -83,10 +88,10 @@ export default function ReceptionLabResults() {
                             size="sm"
                             onClick={async () => {
                                 try {
-                                    await updateOrderStatus(order.id, 'READY_FOR_SAMPLE_COLLECTION');
+                                    await confirmPayment(order.id);
                                     toast.success("Payment confirmed. Order is ready for sample collection.");
-                                } catch (error) {
-                                    toast.error("Failed to confirm payment");
+                                } catch (error: any) {
+                                    toast.error(error.message || "Failed to confirm payment");
                                 }
                             }}
                         >

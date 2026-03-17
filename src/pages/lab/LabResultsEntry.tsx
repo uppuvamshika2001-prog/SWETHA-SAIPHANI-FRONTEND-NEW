@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { FileText, Save, Plus, Trash2, CheckCircle, Loader2, Upload, X, ChevronRight, AlertTriangle } from "lucide-react";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, Fragment, KeyboardEvent, ChangeEvent } from "react";
 import { toast } from "sonner";
 import { useLab, LabOrder } from "@/contexts/LabContext";
 import { useSearchParams, useNavigate } from "react-router-dom";
@@ -98,7 +98,10 @@ const LabResultsEntry = () => {
             }
         };
 
-        fetchParameters();
+        if (selectedOrderId) {
+            console.log("Selected Lab Order ID:", selectedOrderId);
+            fetchParameters();
+        }
     }, [selectedOrderId]);
 
     const parseRange = (rangeStr: string) => {
@@ -136,7 +139,7 @@ const LabResultsEntry = () => {
         setParameters(updated);
     };
 
-    const handleKeyDown = (e: React.KeyboardEvent, index: number) => {
+    const handleKeyDown = (e: KeyboardEvent, index: number) => {
         if (e.key === 'Enter') {
             e.preventDefault();
             const nextInput = inputRefs.current[index + 1];
@@ -149,7 +152,7 @@ const LabResultsEntry = () => {
         }
     };
 
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
             const file = e.target.files[0];
             if (file.size > 5 * 1024 * 1024) {
@@ -394,7 +397,7 @@ const LabResultsEntry = () => {
                                                 </TableHeader>
                                                 <TableBody>
                                                     {Object.entries(groups).map(([dept, deptParams]) => (
-                                                        <React.Fragment key={dept}>
+                                                        <Fragment key={dept}>
                                                             <TableRow className="bg-slate-100/50 hover:bg-slate-100/50 border-y-2 border-slate-200">
                                                                 <TableCell colSpan={5} className="py-2.5 font-bold text-slate-900 text-xs uppercase tracking-wider bg-slate-100">
                                                                     {dept}
@@ -439,7 +442,7 @@ const LabResultsEntry = () => {
                                                                     </TableRow>
                                                                 );
                                                             })}
-                                                        </React.Fragment>
+                                                        </Fragment>
                                                     ))}
                                                 </TableBody>
                                             </Table>

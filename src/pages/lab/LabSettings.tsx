@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect, FormEvent } from 'react';
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -35,7 +35,7 @@ export default function LabSettings() {
         }
     }, [profile]);
 
-    const handleProfileUpdate = async (e: React.FormEvent) => {
+    const handleProfileUpdate = async (e: FormEvent) => {
         e.preventDefault();
         setIsLoading(true);
         try {
@@ -58,7 +58,7 @@ export default function LabSettings() {
         }
     };
 
-    const handlePasswordChange = async (e: React.FormEvent) => {
+    const handlePasswordChange = async (e: FormEvent) => {
         e.preventDefault();
         if (newPassword !== confirmPassword) {
             toast.error("New passwords do not match");

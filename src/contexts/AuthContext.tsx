@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import { createContext, useContext, useEffect, useState, useCallback, useRef, ReactNode } from 'react';
 import { AppRole, Profile } from '@/types';
 import { api, User as ApiUser } from '@/services/api';
 
@@ -23,7 +23,7 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
+export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<any | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -31,7 +31,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   // Guard to prevent multiple bootstrap attempts
-  const bootstrapAttempted = React.useRef(false);
+  const bootstrapAttempted = useRef(false);
 
   const fetchUserProfile = useCallback(async () => {
     try {
