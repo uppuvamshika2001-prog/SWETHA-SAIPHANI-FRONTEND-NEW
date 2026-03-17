@@ -29,6 +29,14 @@ interface TestParameter {
     normalMax?: number;
     flag?: 'NORMAL' | 'LOW' | 'HIGH';
     department?: string;
+    inputType?: string;
+    options?: string[];
+}
+
+interface TestCategory {
+    id?: string;
+    name: string;
+    parameters: TestParameter[];
 }
 
 const LabResultsEntry = () => {
@@ -40,7 +48,7 @@ const LabResultsEntry = () => {
     const [submitting, setSubmitting] = useState(false);
     const [interpretation, setInterpretation] = useState("");
     const [selectedOrderId, setSelectedOrderId] = useState<string>(orderId || "");
-    const [parameters, setParameters] = useState<TestParameter[]>([]);
+    const [categories, setCategories] = useState<TestCategory[]>([]);
     const [loadingParameters, setLoadingParameters] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [isReportVisible, setIsReportVisible] = useState(true);
@@ -53,7 +61,7 @@ const LabResultsEntry = () => {
     const inProgressOrders = labOrders.filter(o => o.status === 'IN_PROGRESS' || o.status === 'SAMPLE_COLLECTED');
     const selectedOrder = labOrders.find(o => o.id === selectedOrderId);
 
-    const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+    const inputRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
     useEffect(() => {
         if (orderId) {
@@ -64,7 +72,7 @@ const LabResultsEntry = () => {
     useEffect(() => {
         const fetchParameters = async () => {
             if (!selectedOrderId) {
-                setParameters([]);
+                setCategories([]);
                 return;
             }
 
@@ -72,27 +80,38 @@ const LabResultsEntry = () => {
             setError(null);
             try {
                 const response = await labService.getOrderParameters(selectedOrderId);
-                const data = response.parameters || [];
+                const data = response.categories || [];
                 
                 if (data && data.length > 0) {
-                    setParameters(data.map((p: any) => ({
-                        id: p.id,
-                        name: p.name || p.parameter || p.parameter_name,
-                        unit: p.unit,
-                        referenceRange: p.referenceRange || p.reference_range || p.normalRange || p.normal_range || `${p.normalMin}-${p.normalMax}`,
-                        normalMin: p.normalMin !== undefined ? p.normalMin : p.normal_min,
-                        normalMax: p.normalMax !== undefined ? p.normalMax : p.normal_max,
-                        value: "",
-                        flag: "NORMAL",
-                        department: p.department || response.department || "General"
+                    setCategories(data.map((cat: any) => ({
+                        id: cat.id,
+                        name: cat.name,
+                        parameters: cat.parameters.map((p: any) => ({
+                            id: p.id,
+                            name: p.name,
+                            unit: p.unit,
+                            referenceRange: p.referenceRange,
+                            normalMin: p.normalMin,
+                            normalMax: p.normalMax,
+                            inputType: p.inputType || 'number',
+                            options: p.options,
+                            value: "",
+                            flag: "NORMAL"
+                        }))
                     })));
                 } else {
-                    setParameters([{ name: "", value: "", unit: "", referenceRange: "", department: "General" }]);
+                    setCategories([{ 
+                        name: "General", 
+                        parameters: [{ name: "", value: "", unit: "", referenceRange: "" }] 
+                    }]);
                 }
             } catch (error: any) {
                 console.error("Failed to fetch parameters", error);
                 setError(error.message || "Failed to load test parameters.");
-                setParameters([{ name: "", value: "", unit: "", referenceRange: "", department: "General" }]);
+                setCategories([{ 
+                    name: "General", 
+                    parameters: [{ name: "", value: "", unit: "", referenceRange: "" }] 
+                }]);
             } finally {
                 setLoadingParameters(false);
             }
@@ -106,6 +125,12 @@ const LabResultsEntry = () => {
 
     const parseRange = (rangeStr: string) => {
         if (!rangeStr) return { min: undefined, max: undefined };
+        // Support "< 6.0" style
+        if (rangeStr.startsWith('<')) {
+            const val = parseFloat(rangeStr.replace('<', '').trim());
+            return { min: 0, max: val };
+        }
+        // Support "5.0 - 7.0" style
         const parts = rangeStr.split('-').map(s => parseFloat(s.trim()));
         if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
             return { min: parts[0], max: parts[1] };
@@ -132,19 +157,38 @@ const LabResultsEntry = () => {
         return 'NORMAL';
     };
 
-    const updateParameter = (index: number, value: string) => {
-        const updated = [...parameters];
-        updated[index].value = value;
-        updated[index].flag = calculateFlag(value, updated[index].referenceRange, updated[index].normalMin, updated[index].normalMax);
-        setParameters(updated);
+    const updateParameter = (catIndex: number, paramIndex: number, value: string) => {
+        const updated = [...categories];
+        const param = updated[catIndex].parameters[paramIndex];
+        param.value = value;
+        param.flag = calculateFlag(value, param.referenceRange, param.normalMin, param.normalMax);
+        setCategories(updated);
     };
 
-    const handleKeyDown = (e: KeyboardEvent, index: number) => {
+    const handleKeyDown = (e: KeyboardEvent, catIndex: number, paramIndex: number) => {
         if (e.key === 'Enter') {
             e.preventDefault();
-            const nextInput = inputRefs.current[index + 1];
-            if (nextInput) {
-                nextInput.focus();
+            
+            // Try to find next parameter in same category
+            let nextParam = categories[catIndex].parameters[paramIndex + 1];
+            let nextCatIndex = catIndex;
+            let nextParamIndex = paramIndex + 1;
+
+            if (!nextParam) {
+                // Try next category
+                const nextCat = categories[catIndex + 1];
+                if (nextCat) {
+                    nextParam = nextCat.parameters[0];
+                    nextCatIndex = catIndex + 1;
+                    nextParamIndex = 0;
+                }
+            }
+
+            if (nextParam) {
+                const nextInput = inputRefs.current[`${nextCatIndex}-${nextParamIndex}`];
+                if (nextInput) {
+                    nextInput.focus();
+                }
             } else {
                 const textarea = document.querySelector('textarea') as HTMLTextAreaElement;
                 if (textarea) textarea.focus();
@@ -169,7 +213,9 @@ const LabResultsEntry = () => {
             return;
         }
 
-        const validParams = parameters.filter(p => p.name.trim() && p.value.trim());
+        const allParams = categories.flatMap(cat => cat.parameters);
+        const validParams = allParams.filter(p => p.name.trim() && p.value.trim());
+        
         if (validParams.length === 0 && !selectedFile) {
             toast.error("Please enter at least one test parameter or upload a result document");
             return;
@@ -206,7 +252,7 @@ const LabResultsEntry = () => {
             toast.success("Lab result submitted successfully!");
             await fetchLabOrders();
             setSelectedOrderId("");
-            setParameters([{ name: "", value: "", unit: "", referenceRange: "", department: "General" }]);
+            setCategories([]);
             setInterpretation("");
             setSelectedFile(null);
             navigate('/lab/pending-tests');
@@ -217,14 +263,6 @@ const LabResultsEntry = () => {
             setSubmitting(false);
         }
     };
-
-    // Group parameters by department
-    const groups = parameters.reduce((acc, p) => {
-        const dept = p.department || "General";
-        if (!acc[dept]) acc[dept] = [];
-        acc[dept].push(p);
-        return acc;
-    }, {} as Record<string, TestParameter[]>);
 
     return (
         <DashboardLayout role="lab_technician">
@@ -396,52 +434,62 @@ const LabResultsEntry = () => {
                                                     </TableRow>
                                                 </TableHeader>
                                                 <TableBody>
-                                                    {Object.entries(groups).map(([dept, deptParams]) => (
-                                                        <Fragment key={dept}>
+                                                    {categories.map((cat, catIndex) => (
+                                                        <Fragment key={catIndex}>
                                                             <TableRow className="bg-slate-100/50 hover:bg-slate-100/50 border-y-2 border-slate-200">
                                                                 <TableCell colSpan={5} className="py-2.5 font-bold text-slate-900 text-xs uppercase tracking-wider bg-slate-100">
-                                                                    {dept}
+                                                                    {cat.name}
                                                                 </TableCell>
                                                             </TableRow>
-                                                            {deptParams.map((param, index) => {
-                                                                const globalIndex = parameters.indexOf(param);
-                                                                return (
-                                                                    <TableRow key={globalIndex} className={`group ${param.flag !== 'NORMAL' ? 'bg-orange-50/30' : ''}`}>
-                                                                        <TableCell className="font-medium text-slate-700 py-3">{param.name}</TableCell>
-                                                                        <TableCell>
+                                                            {cat.parameters.map((param, paramIndex) => (
+                                                                <TableRow key={paramIndex} className={`group ${param.flag !== 'NORMAL' ? 'bg-orange-50/30' : ''}`}>
+                                                                    <TableCell className="font-medium text-slate-700 py-3">{param.name}</TableCell>
+                                                                    <TableCell>
+                                                                        {param.inputType === 'select' ? (
+                                                                            <select
+                                                                                className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                                                                                value={param.value}
+                                                                                onChange={(e) => updateParameter(catIndex, paramIndex, e.target.value)}
+                                                                            >
+                                                                                <option value="">Select...</option>
+                                                                                {param.options?.map(opt => (
+                                                                                    <option key={opt} value={opt}>{opt}</option>
+                                                                                ))}
+                                                                            </select>
+                                                                        ) : (
                                                                             <Input
-                                                                                ref={el => inputRefs.current[globalIndex] = el}
+                                                                                ref={el => inputRefs.current[`${catIndex}-${paramIndex}`] = el}
                                                                                 className={`h-9 font-bold text-base transition-all ${
                                                                                     param.flag === 'HIGH' ? 'border-red-500 bg-red-50 focus-visible:ring-red-500 text-red-900' :
                                                                                     param.flag === 'LOW' ? 'border-orange-500 bg-orange-50 focus-visible:ring-orange-500 text-orange-900' : 
                                                                                     'focus-visible:ring-blue-600 text-slate-900'
                                                                                 }`}
-                                                                                placeholder="0.0"
+                                                                                placeholder={param.inputType === 'number' ? '0.0' : 'Enter value'}
                                                                                 value={param.value}
-                                                                                onChange={(e) => updateParameter(globalIndex, e.target.value)}
-                                                                                onKeyDown={(e) => handleKeyDown(e, globalIndex)}
-                                                                                autoFocus={globalIndex === 0}
+                                                                                onChange={(e) => updateParameter(catIndex, paramIndex, e.target.value)}
+                                                                                onKeyDown={(e) => handleKeyDown(e, catIndex, paramIndex)}
+                                                                                autoFocus={catIndex === 0 && paramIndex === 0}
                                                                             />
-                                                                        </TableCell>
-                                                                        <TableCell className="text-slate-500 text-sm italic">{param.unit}</TableCell>
-                                                                        <TableCell className="text-slate-600 text-sm font-medium">{param.referenceRange}</TableCell>
-                                                                        <TableCell className="text-right">
-                                                                            {param.value && (
-                                                                                <Badge
-                                                                                    variant={param.flag === 'NORMAL' ? 'secondary' : 'destructive'}
-                                                                                    className={`text-[10px] font-bold px-1.5 py-0 ${
-                                                                                        param.flag === 'NORMAL' ? 'bg-green-100 text-green-700' :
-                                                                                        param.flag === 'LOW' ? 'bg-orange-100 text-orange-700 border-orange-200' : 
-                                                                                        'bg-red-100 text-red-700 border-red-200'
-                                                                                    }`}
-                                                                                >
-                                                                                    {param.flag}
-                                                                                </Badge>
-                                                                            )}
-                                                                        </TableCell>
-                                                                    </TableRow>
-                                                                );
-                                                            })}
+                                                                        )}
+                                                                    </TableCell>
+                                                                    <TableCell className="text-slate-500 text-sm italic">{param.unit}</TableCell>
+                                                                    <TableCell className="text-slate-600 text-sm font-medium">{param.referenceRange}</TableCell>
+                                                                    <TableCell className="text-right">
+                                                                        {param.value && (
+                                                                            <Badge
+                                                                                variant={param.flag === 'NORMAL' ? 'secondary' : 'destructive'}
+                                                                                className={`text-[10px] font-bold px-1.5 py-0 ${
+                                                                                    param.flag === 'NORMAL' ? 'bg-green-100 text-green-700' :
+                                                                                    param.flag === 'LOW' ? 'bg-orange-100 text-orange-700 border-orange-200' : 
+                                                                                    'bg-red-100 text-red-700 border-red-200'
+                                                                                }`}
+                                                                            >
+                                                                                {param.flag}
+                                                                            </Badge>
+                                                                        )}
+                                                                    </TableCell>
+                                                                </TableRow>
+                                                            ))}
                                                         </Fragment>
                                                     ))}
                                                 </TableBody>
