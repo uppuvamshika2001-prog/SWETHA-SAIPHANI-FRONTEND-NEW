@@ -51,7 +51,7 @@ export class ErrorBoundary extends Component<Props, State> {
               <p className="text-muted-foreground mb-6">
                 An unexpected error occurred while rendering this component.
               </p>
-              {process.env.NODE_ENV === "development" && (
+              {import.meta.env.DEV && (
                 <pre className="text-left bg-slate-100 p-4 rounded text-xs mb-6 overflow-auto max-h-40">
                   {this.state.error?.message}
                 </pre>
