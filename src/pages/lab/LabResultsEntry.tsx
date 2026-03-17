@@ -24,7 +24,7 @@ interface TestParameter {
     name: string;
     value: string;
     unit: string;
-    normalRange: string;
+    referenceRange: string;
     normalMin?: number;
     normalMax?: number;
     flag?: 'NORMAL' | 'LOW' | 'HIGH';
@@ -77,9 +77,9 @@ const LabResultsEntry = () => {
                 if (data && data.length > 0) {
                     setParameters(data.map((p: any) => ({
                         id: p.id,
-                        name: p.parameter || p.parameter_name || p.name,
+                        name: p.name || p.parameter || p.parameter_name,
                         unit: p.unit,
-                        normalRange: p.normalRange || p.normal_range || `${p.normal_min}-${p.normal_max}`,
+                        referenceRange: p.referenceRange || p.reference_range || p.normalRange || p.normal_range || `${p.normalMin}-${p.normalMax}`,
                         normalMin: p.normalMin !== undefined ? p.normalMin : p.normal_min,
                         normalMax: p.normalMax !== undefined ? p.normalMax : p.normal_max,
                         value: "",
@@ -87,12 +87,12 @@ const LabResultsEntry = () => {
                         department: p.department || response.department || "General"
                     })));
                 } else {
-                    setParameters([{ name: "", value: "", unit: "", normalRange: "", department: "General" }]);
+                    setParameters([{ name: "", value: "", unit: "", referenceRange: "", department: "General" }]);
                 }
             } catch (error: any) {
                 console.error("Failed to fetch parameters", error);
                 setError(error.message || "Failed to load test parameters.");
-                setParameters([{ name: "", value: "", unit: "", normalRange: "", department: "General" }]);
+                setParameters([{ name: "", value: "", unit: "", referenceRange: "", department: "General" }]);
             } finally {
                 setLoadingParameters(false);
             }
@@ -135,7 +135,7 @@ const LabResultsEntry = () => {
     const updateParameter = (index: number, value: string) => {
         const updated = [...parameters];
         updated[index].value = value;
-        updated[index].flag = calculateFlag(value, updated[index].normalRange, updated[index].normalMin, updated[index].normalMax);
+        updated[index].flag = calculateFlag(value, updated[index].referenceRange, updated[index].normalMin, updated[index].normalMax);
         setParameters(updated);
     };
 
@@ -194,7 +194,7 @@ const LabResultsEntry = () => {
                         name: p.name,
                         value: p.value,
                         unit: p.unit || undefined,
-                        normalRange: p.normalRange || undefined,
+                        referenceRange: p.referenceRange || undefined,
                         flag: p.flag
                     })),
                 },
@@ -206,7 +206,7 @@ const LabResultsEntry = () => {
             toast.success("Lab result submitted successfully!");
             await fetchLabOrders();
             setSelectedOrderId("");
-            setParameters([{ name: "", value: "", unit: "", normalRange: "", department: "General" }]);
+            setParameters([{ name: "", value: "", unit: "", referenceRange: "", department: "General" }]);
             setInterpretation("");
             setSelectedFile(null);
             navigate('/lab/pending-tests');
@@ -424,7 +424,7 @@ const LabResultsEntry = () => {
                                                                             />
                                                                         </TableCell>
                                                                         <TableCell className="text-slate-500 text-sm italic">{param.unit}</TableCell>
-                                                                        <TableCell className="text-slate-600 text-sm font-medium">{param.normalRange}</TableCell>
+                                                                        <TableCell className="text-slate-600 text-sm font-medium">{param.referenceRange}</TableCell>
                                                                         <TableCell className="text-right">
                                                                             {param.value && (
                                                                                 <Badge
