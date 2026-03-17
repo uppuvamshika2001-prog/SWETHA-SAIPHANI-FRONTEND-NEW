@@ -22,7 +22,7 @@ const LabPendingTests = () => {
 
     // Filter for pending orders (including newly created orders from reception)
     const pendingOrders = labOrders.filter(order =>
-        order.status === 'ORDERED' || order.status === 'PAYMENT_PENDING' || order.status === 'READY_FOR_SAMPLE_COLLECTION' || order.status === 'SAMPLE_COLLECTED' || order.status === 'IN_PROGRESS'
+        order.status === 'PENDING' || order.status === 'ORDERED' || order.status === 'PAYMENT_PENDING' || order.status === 'READY_FOR_SAMPLE_COLLECTION' || order.status === 'SAMPLE_COLLECTED' || order.status === 'IN_PROGRESS'
     ).filter(order =>
         `${order.patient.firstName} ${order.patient.lastName}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
         order.id.toLowerCase().includes(searchTerm.toLowerCase()) ||

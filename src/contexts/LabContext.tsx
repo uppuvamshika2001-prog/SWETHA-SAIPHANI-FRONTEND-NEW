@@ -10,7 +10,7 @@ export interface LabOrder {
     testName: string;
     testCode: string | null;
     priority: string;
-    status: 'ORDERED' | 'SAMPLE_COLLECTED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED' | 'PAYMENT_PENDING' | 'READY_FOR_SAMPLE_COLLECTION';
+    status: 'ORDERED' | 'SAMPLE_COLLECTED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED' | 'PAYMENT_PENDING' | 'READY_FOR_SAMPLE_COLLECTION' | 'PENDING';
     notes: string | null;
     patient: { firstName: string; lastName: string };
     orderedBy: { firstName: string; lastName: string };
@@ -109,6 +109,7 @@ export const LabProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             }
 
             const response = await api.get<{ items: LabOrder[] }>(`/lab/orders?${params}`);
+            console.log("Lab Orders API Response:", response.items);
             setLabOrders(response.items || []);
         } catch (err: any) {
             setError(err.message || 'Failed to fetch lab orders');
