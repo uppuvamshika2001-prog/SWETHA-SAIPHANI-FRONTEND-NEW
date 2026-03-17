@@ -43,6 +43,7 @@ export interface CreateLabOrderInput {
     patientId: string;
     testName: string;
     testCode?: string;
+    testId?: string;
     priority?: 'normal' | 'urgent' | 'stat';
     notes?: string;
 }
