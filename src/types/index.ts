@@ -142,6 +142,7 @@ export interface LabTest {
   code: string;
   name: string;
   department: string;
+  type?: 'PANEL' | 'SINGLE' | 'REPORT';
   price: number;
   turnaround: string;
   isActive?: boolean;

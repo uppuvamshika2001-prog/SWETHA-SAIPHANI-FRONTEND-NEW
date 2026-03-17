@@ -90,7 +90,8 @@ const PatientLabResults = () => {
         };
         document.addEventListener('visibilitychange', handleVisibilityChange);
         return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-    }, [fetchData, selectedDate]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     // Polling every 30 seconds for near real-time updates
     useEffect(() => {
@@ -100,7 +101,8 @@ const PatientLabResults = () => {
             }
         }, 30000); // 30 seconds
         return () => clearInterval(interval);
-    }, [fetchData, selectedDate]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     if (loading) {
         return <div className="p-8 text-center">Loading lab results...</div>;

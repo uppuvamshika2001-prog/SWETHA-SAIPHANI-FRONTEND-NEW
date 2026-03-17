@@ -52,6 +52,7 @@ const LabResultsEntry = () => {
     const [loadingParameters, setLoadingParameters] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [isReportVisible, setIsReportVisible] = useState(true);
+    const [testType, setTestType] = useState<'PANEL' | 'SINGLE' | 'REPORT'>('PANEL');
 
     // File upload state
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -81,6 +82,8 @@ const LabResultsEntry = () => {
             try {
                 const response = await labService.getOrderParameters(selectedOrderId);
                 console.log("Lab Parameters API Response:", response);
+                
+                setTestType(response?.testType || 'PANEL');
                 
                 let data = [];
                 if (response?.categories && Array.isArray(response.categories)) {
@@ -113,6 +116,9 @@ const LabResultsEntry = () => {
                             flag: "NORMAL"
                         }))
                     })));
+                } else if (response?.testType === 'REPORT') {
+                    // Report types don't need structured parameters
+                    setCategories([]);
                 } else {
                     setError("No structured parameters found for this test. Please add them manually or sync the test catalog.");
                     setCategories([]);
@@ -432,9 +438,13 @@ const LabResultsEntry = () => {
                                 <CardHeader className="bg-slate-900 text-white pb-6 pt-6">
                                     <div className="flex justify-between items-center">
                                         <div>
-                                            <CardTitle className="text-xl">Observed Values Entry</CardTitle>
+                                            <CardTitle className="text-xl">
+                                                {testType === 'REPORT' ? 'Document Upload' : 'Observed Values Entry'}
+                                            </CardTitle>
                                             <CardDescription className="text-slate-400">
-                                                Enter machine results. Use [Enter] to move to the next field.
+                                                {testType === 'REPORT' 
+                                                    ? 'Upload the final report document.' 
+                                                    : 'Enter machine results. Use [Enter] to move to the next field.'}
                                             </CardDescription>
                                         </div>
                                         <div className="text-right">
@@ -457,6 +467,14 @@ const LabResultsEntry = () => {
                                                 <AlertTriangle className="h-4 w-4" />
                                                 <AlertDescription className="ml-2 font-medium">{error}</AlertDescription>
                                             </Alert>
+                                        </div>
+                                    ) : testType === 'REPORT' ? (
+                                        <div className="flex-1 flex flex-col items-center justify-center p-12 text-center">
+                                            <Upload className="h-16 w-16 text-blue-100 mb-4" />
+                                            <h3 className="text-xl font-semibold text-slate-700">Upload Report Document</h3>
+                                            <p className="text-slate-500 mt-2 mb-6 max-w-sm">
+                                                This is a REPORT-type test. Please upload the generated report document using the "Report Settings" panel on the left.
+                                            </p>
                                         </div>
                                     ) : (
                                         <div className="flex-1 overflow-auto">

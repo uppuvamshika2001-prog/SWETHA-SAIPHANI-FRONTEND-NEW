@@ -25,7 +25,19 @@ interface AuthResponse {
 }
 
 class ApiService {
-    private refreshPromise: Promise<void> | null = null;
+    private isRefreshing = false;
+    private failedQueue: { resolve: () => void, reject: (error: any) => void }[] = [];
+
+    private processQueue(error: any | null) {
+        this.failedQueue.forEach(prom => {
+            if (error) {
+                prom.reject(error);
+            } else {
+                prom.resolve();
+            }
+        });
+        this.failedQueue = [];
+    }
 
     private getHeaders() {
         const headers: Record<string, string> = {
@@ -43,38 +55,42 @@ class ApiService {
     }
 
     private async refreshAccessToken(refreshToken: string): Promise<void> {
-        if (this.refreshPromise) return this.refreshPromise;
+        if (this.isRefreshing) {
+            return new Promise((resolve, reject) => {
+                this.failedQueue.push({ resolve, reject });
+            });
+        }
 
-        this.refreshPromise = (async () => {
-            try {
-                console.log('[API] Attempting to refresh access token...');
-                const response = await fetch(`${API_URL}/auth/refresh`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ refreshToken }),
-                });
+        this.isRefreshing = true;
 
-                if (!response.ok) {
-                    throw new Error('Refresh failed');
-                }
+        try {
+            console.log('[API] Attempting to refresh access token...');
+            const response = await fetch(`${API_URL}/auth/refresh`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ refreshToken }),
+            });
 
-                const res = await response.json();
-                const tokens = (res && res.status === 'success' && res.data !== undefined) ? res.data : res;
-
-                localStorage.setItem('accessToken', tokens.accessToken);
-                localStorage.setItem('refreshToken', tokens.refreshToken);
-                console.log('[API] Token refreshed successfully');
-            } catch (error) {
-                console.error('[API] Token refresh failed', error);
-                localStorage.removeItem('accessToken');
-                localStorage.removeItem('refreshToken');
-                throw error;
-            } finally {
-                this.refreshPromise = null;
+            if (!response.ok) {
+                throw new Error('Refresh failed');
             }
-        })();
 
-        return this.refreshPromise;
+            const res = await response.json();
+            const tokens = (res && res.status === 'success' && res.data !== undefined) ? res.data : res;
+
+            localStorage.setItem('accessToken', tokens.accessToken);
+            localStorage.setItem('refreshToken', tokens.refreshToken);
+            console.log('[API] Token refreshed successfully');
+            this.processQueue(null);
+        } catch (error) {
+            console.error('[API] Token refresh failed', error);
+            localStorage.removeItem('accessToken');
+            localStorage.removeItem('refreshToken');
+            this.processQueue(error);
+            throw error;
+        } finally {
+            this.isRefreshing = false;
+        }
     }
 
     private async handleResponse<T>(response: Response, retryRequest?: () => Promise<T>): Promise<T> {

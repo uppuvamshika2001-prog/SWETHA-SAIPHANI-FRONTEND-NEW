@@ -194,13 +194,12 @@ export function DashboardLayout({ children, role }: DashboardLayoutProps) {
     };
 
     useEffect(() => {
-        if (profile) {
-            fetchNotifications();
-            // Poll every 60s
-            const interval = setInterval(fetchNotifications, 60000);
-            return () => clearInterval(interval);
-        }
-    }, [profile]);
+        fetchNotifications();
+        // Poll every 30s
+        const interval = setInterval(fetchNotifications, 30000);
+        return () => clearInterval(interval);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     const handleMarkAllRead = async (e: React.MouseEvent) => {
         e.preventDefault();

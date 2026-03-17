@@ -47,7 +47,8 @@ export default function OPDConsultation() {
         fetchRecords();
         const interval = setInterval(() => fetchRecords(), 30000);
         return () => clearInterval(interval);
-    }, [fetchRecords]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     const getPatientName = (record: MedicalRecord) => {
         return record.patient

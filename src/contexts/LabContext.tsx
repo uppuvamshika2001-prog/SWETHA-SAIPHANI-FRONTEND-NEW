@@ -236,7 +236,8 @@ export const LabProvider: FC<{ children: ReactNode }> = ({ children }) => {
         if ((user.role === 'lab_technician' || user.role === 'admin' || user.role === 'receptionist') && !hasFetchedOrders) {
             fetchLabOrders();
         }
-    }, [user, authLoading, hasFetchedOrders, hasFetchedMyOrders, fetchLabOrders, fetchMyLabOrders]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [user, authLoading]);
 
     // Auto-refresh for lab technicians to pick up new orders from reception
     useEffect(() => {
@@ -247,7 +248,8 @@ export const LabProvider: FC<{ children: ReactNode }> = ({ children }) => {
             }, 30000); // 30 seconds
             return () => clearInterval(interval);
         }
-    }, [user, authLoading, fetchLabOrders]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [user, authLoading]);
 
     return (
         <LabContext.Provider value={{
