@@ -14,4 +14,3 @@ vite.config.ts.timestamp*
 .git
 .gitignore
 Dockerfile
-nginx.conf
