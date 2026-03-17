@@ -80,17 +80,31 @@ const LabResultsEntry = () => {
             setError(null);
             try {
                 const response = await labService.getOrderParameters(selectedOrderId);
-                const data = response.categories || [];
+                console.log("Lab Parameters API Response:", response);
                 
+                let data = [];
+                if (response?.categories && Array.isArray(response.categories)) {
+                    data = response.categories;
+                } else if (Array.isArray(response)) {
+                    // Backwards compatibility for old API format (flat array)
+                    data = [{
+                        name: "General",
+                        parameters: response
+                    }];
+                } else if (response && typeof response === 'object' && !response.categories) {
+                    // Some other object format
+                    data = [{ name: "General", parameters: [] }];
+                }
+
                 if (data && data.length > 0) {
                     setCategories(data.map((cat: any) => ({
                         id: cat.id,
-                        name: cat.name,
-                        parameters: cat.parameters.map((p: any) => ({
+                        name: cat.name || "General",
+                        parameters: (cat.parameters || []).map((p: any) => ({
                             id: p.id,
-                            name: p.name,
-                            unit: p.unit,
-                            referenceRange: p.referenceRange,
+                            name: p.name || "",
+                            unit: p.unit || "",
+                            referenceRange: p.referenceRange || "",
                             normalMin: p.normalMin,
                             normalMax: p.normalMax,
                             inputType: p.inputType || 'number',
@@ -100,9 +114,10 @@ const LabResultsEntry = () => {
                         }))
                     })));
                 } else {
+                    // Final fallback to at least one editable row
                     setCategories([{ 
                         name: "General", 
-                        parameters: [{ name: "", value: "", unit: "", referenceRange: "" }] 
+                        parameters: [{ name: "", value: "", unit: "", referenceRange: "", flag: 'NORMAL' as const }] 
                     }]);
                 }
             } catch (error: any) {
@@ -110,7 +125,7 @@ const LabResultsEntry = () => {
                 setError(error.message || "Failed to load test parameters.");
                 setCategories([{ 
                     name: "General", 
-                    parameters: [{ name: "", value: "", unit: "", referenceRange: "" }] 
+                    parameters: [{ name: "", value: "", unit: "", referenceRange: "", flag: 'NORMAL' as const }] 
                 }]);
             } finally {
                 setLoadingParameters(false);
@@ -157,11 +172,39 @@ const LabResultsEntry = () => {
         return 'NORMAL';
     };
 
-    const updateParameter = (catIndex: number, paramIndex: number, value: string) => {
+    const updateParameter = (catIndex: number, paramIndex: number, field: string, value: string) => {
         const updated = [...categories];
-        const param = updated[catIndex].parameters[paramIndex];
-        param.value = value;
-        param.flag = calculateFlag(value, param.referenceRange, param.normalMin, param.normalMax);
+        const param = { ...updated[catIndex].parameters[paramIndex] } as any;
+        param[field] = value;
+        
+        if (field === 'value') {
+            param.flag = calculateFlag(value, param.referenceRange, param.normalMin, param.normalMax);
+        }
+        
+        updated[catIndex].parameters[paramIndex] = param;
+        setCategories(updated);
+    };
+
+    const addParameter = (catIndex: number) => {
+        const updated = [...categories];
+        updated[catIndex].parameters.push({
+            name: "",
+            value: "",
+            unit: "",
+            referenceRange: "",
+            flag: 'NORMAL'
+        });
+        setCategories(updated);
+    };
+
+    const removeParameter = (catIndex: number, paramIndex: number) => {
+        const updated = [...categories];
+        updated[catIndex].parameters.splice(paramIndex, 1);
+        if (updated[catIndex].parameters.length === 0 && updated.length > 1) {
+            updated.splice(catIndex, 1);
+        } else if (updated[catIndex].parameters.length === 0) {
+            updated[catIndex].parameters.push({ name: "", value: "", unit: "", referenceRange: "", flag: 'NORMAL' });
+        }
         setCategories(updated);
     };
 
@@ -428,9 +471,10 @@ const LabResultsEntry = () => {
                                                     <TableRow className="hover:bg-transparent">
                                                         <TableHead className="w-[30%] font-bold text-slate-700">Test Parameter</TableHead>
                                                         <TableHead className="w-[20%] font-bold text-slate-700">Observed Value</TableHead>
-                                                        <TableHead className="w-[15%] font-bold text-slate-700">Unit</TableHead>
-                                                        <TableHead className="w-[25%] font-bold text-slate-700">Reference Range</TableHead>
-                                                        <TableHead className="w-[10%] text-right font-bold text-slate-700">Flag</TableHead>
+                                                        <TableHead className="w-[12%] font-bold text-slate-700">Unit</TableHead>
+                                                        <TableHead className="w-[23%] font-bold text-slate-700">Reference Range</TableHead>
+                                                        <TableHead className="w-[10%] text-center font-bold text-slate-700">Flag</TableHead>
+                                                        <TableHead className="w-[5%] text-right font-bold text-slate-700"></TableHead>
                                                     </TableRow>
                                                 </TableHeader>
                                                 <TableBody>
@@ -443,13 +487,24 @@ const LabResultsEntry = () => {
                                                             </TableRow>
                                                             {cat.parameters.map((param, paramIndex) => (
                                                                 <TableRow key={paramIndex} className={`group ${param.flag !== 'NORMAL' ? 'bg-orange-50/30' : ''}`}>
-                                                                    <TableCell className="font-medium text-slate-700 py-3">{param.name}</TableCell>
+                                                                    <TableCell className="font-medium text-slate-700 py-3">
+                                                                        {param.id ? (
+                                                                            param.name
+                                                                        ) : (
+                                                                            <Input 
+                                                                                className="h-8 text-xs" 
+                                                                                placeholder="Parameter name" 
+                                                                                value={param.name}
+                                                                                onChange={(e) => updateParameter(catIndex, paramIndex, 'name', e.target.value)}
+                                                                            />
+                                                                        )}
+                                                                    </TableCell>
                                                                     <TableCell>
                                                                         {param.inputType === 'select' ? (
                                                                             <select
                                                                                 className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                                                                                 value={param.value}
-                                                                                onChange={(e) => updateParameter(catIndex, paramIndex, e.target.value)}
+                                                                                onChange={(e) => updateParameter(catIndex, paramIndex, 'value', e.target.value)}
                                                                             >
                                                                                 <option value="">Select...</option>
                                                                                 {param.options?.map(opt => (
@@ -466,15 +521,37 @@ const LabResultsEntry = () => {
                                                                                 }`}
                                                                                 placeholder={param.inputType === 'number' ? '0.0' : 'Enter value'}
                                                                                 value={param.value}
-                                                                                onChange={(e) => updateParameter(catIndex, paramIndex, e.target.value)}
+                                                                                onChange={(e) => updateParameter(catIndex, paramIndex, 'value', e.target.value)}
                                                                                 onKeyDown={(e) => handleKeyDown(e, catIndex, paramIndex)}
                                                                                 autoFocus={catIndex === 0 && paramIndex === 0}
                                                                             />
                                                                         )}
                                                                     </TableCell>
-                                                                    <TableCell className="text-slate-500 text-sm italic">{param.unit}</TableCell>
-                                                                    <TableCell className="text-slate-600 text-sm font-medium">{param.referenceRange}</TableCell>
-                                                                    <TableCell className="text-right">
+                                                                    <TableCell>
+                                                                        {param.id ? (
+                                                                            <span className="text-slate-500 text-sm italic">{param.unit}</span>
+                                                                        ) : (
+                                                                            <Input 
+                                                                                className="h-8 text-xs" 
+                                                                                placeholder="Unit" 
+                                                                                value={param.unit}
+                                                                                onChange={(e) => updateParameter(catIndex, paramIndex, 'unit', e.target.value)}
+                                                                            />
+                                                                        )}
+                                                                    </TableCell>
+                                                                    <TableCell>
+                                                                        {param.id ? (
+                                                                            <span className="text-slate-600 text-sm font-medium">{param.referenceRange}</span>
+                                                                        ) : (
+                                                                            <Input 
+                                                                                className="h-8 text-xs" 
+                                                                                placeholder="Range" 
+                                                                                value={param.referenceRange}
+                                                                                onChange={(e) => updateParameter(catIndex, paramIndex, 'referenceRange', e.target.value)}
+                                                                            />
+                                                                        )}
+                                                                    </TableCell>
+                                                                    <TableCell className="text-center">
                                                                         {param.value && (
                                                                             <Badge
                                                                                 variant={param.flag === 'NORMAL' ? 'secondary' : 'destructive'}
@@ -488,8 +565,30 @@ const LabResultsEntry = () => {
                                                                             </Badge>
                                                                         )}
                                                                     </TableCell>
+                                                                    <TableCell className="text-right">
+                                                                        <Button 
+                                                                            variant="ghost" 
+                                                                            size="icon" 
+                                                                            className="h-6 w-6 text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                                                                            onClick={() => removeParameter(catIndex, paramIndex)}
+                                                                        >
+                                                                            <Trash2 className="h-3.5 w-3.5" />
+                                                                        </Button>
+                                                                    </TableCell>
                                                                 </TableRow>
                                                             ))}
+                                                            <TableRow className="hover:bg-transparent">
+                                                                <TableCell colSpan={5} className="py-2">
+                                                                    <Button 
+                                                                        variant="ghost" 
+                                                                        size="sm" 
+                                                                        className="text-xs text-blue-600 hover:text-blue-700 hover:bg-blue-50 h-7"
+                                                                        onClick={() => addParameter(catIndex)}
+                                                                    >
+                                                                        <Plus className="h-3 w-3 mr-1" /> Add custom parameter to {cat.name}
+                                                                    </Button>
+                                                                </TableCell>
+                                                            </TableRow>
                                                         </Fragment>
                                                     ))}
                                                 </TableBody>
