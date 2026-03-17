@@ -114,19 +114,13 @@ const LabResultsEntry = () => {
                         }))
                     })));
                 } else {
-                    // Final fallback to at least one editable row
-                    setCategories([{ 
-                        name: "General", 
-                        parameters: [{ name: "", value: "", unit: "", referenceRange: "", flag: 'NORMAL' as const }] 
-                    }]);
+                    setError("No structured parameters found for this test. Please add them manually or sync the test catalog.");
+                    setCategories([]);
                 }
             } catch (error: any) {
                 console.error("Failed to fetch parameters", error);
                 setError(error.message || "Failed to load test parameters.");
-                setCategories([{ 
-                    name: "General", 
-                    parameters: [{ name: "", value: "", unit: "", referenceRange: "", flag: 'NORMAL' as const }] 
-                }]);
+                setCategories([]);
             } finally {
                 setLoadingParameters(false);
             }
