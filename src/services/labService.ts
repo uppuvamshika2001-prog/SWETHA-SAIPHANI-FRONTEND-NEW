@@ -19,7 +19,7 @@ export const labService = {
             test_name: order.testName || '',
             testName: order.testName || '',
             priority: (order.priority || 'routine').toLowerCase() as any,
-            status: (order.status || 'ordered').toLowerCase() as any,
+            status: order.status,
             ordered_at: order.createdAt,
             completed_at: order.result?.completedAt,
             notes: order.notes,
@@ -28,7 +28,7 @@ export const labService = {
                 test_id: order.id,
                 test_name: order.testName || '',
                 result: order.result?.result?.parameters?.map((p: any) => `${p.name}: ${p.value} ${p.unit || ''}`).join(', '),
-                status: (order.status || 'ordered').toLowerCase() as any
+                status: order.status
             }]
         }));
 
