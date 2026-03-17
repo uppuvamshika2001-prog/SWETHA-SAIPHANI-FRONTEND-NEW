@@ -9,7 +9,8 @@ export const labService = {
         // Short cache or no cache for fresh data
 
         const response = await api.get<{ items: any[] }>(`/lab/orders?${queryString}`);
-        const result = response.items.map(order => ({
+        const items = (response as any).items || response;
+        const result = (Array.isArray(items) ? items : []).map(order => ({
             id: order.id,
             order_id: `LAB-${order.id.slice(0, 4).toUpperCase()}`,
             patient_id: order.patientId,

@@ -109,8 +109,10 @@ export const LabProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             }
 
             const response = await api.get<{ items: LabOrder[] }>(`/lab/orders?${params}`);
-            console.log("Lab Orders API Response:", response.items);
-            setLabOrders(response.items || []);
+            console.log("Lab Orders API Response:", response);
+            // Result is now either inside .data.items (via api.get wrapper) or direct
+            const items = (response as any).items || response;
+            setLabOrders(Array.isArray(items) ? items : []);
         } catch (err: any) {
             setError(err.message || 'Failed to fetch lab orders');
             console.error('[LabContext] fetchLabOrders error:', err);
@@ -136,7 +138,8 @@ export const LabProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             }
 
             const response = await api.get<{ items: LabOrder[] }>(`/lab/orders/my-orders?${params}`);
-            setMyLabOrders(response.items || []);
+            const items = (response as any).items || response;
+            setMyLabOrders(Array.isArray(items) ? items : []);
         } catch (err: any) {
             setError(err.message || 'Failed to fetch my lab orders');
             console.error('[LabContext] fetchMyLabOrders error:', err);
