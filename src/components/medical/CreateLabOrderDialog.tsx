@@ -24,6 +24,8 @@ import { toast } from "sonner";
 import { useLab } from "@/contexts/LabContext";
 import { api } from "@/services/api";
 import { WalkInLabPatientDialog } from "@/components/patients/WalkInLabPatientDialog";
+import { SearchableSelect } from "@/components/ui/SearchableSelect";
+import { LabTest } from "@/types";
 
 interface PatientInfo {
     uhid: string; // The primary identifier
@@ -44,7 +46,7 @@ export function CreateLabOrderDialog() {
     const [showResults, setShowResults] = useState(false);
 
     // Test state
-    const [testNames, setTestNames] = useState<string[]>([""]);
+    const [selectedTests, setSelectedTests] = useState<(LabTest | { id: string, name: string, code?: string })[]>([]);
     const [priority, setPriority] = useState<"normal" | "urgent" | "stat">("normal");
     const [notes, setNotes] = useState("");
 
@@ -59,7 +61,6 @@ export function CreateLabOrderDialog() {
         setSearchLoading(true);
         setShowResults(true);
         try {
-            // Search by UHID or name using the patients API
             const response = await api.get<{ items: PatientInfo[] }>(`/patients?search=${encodeURIComponent(patientSearch)}&limit=10`);
             setSearchResults(response.items || []);
             if ((response.items || []).length === 0) {
@@ -81,27 +82,42 @@ export function CreateLabOrderDialog() {
         setShowResults(false);
     };
 
+    const handleSearchTests = async (q: string) => {
+        try {
+            const response = await api.get<LabTest[]>(`/lab/tests?search=${encodeURIComponent(q)}`);
+            return response;
+        } catch (error) {
+            console.error("Search tests error:", error);
+            return [];
+        }
+    };
+
     const handleSubmit = async () => {
         if (!selectedPatient) {
             toast.error("Please select a patient");
             return;
         }
 
-        const validTestNames = testNames.map(t => t.trim()).filter(t => t.length > 0);
-        if (validTestNames.length === 0) {
-            toast.error("Please enter at least one lab test name");
+        if (selectedTests.length === 0) {
+            toast.error("Please select at least one lab test");
             return;
         }
 
         setLoading(true);
         try {
-            await createLabOrder({
-                patientId: selectedPatient.uhid,
-                testName: validTestNames.join(', '),
-                priority,
-                notes: notes || undefined,
-            });
-            toast.success("Lab order created successfully");
+            // Create separate orders for each test for structured results
+            for (const test of selectedTests) {
+                await createLabOrder({
+                    patientId: selectedPatient.uhid,
+                    testId: test.id.length > 10 ? test.id : undefined, // UUID check
+                    testName: test.name,
+                    testCode: (test as any).code,
+                    priority,
+                    notes: notes || undefined,
+                });
+            }
+            
+            toast.success(`${selectedTests.length} Lab order(s) created successfully`);
             setOpen(false);
             resetForm();
         } catch (error: any) {
@@ -113,7 +129,7 @@ export function CreateLabOrderDialog() {
 
     const resetForm = () => {
         setSelectedPatient(null);
-        setTestNames([""]);
+        setSelectedTests([]);
         setPriority("normal");
         setNotes("");
         setPatientSearch("");
@@ -246,44 +262,88 @@ export function CreateLabOrderDialog() {
                         )}
                     </div>
 
-                    {/* Lab Test - Manual Entry */}
+                    {/* Lab Test - Searchable Selection */}
                     <div className="space-y-4">
-                        <Label>Lab Test Names *</Label>
-                        {testNames.map((test, index) => (
-                            <div key={index} className="flex items-center gap-2">
-                                <Input
-                                    placeholder="e.g., Complete Blood Count..."
-                                    value={test}
-                                    onChange={(e) => {
-                                        const newTestNames = [...testNames];
-                                        newTestNames[index] = e.target.value;
-                                        setTestNames(newTestNames);
-                                    }}
-                                />
-                                {testNames.length > 1 && (
-                                    <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        onClick={() => setTestNames(testNames.filter((_, i) => i !== index))}
-                                        className="h-10 w-10 text-red-500 hover:text-red-700 hover:bg-red-50 flex-shrink-0"
-                                    >
-                                        <Trash2 className="h-4 w-4" />
-                                    </Button>
-                                )}
-                            </div>
-                        ))}
+                        <Label>Select Lab Test(s) *</Label>
+                        <SearchableSelect<LabTest>
+                            onSearch={handleSearchTests}
+                            onSelect={(test) => {
+                                if (selectedTests.some(t => t.id === test.id)) {
+                                    toast.info(`${test.name} is already selected`);
+                                    return;
+                                }
+                                setSelectedTests([...selectedTests, test]);
+                            }}
+                            renderItem={(test) => (
+                                <div className="flex flex-col">
+                                    <span>{test.name}</span>
+                                    <span className="text-xs text-muted-foreground">{test.code} · {test.department}</span>
+                                </div>
+                            )}
+                            getDisplayValue={() => ""}
+                            placeholder="Type to search tests (e.g., CBP, LFT)..."
+                            emptyMessage="No tests found in catalog"
+                        />
 
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            className="mt-2 w-full border-dashed"
-                            onClick={() => setTestNames([...testNames, ""])}
-                        >
-                            <Plus className="h-4 w-4 mr-2" />
-                            Add another test
-                        </Button>
+                        {selectedTests.length > 0 && (
+                            <div className="space-y-2 max-h-40 overflow-y-auto pr-2">
+                                {selectedTests.map((test, index) => (
+                                    <div key={test.id} className="flex items-center justify-between p-2 bg-muted/50 rounded-md border text-sm">
+                                        <div className="flex flex-col">
+                                            <span className="font-medium">{test.name}</span>
+                                            <span className="text-xs text-muted-foreground">{test.code}</span>
+                                        </div>
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="h-8 w-8 text-red-500 hover:text-red-700"
+                                            onClick={() => setSelectedTests(selectedTests.filter((_, i) => i !== index))}
+                                        >
+                                            <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+
+                        {/* Manual Entry Fallback */}
+                        {selectedTests.length === 0 && (
+                            <div className="pt-2 border-t mt-4 flex flex-col gap-2">
+                                <Label className="text-xs text-muted-foreground uppercase tracking-wider">Or Manual Entry</Label>
+                                <div className="flex gap-2">
+                                    <Input 
+                                        id="manualTest"
+                                        placeholder="Enter test name manually..." 
+                                        className="text-sm"
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter') {
+                                                const val = (e.currentTarget as HTMLInputElement).value;
+                                                if (val) {
+                                                    setSelectedTests([...selectedTests, { id: `manual-${Date.now()}`, name: val }]);
+                                                    (e.currentTarget as HTMLInputElement).value = "";
+                                                }
+                                            }
+                                        }}
+                                    />
+                                    <Button 
+                                        variant="outline" 
+                                        size="sm"
+                                        onClick={() => {
+                                            const input = document.getElementById('manualTest') as HTMLInputElement;
+                                            if (input.value) {
+                                                setSelectedTests([...selectedTests, { id: `manual-${Date.now()}`, name: input.value }]);
+                                                input.value = "";
+                                            }
+                                        }}
+                                    >
+                                        Add
+                                    </Button>
+                                </div>
+                            </div>
+                        )}
+                        
                         <p className="text-xs text-muted-foreground mt-1">
-                            Enter the names of the lab tests to be performed
+                            Search from the catalog for structured results, or enter manually for others.
                         </p>
                     </div>
 
@@ -320,7 +380,7 @@ export function CreateLabOrderDialog() {
                     </Button>
                     <Button
                         onClick={handleSubmit}
-                        disabled={loading || !selectedPatient || !testNames.some(t => t.trim().length > 0)}
+                        disabled={loading || !selectedPatient || selectedTests.length === 0}
                     >
                         {loading ? (
                             <>
