@@ -138,37 +138,43 @@ const LabResultsEntry = () => {
         }
     }, [selectedOrderId]);
 
-    const parseRange = (rangeStr: string) => {
-        if (!rangeStr) return { min: undefined, max: undefined };
-        // Support "< 6.0" style
-        if (rangeStr.startsWith('<')) {
-            const val = parseFloat(rangeStr.replace('<', '').trim());
-            return { min: 0, max: val };
-        }
-        // Support "5.0 - 7.0" style
-        const parts = rangeStr.split('-').map(s => parseFloat(s.trim()));
-        if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
-            return { min: parts[0], max: parts[1] };
-        }
-        return { min: undefined, max: undefined };
-    };
-
     const calculateFlag = (value: string, rangeStr: string, min?: number, max?: number): 'NORMAL' | 'LOW' | 'HIGH' => {
         const numValue = parseFloat(value);
         if (isNaN(numValue)) return 'NORMAL';
         
-        let targetMin = min;
-        let targetMax = max;
-
-        if (targetMin === undefined || targetMax === undefined) {
-            const parsed = parseRange(rangeStr);
-            targetMin = parsed.min;
-            targetMax = parsed.max;
+        // 1. Use explicit min/max from database if fully provided
+        if (min !== null && min !== undefined && max !== null && max !== undefined) {
+            if (numValue < min) return 'LOW';
+            if (numValue > max) return 'HIGH';
+            return 'NORMAL';
         }
 
-        if (targetMin === undefined || targetMax === undefined) return 'NORMAL';
-        if (numValue < targetMin) return 'LOW';
-        if (numValue > targetMax) return 'HIGH';
+        // 2. Fallback to strict string parsing of the reference range
+        if (!rangeStr || typeof rangeStr !== 'string') return 'NORMAL';
+
+        const cleaned = rangeStr.replace(/\s/g, '');
+
+        if (cleaned.includes('-')) {
+            const parts = cleaned.split('-');
+            if (parts.length >= 2) {
+                const rMin = parseFloat(parts[0]);
+                const rMax = parseFloat(parts[1]);
+                if (!isNaN(rMin) && numValue < rMin) return 'LOW';
+                if (!isNaN(rMax) && numValue > rMax) return 'HIGH';
+            }
+            return 'NORMAL';
+        }
+
+        if (cleaned.startsWith('<') || cleaned.toLowerCase().startsWith('upto')) {
+            const rMax = parseFloat(cleaned.replace(/<|upto/ig, ''));
+            if (!isNaN(rMax)) return numValue >= rMax ? 'HIGH' : 'NORMAL';
+        }
+
+        if (cleaned.startsWith('>')) {
+            const rMin = parseFloat(cleaned.replace(/>/ig, ''));
+            if (!isNaN(rMin)) return numValue <= rMin ? 'LOW' : 'NORMAL';
+        }
+
         return 'NORMAL';
     };
 
