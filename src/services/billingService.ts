@@ -60,6 +60,7 @@ export const billingService = {
         status?: string;
         gstPercent?: number;
         paidAmount?: number;
+        isWalkInLab?: boolean;
     }) {
         return api.post<Bill>('/billing', data);
     },

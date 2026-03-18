@@ -142,37 +142,41 @@ const LabResultsEntry = () => {
         const numValue = parseFloat(value);
         if (isNaN(numValue)) return 'NORMAL';
         
-        // 1. Use explicit min/max from database if fully provided
-        if (min !== null && min !== undefined && max !== null && max !== undefined) {
+        // Trim and simplify the range string for robust parsing
+        const cleanedRange = (rangeStr || "").trim().replace(/\s+/g, ' ');
+
+        // 1. Handle "X - Y" range format
+        // We use a regex to be more precise than just .includes('-')
+        const rangeMatch = cleanedRange.match(/^([0-9.]+)\s*-\s*([0-9.]+)$/);
+        if (rangeMatch) {
+            const rMin = parseFloat(rangeMatch[1]);
+            const rMax = parseFloat(rangeMatch[2]);
+            if (!isNaN(rMin) && numValue < rMin) return 'LOW';
+            if (!isNaN(rMax) && numValue > rMax) return 'HIGH';
+            return 'NORMAL';
+        }
+
+        // 2. Handle "< X" or "upto X" format
+        if (cleanedRange.startsWith('<') || cleanedRange.toLowerCase().startsWith('upto')) {
+            const limit = parseFloat(cleanedRange.replace(/<|upto/ig, '').trim());
+            if (!isNaN(limit)) {
+                return numValue >= limit ? 'HIGH' : 'NORMAL';
+            }
+        }
+
+        // 3. Handle "> X" format
+        if (cleanedRange.startsWith('>')) {
+            const limit = parseFloat(cleanedRange.replace('>', '').trim());
+            if (!isNaN(limit)) {
+                return numValue <= limit ? 'LOW' : 'NORMAL';
+            }
+        }
+        
+        // 4. Fallback to explicit min/max from database (only if they aren't both 0, which is likely a placeholder)
+        if (min !== null && min !== undefined && max !== null && max !== undefined && (min !== 0 || max !== 0)) {
             if (numValue < min) return 'LOW';
             if (numValue > max) return 'HIGH';
             return 'NORMAL';
-        }
-
-        // 2. Fallback to strict string parsing of the reference range
-        if (!rangeStr || typeof rangeStr !== 'string') return 'NORMAL';
-
-        const cleaned = rangeStr.replace(/\s/g, '');
-
-        if (cleaned.includes('-')) {
-            const parts = cleaned.split('-');
-            if (parts.length >= 2) {
-                const rMin = parseFloat(parts[0]);
-                const rMax = parseFloat(parts[1]);
-                if (!isNaN(rMin) && numValue < rMin) return 'LOW';
-                if (!isNaN(rMax) && numValue > rMax) return 'HIGH';
-            }
-            return 'NORMAL';
-        }
-
-        if (cleaned.startsWith('<') || cleaned.toLowerCase().startsWith('upto')) {
-            const rMax = parseFloat(cleaned.replace(/<|upto/ig, ''));
-            if (!isNaN(rMax)) return numValue >= rMax ? 'HIGH' : 'NORMAL';
-        }
-
-        if (cleaned.startsWith('>')) {
-            const rMin = parseFloat(cleaned.replace(/>/ig, ''));
-            if (!isNaN(rMin)) return numValue <= rMin ? 'LOW' : 'NORMAL';
         }
 
         return 'NORMAL';

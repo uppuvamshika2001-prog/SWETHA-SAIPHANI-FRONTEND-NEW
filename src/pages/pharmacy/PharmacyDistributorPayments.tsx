@@ -15,7 +15,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function DistributorPayments() {
     const [purchases, setPurchases] = useState<any[]>([]);
-    const [report, setReport] = useState<any>(null);
+    const [report, setReport] = useState<any>({
+        stats: {
+            totalAmount: 0,
+            totalPaid: 0,
+            totalBalance: 0,
+            pendingCount: 0
+        },
+        pendingByDistributor: {}
+    });
     const [isLoading, setIsLoading] = useState(true);
     const [filters, setFilters] = useState({
         distributor: "",
@@ -38,11 +46,30 @@ export default function DistributorPayments() {
                 pharmacyService.getDistributorReport()
             ]);
             
-            setPurchases(purchasesRes.items || []);
-            setReport(reportRes);
+            console.log("Distributor Payments API:", { purchases: purchasesRes, report: reportRes });
+
+            if (purchasesRes && purchasesRes.items) {
+                setPurchases(purchasesRes.items);
+            } else {
+                setPurchases([]);
+            }
+
+            if (reportRes && reportRes.stats) {
+                setReport(reportRes);
+            } else {
+                setReport({
+                    stats: { totalAmount: 0, totalPaid: 0, totalBalance: 0, pendingCount: 0 },
+                    pendingByDistributor: {}
+                });
+            }
         } catch (error) {
             console.error("Failed to fetch data:", error);
             toast.error("Failed to load payment data");
+            setPurchases([]);
+            setReport({
+                stats: { totalAmount: 0, totalPaid: 0, totalBalance: 0, pendingCount: 0 },
+                pendingByDistributor: {}
+            });
         } finally {
             setIsLoading(false);
         }
@@ -81,7 +108,7 @@ export default function DistributorPayments() {
                                 <div className="flex justify-between items-start">
                                     <div>
                                         <p className="text-sm font-medium text-slate-500">Total Purchase</p>
-                                        <h3 className="text-2xl font-bold">₹{report.stats.totalAmount.toLocaleString()}</h3>
+                                        <h3 className="text-2xl font-bold">₹{report?.stats?.totalAmount?.toLocaleString() ?? 0}</h3>
                                     </div>
                                     <div className="p-2 bg-blue-50 rounded-lg">
                                         <IndianRupee className="h-5 w-5 text-blue-500" />
@@ -94,7 +121,7 @@ export default function DistributorPayments() {
                                 <div className="flex justify-between items-start">
                                     <div>
                                         <p className="text-sm font-medium text-slate-500">Total Paid</p>
-                                        <h3 className="text-2xl font-bold">₹{report.stats.totalPaid.toLocaleString()}</h3>
+                                        <h3 className="text-2xl font-bold">₹{report?.stats?.totalPaid?.toLocaleString() ?? 0}</h3>
                                     </div>
                                     <div className="p-2 bg-green-50 rounded-lg">
                                         <ArrowUpRight className="h-5 w-5 text-green-500" />
@@ -107,7 +134,7 @@ export default function DistributorPayments() {
                                 <div className="flex justify-between items-start">
                                     <div>
                                         <p className="text-sm font-medium text-slate-500">Total Balance</p>
-                                        <h3 className="text-2xl font-bold">₹{report.stats.totalBalance.toLocaleString()}</h3>
+                                        <h3 className="text-2xl font-bold">₹{report?.stats?.totalBalance?.toLocaleString() ?? 0}</h3>
                                     </div>
                                     <div className="p-2 bg-red-50 rounded-lg">
                                         <ArrowDownRight className="h-5 w-5 text-red-500" />
@@ -120,7 +147,7 @@ export default function DistributorPayments() {
                                 <div className="flex justify-between items-start">
                                     <div>
                                         <p className="text-sm font-medium text-slate-500">Pending Invoices</p>
-                                        <h3 className="text-2xl font-bold">{report.stats.pendingCount}</h3>
+                                        <h3 className="text-2xl font-bold">{report?.stats?.pendingCount ?? 0}</h3>
                                     </div>
                                     <div className="p-2 bg-purple-50 rounded-lg">
                                         <AlertCircle className="h-5 w-5 text-purple-500" />
@@ -209,9 +236,9 @@ export default function DistributorPayments() {
                                                         <TableCell className="font-medium text-purple-700">{purchase.invoiceNumber}</TableCell>
                                                         <TableCell>{purchase.distributorName}</TableCell>
                                                         <TableCell>{format(new Date(purchase.purchaseDate), "dd MMM yyyy")}</TableCell>
-                                                        <TableCell className="text-right">₹{purchase.totalAmount.toFixed(2)}</TableCell>
-                                                        <TableCell className="text-right text-green-600">₹{purchase.amountPaid.toFixed(2)}</TableCell>
-                                                        <TableCell className="text-right text-red-600 font-semibold">₹{purchase.balanceAmount.toFixed(2)}</TableCell>
+                                                        <TableCell className="text-right">₹{(purchase.totalAmount || 0).toFixed(2)}</TableCell>
+                                                        <TableCell className="text-right text-green-600">₹{(purchase.amountPaid || 0).toFixed(2)}</TableCell>
+                                                        <TableCell className="text-right text-red-600 font-semibold">₹{(purchase.balanceAmount || 0).toFixed(2)}</TableCell>
                                                         <TableCell className="text-center">{getStatusBadge(purchase.paymentStatus)}</TableCell>
                                                         <TableCell>{purchase.paymentMethod}</TableCell>
                                                     </TableRow>
@@ -248,7 +275,7 @@ export default function DistributorPayments() {
                                                         <Loader2 className="h-6 w-6 animate-spin mx-auto text-slate-400" />
                                                     </TableCell>
                                                 </TableRow>
-                                            ) : (!report || Object.keys(report.pendingByDistributor).length === 0) ? (
+                                            ) : (!report || !report.pendingByDistributor || Object.keys(report.pendingByDistributor).length === 0) ? (
                                                 <TableRow>
                                                     <TableCell colSpan={4} className="h-24 text-center text-slate-500">
                                                         No outstanding payments
@@ -259,10 +286,10 @@ export default function DistributorPayments() {
                                                     <TableRow key={name}>
                                                         <TableCell className="font-medium">{name}</TableCell>
                                                         <TableCell className="text-center">
-                                                            <Badge variant="secondary">{data.count}</Badge>
+                                                            <Badge variant="secondary">{data.count || 0}</Badge>
                                                         </TableCell>
                                                         <TableCell className="text-right font-bold text-red-600">
-                                                            ₹{data.totalBalance.toFixed(2)}
+                                                            ₹{(data.totalBalance || 0).toFixed(2)}
                                                         </TableCell>
                                                         <TableCell className="text-center">
                                                             <Button variant="ghost" size="sm" onClick={() => setFilters({ ...filters, distributor: name, status: "PENDING" })}>

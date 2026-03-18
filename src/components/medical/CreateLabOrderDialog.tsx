@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
     Dialog,
@@ -19,10 +19,12 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { Plus, FlaskConical, Search, User, Loader2, Trash2 } from "lucide-react";
+import { Plus, FlaskConical, Search, User, Loader2, Trash2, UserRound } from "lucide-react";
 import { toast } from "sonner";
 import { useLab } from "@/contexts/LabContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { api } from "@/services/api";
+import { staffService } from "@/services/staffService";
 import { WalkInLabPatientDialog } from "@/components/patients/WalkInLabPatientDialog";
 import { SearchableSelect } from "@/components/ui/SearchableSelect";
 import { LabTest } from "@/types";
@@ -39,9 +41,13 @@ export function CreateLabOrderDialog() {
     const [loading, setLoading] = useState(false);
     const [searchLoading, setSearchLoading] = useState(false);
 
+    const { user } = useAuth();
+    const isReceptionist = user?.role === 'receptionist';
+
     // Patient state
     const [patientSearch, setPatientSearch] = useState("");
     const [selectedPatient, setSelectedPatient] = useState<PatientInfo | null>(null);
+    const [isWalkInLab, setIsWalkInLab] = useState(false);
     const [searchResults, setSearchResults] = useState<PatientInfo[]>([]);
     const [showResults, setShowResults] = useState(false);
 
@@ -49,8 +55,27 @@ export function CreateLabOrderDialog() {
     const [selectedTests, setSelectedTests] = useState<(LabTest | { id: string, name: string, code?: string })[]>([]);
     const [priority, setPriority] = useState<"normal" | "urgent" | "stat">("normal");
     const [notes, setNotes] = useState("");
+    
+    // Doctor state
+    const [doctors, setDoctors] = useState<any[]>([]);
+    const [selectedDoctorId, setSelectedDoctorId] = useState<string>("");
 
     const { createLabOrder } = useLab();
+
+    useEffect(() => {
+        if (open) {
+            const fetchDoctors = async () => {
+                try {
+                    const staff = await staffService.getStaff();
+                    const activeDoctors = staff.filter((s: any) => s.role === 'doctor');
+                    setDoctors(activeDoctors);
+                } catch (error) {
+                    console.error("Failed to fetch doctors:", error);
+                }
+            };
+            fetchDoctors();
+        }
+    }, [open]);
 
     const handlePatientSearch = async () => {
         if (!patientSearch.trim()) {
@@ -77,6 +102,7 @@ export function CreateLabOrderDialog() {
 
     const handleSelectPatient = (patient: PatientInfo) => {
         setSelectedPatient(patient);
+        setIsWalkInLab(false);
         setPatientSearch("");
         setSearchResults([]);
         setShowResults(false);
@@ -103,6 +129,12 @@ export function CreateLabOrderDialog() {
             return;
         }
 
+        if (!isReceptionist && !selectedDoctorId) {
+            // If not receptionist, doctor selection might be required depending on flow, 
+            // but for doctor role it defaults to self on backend usually.
+            // For now let's allow optional if receptionist.
+        }
+
         setLoading(true);
         try {
             // Create separate orders for each test for structured results
@@ -112,8 +144,10 @@ export function CreateLabOrderDialog() {
                     testId: test.id.length > 10 ? test.id : undefined, // UUID check
                     testName: test.name,
                     testCode: (test as any).code,
+                    doctorId: selectedDoctorId || undefined,
                     priority,
                     notes: notes || undefined,
+                    isWalkInLab: isWalkInLab,
                 });
             }
             
@@ -130,6 +164,7 @@ export function CreateLabOrderDialog() {
     const resetForm = () => {
         setSelectedPatient(null);
         setSelectedTests([]);
+        setSelectedDoctorId("");
         setPriority("normal");
         setNotes("");
         setPatientSearch("");
@@ -172,6 +207,7 @@ export function CreateLabOrderDialog() {
                                         lastName: patient.full_name.split(' ').slice(1).join(' '),
                                         phone: patient.phone,
                                     });
+                                    setIsWalkInLab(true);
                                     setShowResults(false);
                                 }} />
                             )}
@@ -345,6 +381,36 @@ export function CreateLabOrderDialog() {
                         <p className="text-xs text-muted-foreground mt-1">
                             Search from the catalog for structured results, or enter manually for others.
                         </p>
+                    </div>
+
+                    {/* Doctor Selection */}
+                    <div className="space-y-2">
+                        <Label>Consulting Doctor {isReceptionist ? "(Optional)" : "*"}</Label>
+                        <Select value={selectedDoctorId} onValueChange={setSelectedDoctorId}>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select a doctor..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {doctors.map((doctor) => (
+                                    <SelectItem key={doctor.id} value={doctor.id}>
+                                        <div className="flex items-center gap-2">
+                                            <UserRound className="h-4 w-4 text-muted-foreground" />
+                                            <span>Dr. {doctor.firstName} {doctor.lastName}</span>
+                                        </div>
+                                    </SelectItem>
+                                ))}
+                                {doctors.length === 0 && (
+                                    <div className="p-2 text-sm text-muted-foreground text-center">
+                                        No active doctors found
+                                    </div>
+                                )}
+                            </SelectContent>
+                        </Select>
+                        {isReceptionist && (
+                            <p className="text-[10px] text-muted-foreground">
+                                Leave blank to order as Receptionist without a specific doctor.
+                            </p>
+                        )}
                     </div>
 
                     {/* Priority */}

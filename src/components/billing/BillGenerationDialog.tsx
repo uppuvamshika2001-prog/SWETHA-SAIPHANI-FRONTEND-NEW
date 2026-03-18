@@ -103,6 +103,7 @@ export function BillGenerationDialog({
     };
 
     // Lab Orders Logic
+    const selectedPatient = patientList.find(p => p.uhid === patientId);
     const [pendingLabOrders, setPendingLabOrders] = useState<any[]>([]);
     const [selectedLabOrderIds, setSelectedLabOrderIds] = useState<string[]>([]);
 
@@ -249,7 +250,8 @@ export function BillGenerationDialog({
                     ? `GST (18%): ₹${calculateGST().toFixed(2)} | Total with GST: ₹${calculateTotal().toFixed(2)}`
                     : `Total: ₹${calculateTotal().toFixed(2)}`,
                 gstPercent: 0, // Explicitly set GST to 0 for Lab/OPD bills
-                labOrderIds: selectedLabOrderIds
+                labOrderIds: selectedLabOrderIds,
+                isWalkInLab: selectedPatient?.patient_type === 'WALKIN_LAB'
             } as any);
 
             toast.success("Bill generated successfully!");
@@ -427,7 +429,9 @@ export function BillGenerationDialog({
                                         <SelectValue placeholder="Select service" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="Consultation Fee">Consultation Fee</SelectItem>
+                                        {(!selectedPatient || selectedPatient.patient_type !== 'WALKIN_LAB') && (
+                                            <SelectItem value="Consultation Fee">Consultation Fee</SelectItem>
+                                        )}
                                         <SelectItem value="Lab Fee">Lab Fee</SelectItem>
                                     </SelectContent>
                                 </Select>

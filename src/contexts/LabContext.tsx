@@ -7,6 +7,8 @@ export interface LabOrder {
     id: string;
     patientId: string;
     orderedById: string;
+    orderedByRole?: string | null;
+    doctorId?: string | null;
     testName: string;
     testCode: string | null;
     priority: string;
@@ -14,11 +16,14 @@ export interface LabOrder {
     notes: string | null;
     patient: { firstName: string; lastName: string };
     orderedBy: { firstName: string; lastName: string };
+    doctor?: { firstName: string; lastName: string } | null;
     bill?: {
         status: 'PENDING' | 'PAID' | 'PARTIALLY_PAID' | 'CANCELLED';
         id: string;
     } | null;
     result?: LabResult | null;
+    isWalkInLab: boolean;
+    visitId: string | null;
     createdAt: string;
 }
 
@@ -44,8 +49,11 @@ export interface CreateLabOrderInput {
     testName: string;
     testCode?: string;
     testId?: string;
+    doctorId?: string;
     priority?: 'normal' | 'urgent' | 'stat';
     notes?: string;
+    isWalkInLab?: boolean;
+    visitId?: string;
 }
 
 export interface CreateLabResultInput {
@@ -156,9 +164,11 @@ export const LabProvider: FC<{ children: ReactNode }> = ({ children }) => {
         const order = await api.post<LabOrder>('/lab/orders', input);
         // Refresh lists
         fetchLabOrders();
-        fetchMyLabOrders();
+        if (user?.role === 'doctor' || user?.role === 'admin') {
+            fetchMyLabOrders();
+        }
         return order;
-    }, [fetchLabOrders, fetchMyLabOrders]);
+    }, [fetchLabOrders, fetchMyLabOrders, user]);
 
     // Update order status
     const updateOrderStatus = useCallback(async (orderId: string, status: string): Promise<LabOrder> => {
@@ -181,8 +191,10 @@ export const LabProvider: FC<{ children: ReactNode }> = ({ children }) => {
         await api.delete(`/lab/orders/${orderId}`);
         // Refresh lists
         fetchLabOrders();
-        fetchMyLabOrders();
-    }, [fetchLabOrders, fetchMyLabOrders]);
+        if (user?.role === 'doctor' || user?.role === 'admin') {
+            fetchMyLabOrders();
+        }
+    }, [fetchLabOrders, fetchMyLabOrders, user]);
 
     // Submit lab result
     const submitResult = useCallback(async (input: CreateLabResultInput): Promise<LabResult> => {

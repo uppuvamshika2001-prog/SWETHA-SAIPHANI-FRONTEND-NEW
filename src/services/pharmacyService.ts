@@ -126,6 +126,6 @@ export const pharmacyService = {
     },
     
     async getMarginReport(params: { startDate?: string; endDate?: string }): Promise<any> {
-        return api.get('/pharmacy/margin-report', { params });
+        return api.get('/pharmacy/margin-reports', { params });
     }
 };
