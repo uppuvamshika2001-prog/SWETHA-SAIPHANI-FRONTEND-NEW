@@ -57,6 +57,8 @@ export const staffService = {
                 department: s.department || 'General',
                 status: (s.status || '').toLowerCase(),
                 phone: s.phone,
+                firstName: s.firstName,
+                lastName: s.lastName,
                 specialization: s.specialization,
                 created_at: s.createdAt,
                 last_login: new Date().toISOString(),

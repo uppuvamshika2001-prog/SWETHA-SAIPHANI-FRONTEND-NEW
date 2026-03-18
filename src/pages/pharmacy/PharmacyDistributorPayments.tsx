@@ -250,7 +250,15 @@ export default function DistributorPayments() {
                                                         <TableCell className="text-right text-green-600">₹{(purchase.amountPaid || 0).toFixed(2)}</TableCell>
                                                         <TableCell className="text-right text-red-600 font-semibold">₹{(purchase.balanceAmount || 0).toFixed(2)}</TableCell>
                                                         <TableCell className="text-center">{getStatusBadge(purchase.paymentStatus)}</TableCell>
-                                                        <TableCell>{purchase.paymentMethod}</TableCell>
+                                                                                                                 <TableCell className="text-center">
+                                                             {purchase.paymentStatus !== "PAID" && (
+                                                                 <RecordPaymentDialog 
+                                                                     purchase={purchase} 
+                                                                     onSuccess={fetchData} 
+                                                                 />
+                                                             )}
+                                                         </TableCell>
+
                                                     </TableRow>
                                                 ))
                                             )}

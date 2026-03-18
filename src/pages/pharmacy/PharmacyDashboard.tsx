@@ -61,13 +61,21 @@ export default function PharmacyDashboard() {
         setMedicines(fetchedMedicines || []);
         setPendingPrescriptions(fetchedPrescriptions || []);
 
-        // Calculate dispensed today
-        const today = new Date().toDateString();
-        const todaysBills = (fetchedBills || []).filter((bill: any) =>
-          new Date(bill.created_at || bill.date).toDateString() === today
-        );
-        // Assuming each bill represents a dispensing action, or sum items if simpler
-        setDispensedToday(todaysBills.length);
+        // Fetch and set real-time stats from backend
+        try {
+          const stats = await pharmacyService.getPharmacyStats();
+          if (stats) {
+            setDispensedToday(stats.dispensedToday || 0);
+          }
+        } catch (statsError) {
+          console.error("Failed to fetch live pharmacy stats", statsError);
+          // Fallback calculation from bills if stats API fails
+          const today = new Date().toDateString();
+          const todaysBills = (fetchedBills || []).filter((bill: any) =>
+            new Date(bill.created_at || bill.date).toDateString() === today
+          );
+          setDispensedToday(todaysBills.length);
+        }
 
       } catch (error) {
         console.error("Failed to fetch pharmacy dashboard data", error);

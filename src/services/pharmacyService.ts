@@ -100,6 +100,15 @@ export const pharmacyService = {
         return Array.isArray(response) ? response : (response.items || response.data || []);
     },
 
+    async getDispensedHistory(): Promise<any[]> {
+        const response: any = await api.get('/pharmacy/dispensed-history');
+        return Array.isArray(response) ? response : (response.items || response.data || []);
+    },
+
+    async getPharmacyStats(): Promise<any> {
+        return api.get('/pharmacy/stats');
+    },
+
     async deleteBill(id: string): Promise<any> {
         apiCache.invalidate('/pharmacy/bills');
         return api.delete(`/pharmacy/bills/${id}`);

@@ -22,7 +22,22 @@ const PharmacyDispensing = () => {
 
     useEffect(() => {
         loadPendingOrders();
+        loadDispensedHistory();
     }, []);
+
+    const loadDispensedHistory = async () => {
+        try {
+            const data = await pharmacyService.getDispensedHistory();
+            setDispensedItems(data.map(item => ({
+                ...item,
+                order_id: item.id,
+                patient_name: `${item.patient.firstName} ${item.patient.lastName}`,
+                dispensedAt: item.vitalSigns?.dispensedAt ? new Date(item.vitalSigns.dispensedAt).toLocaleString() : new Date(item.updatedAt).toLocaleString()
+            })));
+        } catch (e) {
+            console.error("Failed to load dispensed history", e);
+        }
+    };
 
     const loadPendingOrders = async () => {
         try {
@@ -155,13 +170,11 @@ const PharmacyDispensing = () => {
 
             try {
                 await pharmacyService.dispenseMedicalRecord(foundOrder.order_id);
-                setDispensedItems([...dispensedItems, {
-                    ...foundOrder,
-                    dispensedAt: new Date().toLocaleString(),
-                }]);
                 toast.success("Dispensing Complete", {
                     description: `Prescriptions for ${foundOrder.patient_name} dispensed`,
                 });
+                // Refresh list from backend
+                loadDispensedHistory();
                 setFoundOrder(null);
                 setFoundPatient(null);
                 setOrderId("");

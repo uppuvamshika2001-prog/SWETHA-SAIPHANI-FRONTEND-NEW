@@ -183,7 +183,7 @@ export function CreateLabOrderDialog() {
                     Order Lab Test
                 </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[500px]">
+            <DialogContent className="sm:max-w-[500px] max-h-[85vh] overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">
                         <FlaskConical className="h-5 w-5" />
