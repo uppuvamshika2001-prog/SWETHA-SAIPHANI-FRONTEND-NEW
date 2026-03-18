@@ -329,6 +329,7 @@ export function AddMedicineDialog({ children, onAdd }: AddMedicineDialogProps) {
                             />
                         </div>
                     </div>
+                </div>
 
                 <DialogFooter>
                     <Button variant="outline" onClick={() => setOpen(false)} disabled={isLoading}>
