@@ -46,6 +46,7 @@ export interface Patient {
   allergies?: string[];
   medical_history?: string;
   status: 'active';
+  registration_date: string;
   created_at: string;
   updated_at: string;
   consulting_doctor?: string;

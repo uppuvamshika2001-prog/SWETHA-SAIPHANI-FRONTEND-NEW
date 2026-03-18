@@ -40,18 +40,7 @@ export function AddMedicineDialog({ children, onAdd }: AddMedicineDialogProps) {
         stock_quantity: "",
         min_stock_level: "10",
         invoice_number: "",
-        amount_paid: "0",
-        payment_date: new Date().toISOString().split('T')[0],
-        payment_method: "Cash",
     });
-
-    const totalAmount = (parseFloat(formData.stock_quantity) || 0) * (parseFloat(formData.purchase_price) || 0);
-    const amountPaid = parseFloat(formData.amount_paid) || 0;
-    const balanceAmount = totalAmount - amountPaid;
-    
-    let paymentStatus = 'Pending';
-    if (amountPaid >= totalAmount && totalAmount > 0) paymentStatus = 'Paid';
-    else if (amountPaid > 0) paymentStatus = 'Partially Paid';
 
     const profit = formData.sale_price && formData.purchase_price 
         ? parseFloat(formData.sale_price) - parseFloat(formData.purchase_price)
@@ -99,9 +88,6 @@ export function AddMedicineDialog({ children, onAdd }: AddMedicineDialogProps) {
                 stockQuantity: parseInt(formData.stock_quantity),
                 reorderLevel: parseInt(formData.min_stock_level) || 10,
                 invoiceNumber: formData.invoice_number,
-                amountPaid: parseFloat(formData.amount_paid) || 0,
-                paymentDate: formData.payment_date,
-                paymentMethod: formData.payment_method,
             };
 
             await pharmacyService.createMedicine(medicinePayload);
@@ -130,9 +116,6 @@ export function AddMedicineDialog({ children, onAdd }: AddMedicineDialogProps) {
                 stock_quantity: "",
                 min_stock_level: "10",
                 invoice_number: "",
-                amount_paid: "0",
-                payment_date: new Date().toISOString().split('T')[0],
-                payment_method: "Cash",
             });
             setOpen(false);
         } catch (error: any) {
@@ -346,86 +329,6 @@ export function AddMedicineDialog({ children, onAdd }: AddMedicineDialogProps) {
                             />
                         </div>
                     </div>
-
-                    {/* Payment Section */}
-                    <div className="border-t pt-4 mt-2">
-                        <h3 className="text-sm font-semibold mb-3 text-purple-700">Payment Information</h3>
-                        <div className="grid gap-4">
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                    <Label htmlFor="invoice_number">Invoice Number</Label>
-                                    <Input
-                                        id="invoice_number"
-                                        placeholder="e.g. INV-9901"
-                                        value={formData.invoice_number}
-                                        onChange={(e) => setFormData({ ...formData, invoice_number: e.target.value })}
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="amount_paid">Amount Paid (₹)</Label>
-                                    <Input
-                                        id="amount_paid"
-                                        type="number"
-                                        placeholder="0.00"
-                                        value={formData.amount_paid}
-                                        onChange={(e) => setFormData({ ...formData, amount_paid: e.target.value })}
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                    <Label htmlFor="payment_date">Payment Date</Label>
-                                    <Input
-                                        id="payment_date"
-                                        type="date"
-                                        value={formData.payment_date}
-                                        onChange={(e) => setFormData({ ...formData, payment_date: e.target.value })}
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="payment_method">Payment Method</Label>
-                                    <Select
-                                        value={formData.payment_method}
-                                        onValueChange={(value) => setFormData({ ...formData, payment_method: value })}
-                                    >
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Select method" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="Cash">Cash</SelectItem>
-                                            <SelectItem value="Online">Online</SelectItem>
-                                            <SelectItem value="Cheque">Cheque</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                            </div>
-
-                            <div className="bg-slate-50 p-3 rounded-lg border border-slate-100 grid grid-cols-3 gap-4 text-center">
-                                <div className="flex flex-col">
-                                    <span className="text-[10px] text-muted-foreground uppercase">Total Amount</span>
-                                    <span className="font-bold">₹{totalAmount.toFixed(2)}</span>
-                                </div>
-                                <div className="flex flex-col">
-                                    <span className="text-[10px] text-muted-foreground uppercase">Balance</span>
-                                    <span className={`font-bold ${balanceAmount > 0 ? 'text-red-600' : 'text-green-600'}`}>
-                                        ₹{balanceAmount.toFixed(2)}
-                                    </span>
-                                </div>
-                                <div className="flex flex-col">
-                                    <span className="text-[10px] text-muted-foreground uppercase">Status</span>
-                                    <span className={`font-bold ${
-                                        paymentStatus === 'Paid' ? 'text-green-600' : 
-                                        paymentStatus === 'Partially Paid' ? 'text-yellow-600' : 
-                                        'text-red-500'
-                                    }`}>
-                                        {paymentStatus}
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
 
                 <DialogFooter>
                     <Button variant="outline" onClick={() => setOpen(false)} disabled={isLoading}>

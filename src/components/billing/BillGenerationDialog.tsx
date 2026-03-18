@@ -117,8 +117,8 @@ export function BillGenerationDialog({
 
     const fetchPendingLabOrders = async () => {
         try {
-            // Fetch 'PENDING' orders (new default status)
-            const orders = await labService.getLabOrders({ patientId, status: 'PENDING' });
+            // Fetch 'PAYMENT_PENDING' orders (new default status)
+            const orders = await labService.getLabOrders({ patientId, status: 'PAYMENT_PENDING' });
             setPendingLabOrders(orders);
         } catch (error) {
             console.error("Failed to fetch lab orders", error);

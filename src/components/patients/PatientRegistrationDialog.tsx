@@ -92,7 +92,8 @@ export function PatientRegistrationDialog({ children, onRegister, patientToEdit 
         emergencyName: '',
         emergencyPhone: '',
         relation: '',
-        registrationFee: '500'
+        registrationFee: '500',
+        registrationDate: new Date().toISOString().slice(0, 10)
     };
 
     const [formData, setFormData] = useState(initialFormState);
@@ -248,6 +249,7 @@ export function PatientRegistrationDialog({ children, onRegister, patientToEdit 
                 district,
                 state,
                 pincode,
+                registrationDate: patientToEdit.registration_date ? patientToEdit.registration_date.slice(0, 10) : new Date().toISOString().slice(0, 10),
 
                 // Map other potential fields if they exist in patient object
                 gender: patientToEdit.gender ? patientToEdit.gender.charAt(0).toUpperCase() + patientToEdit.gender.slice(1) : '',
@@ -875,7 +877,8 @@ export function PatientRegistrationDialog({ children, onRegister, patientToEdit 
             emergencyName: '',
             emergencyPhone: '',
             relation: '',
-            registrationFee: '500'
+            registrationFee: '500',
+            registrationDate: new Date().toISOString().slice(0, 10)
         });
     };
 
@@ -903,6 +906,16 @@ export function PatientRegistrationDialog({ children, onRegister, patientToEdit 
                                     <div className="space-y-2">
                                         <Label htmlFor="uhid">UHID *</Label>
                                         <Input id="uhid" value={formData.uhid} disabled className="bg-slate-50 dark:bg-slate-900 border-primary/20 text-primary font-medium" />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="registrationDate">Registration Date *</Label>
+                                        <Input 
+                                            id="registrationDate" 
+                                            type="date" 
+                                            value={formData.registrationDate} 
+                                            max={new Date().toISOString().slice(0, 10)} 
+                                            onChange={(e) => handleChange('registrationDate', e.target.value)} 
+                                        />
                                     </div>
                                     <div className="space-y-2">
                                         <Label htmlFor="title">Title *</Label>

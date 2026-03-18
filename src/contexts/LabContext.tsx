@@ -12,7 +12,7 @@ export interface LabOrder {
     testName: string;
     testCode: string | null;
     priority: string;
-    status: 'ORDERED' | 'SAMPLE_COLLECTED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED' | 'PAYMENT_PENDING' | 'READY_FOR_SAMPLE_COLLECTION' | 'PENDING';
+    status: 'ORDERED' | 'SAMPLE_COLLECTED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED' | 'PAYMENT_PENDING' | 'READY_FOR_SAMPLE_COLLECTION';
     notes: string | null;
     patient: { firstName: string; lastName: string };
     orderedBy: { firstName: string; lastName: string };

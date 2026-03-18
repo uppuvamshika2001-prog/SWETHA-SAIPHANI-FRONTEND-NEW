@@ -16,6 +16,7 @@ export interface PatientResponse {
     emergencyContact: string | null;
     bloodGroup: string | null;
     allergies: string | null;
+    registrationDate: string;
     createdAt: string;
     updatedAt: string;
     consultingDoctor: string | null;
@@ -45,6 +46,7 @@ const adaptPatient = (data: PatientResponse): Patient => {
         emergency_contact_phone: data.emergencyContact || '',
         allergies: data.allergies ? data.allergies.split(',') : [],
         status: 'active',
+        registration_date: new Date(data.registrationDate).toISOString(),
         created_at: new Date(data.createdAt).toISOString(),
         updated_at: new Date(data.updatedAt).toISOString(),
         consulting_doctor: data.consultingDoctor || undefined,
@@ -133,7 +135,8 @@ export const patientService = {
             referredPerson: data.referredPerson || undefined,
             consultingDoctor: data.consultingDoctor || undefined,
             registrationFee: data.registrationFee || undefined,
-            paymentMode: data.paymentMode || undefined
+            paymentMode: data.paymentMode || undefined,
+            registrationDate: data.registrationDate || data.registration_date || undefined
         };
 
         console.log('[PatientService] Creating patient with payload:', JSON.stringify(payload, null, 2));
@@ -217,6 +220,7 @@ export const patientService = {
         age?: number;
         gender?: string;
         referredBy?: string;
+        registrationDate?: string;
     }): Promise<Patient> {
         const payload = {
             firstName: data.firstName,
@@ -229,6 +233,7 @@ export const patientService = {
             patientType: 'WALKIN_LAB',
             createdFromModule: 'lab_billing',
             referredBy: data.referredBy || undefined,
+            registrationDate: (data as any).registrationDate || (data as any).registration_date || undefined
         };
 
         console.log('[PatientService] Creating walk-in lab patient:', JSON.stringify(payload, null, 2));

@@ -121,6 +121,11 @@ export default function ReceptionPatients() {
         { key: 'phone', header: 'Phone' },
         { key: 'email', header: 'Email' },
         {
+            key: 'registration_date',
+            header: 'Reg. Date',
+            render: (patient: Patient) => format(new Date(patient.registration_date), 'dd/MM/yyyy')
+        },
+        {
             key: 'status',
             header: 'Status',
             render: (patient: any) => (

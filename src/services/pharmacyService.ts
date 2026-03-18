@@ -127,5 +127,13 @@ export const pharmacyService = {
     
     async getMarginReport(params: { startDate?: string; endDate?: string }): Promise<any> {
         return api.get('/pharmacy/margin-reports', { params });
+    },
+
+    async recordPayment(purchaseId: string, data: any): Promise<any> {
+        return api.post(`/pharmacy/purchases/${purchaseId}/payments`, data);
+    },
+
+    async getPurchasePayments(purchaseId: string): Promise<any> {
+        return api.get(`/pharmacy/purchases/${purchaseId}/payments`);
     }
 };

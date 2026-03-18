@@ -12,6 +12,16 @@ import { pharmacyService } from "@/services/pharmacyService";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+    DialogFooter,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Receipt } from "lucide-react";
 
 export default function DistributorPayments() {
     const [purchases, setPurchases] = useState<any[]>([]);
@@ -214,7 +224,7 @@ export default function DistributorPayments() {
                                                 <TableHead className="text-right">Paid</TableHead>
                                                 <TableHead className="text-right">Balance</TableHead>
                                                 <TableHead className="text-center">Status</TableHead>
-                                                <TableHead>Method</TableHead>
+                                                <TableHead className="text-center">Action</TableHead>
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
@@ -309,5 +319,131 @@ export default function DistributorPayments() {
                 </Tabs>
             </div>
         </DashboardLayout>
+    );
+}
+
+function RecordPaymentDialog({ purchase, onSuccess }: { purchase: any, onSuccess: () => void }) {
+    const [open, setOpen] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
+    const [formData, setFormData] = useState({
+        amount: purchase.balanceAmount.toString(),
+        paymentMethod: "Cash",
+        paymentDate: new Date().toISOString().split('T')[0],
+        notes: ""
+    });
+
+    const handleSubmit = async () => {
+        const amount = parseFloat(formData.amount);
+        if (isNaN(amount) || amount <= 0) {
+            toast.error("Please enter a valid amount");
+            return;
+        }
+
+        if (amount > purchase.balanceAmount) {
+            toast.error(`Amount cannot exceed balance (₹${purchase.balanceAmount})`);
+            return;
+        }
+
+        try {
+            setIsLoading(true);
+            await pharmacyService.recordPayment(purchase.id, {
+                purchaseId: purchase.id,
+                amount,
+                paymentMethod: formData.paymentMethod,
+                paymentDate: formData.paymentDate,
+                notes: formData.notes
+            });
+            toast.success("Payment recorded successfully");
+            setOpen(false);
+            onSuccess();
+        } catch (error: any) {
+            console.error("Failed to record payment:", error);
+            toast.error(error.response?.data?.message || "Failed to record payment");
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    return (
+        <Dialog open={open} onOpenChange={setOpen}>
+            <Button variant="ghost" size="sm" className="text-purple-600 hover:text-purple-700 hover:bg-purple-50" onClick={() => setOpen(true)}>
+                <Receipt className="h-4 w-4 mr-1" />
+                Pay
+            </Button>
+            <DialogContent className="sm:max-w-[425px]">
+                <DialogHeader>
+                    <DialogTitle>Record Payment</DialogTitle>
+                    <DialogDescription>
+                        Payment for Invoice #{purchase.invoiceNumber} (Distributor: {purchase.distributorName})
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                    <div className="bg-slate-50 p-3 rounded-lg border border-slate-100 mb-2">
+                        <div className="flex justify-between items-center mb-1">
+                            <span className="text-xs text-slate-500 uppercase">Total Amount</span>
+                            <span className="font-semibold text-slate-700">₹{Number(purchase.totalAmount).toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                            <span className="text-xs text-slate-500 uppercase">Current Balance</span>
+                            <span className="font-bold text-red-600">₹{Number(purchase.balanceAmount).toFixed(2)}</span>
+                        </div>
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="amount">Amount to Pay (₹)</Label>
+                        <Input
+                            id="amount"
+                            type="number"
+                            step="0.01"
+                            value={formData.amount}
+                            onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+                        />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="method">Payment Method</Label>
+                        <Select
+                            value={formData.paymentMethod}
+                            onValueChange={(v) => setFormData({ ...formData, paymentMethod: v })}
+                        >
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select method" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="Cash">Cash</SelectItem>
+                                <SelectItem value="UPI">UPI/Online</SelectItem>
+                                <SelectItem value="Cheque">Cheque</SelectItem>
+                                <SelectItem value="Bank Transfer">Bank Transfer</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="date">Payment Date</Label>
+                        <Input
+                            id="date"
+                            type="date"
+                            value={formData.paymentDate}
+                            onChange={(e) => setFormData({ ...formData, paymentDate: e.target.value })}
+                        />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="notes">Notes (Optional)</Label>
+                        <Input
+                            id="notes"
+                            placeholder="e.g. Transaction ID or check number"
+                            value={formData.notes}
+                            onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                        />
+                    </div>
+                </div>
+                <DialogFooter>
+                    <Button variant="outline" onClick={() => setOpen(false)} disabled={isLoading}>
+                        Cancel
+                    </Button>
+                    <Button onClick={handleSubmit} disabled={isLoading} className="bg-purple-600 hover:bg-purple-700">
+                        {isLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                        Confirm Payment
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
     );
 }

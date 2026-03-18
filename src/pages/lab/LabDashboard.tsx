@@ -58,7 +58,7 @@ export default function LabDashboard() {
     tests: [{
       test_id: order.testCode || 'N/A',
       test_name: order.testName,
-      status: (order.status === 'COMPLETED' ? 'completed' : (order.status === 'PENDING' ? 'pending' : 'pending')) as any,
+      status: (order.status === 'COMPLETED' ? 'completed' : order.status.toLowerCase()) as any,
       result: '',
     }],
     priority: (order.priority.toLowerCase() === 'stat' ? 'stat' : (order.priority.toLowerCase() === 'urgent' ? 'urgent' : 'routine')) as any,
@@ -68,7 +68,7 @@ export default function LabDashboard() {
     notes: order.notes || undefined
   }));
 
-  const pendingTests = labOrders.filter((t) => t.status === 'pending' || t.status === 'ordered' || t.status === 'sample_collected').length;
+  const pendingTests = labOrders.filter((t) => t.status === 'payment_pending' || t.status === 'ordered' || t.status === 'sample_collected').length;
   const inProgress = labOrders.filter((t) => t.status === 'processing').length;
   const completedToday = labOrders.filter((t) => t.status === 'completed').length;
   const urgentTests = labOrders.filter((t) => t.priority === 'urgent' || t.priority === 'stat').length;
@@ -88,7 +88,7 @@ export default function LabDashboard() {
   );
 
   // Lists for each category
-  const pendingTestsList = labOrders.filter((t) => t.status === 'pending' || t.status === 'ordered' || t.status === 'sample_collected' || t.status === 'payment_pending' || t.status === 'ready_for_sample_collection');
+  const pendingTestsList = labOrders.filter((t) => t.status === 'payment_pending' || t.status === 'ordered' || t.status === 'sample_collected' || t.status === 'ready_for_sample_collection');
   const inProgressList = labOrders.filter((t) => t.status === 'processing');
   const completedList = labOrders.filter((t) => t.status === 'completed');
   const urgentList = labOrders.filter((t) => t.priority === 'urgent' || t.priority === 'stat');

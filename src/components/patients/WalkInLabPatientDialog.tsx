@@ -39,6 +39,7 @@ export function WalkInLabPatientDialog({ children, onPatientCreated }: WalkInLab
     const [age, setAge] = useState("");
     const [gender, setGender] = useState("");
     const [referredBy, setReferredBy] = useState("");
+    const [registrationDate, setRegistrationDate] = useState(new Date().toISOString().slice(0, 10));
 
     const resetForm = () => {
         setFirstName("");
@@ -47,6 +48,7 @@ export function WalkInLabPatientDialog({ children, onPatientCreated }: WalkInLab
         setAge("");
         setGender("");
         setReferredBy("");
+        setRegistrationDate(new Date().toISOString().slice(0, 10));
     };
 
     const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -73,6 +75,7 @@ export function WalkInLabPatientDialog({ children, onPatientCreated }: WalkInLab
                 age: age ? parseInt(age) : undefined,
                 gender: gender || undefined,
                 referredBy: referredBy.trim() || undefined,
+                registrationDate: registrationDate,
             });
 
             toast.success("Walk-in Patient Registered", {
@@ -112,6 +115,20 @@ export function WalkInLabPatientDialog({ children, onPatientCreated }: WalkInLab
                 </DialogHeader>
 
                 <div className="grid gap-4 py-4">
+                    {/* Registration Date Row */}
+                    <div className="space-y-1.5">
+                        <Label htmlFor="walkin-registrationDate" className="text-sm">
+                            Registration Date <span className="text-red-500">*</span>
+                        </Label>
+                        <Input
+                            id="walkin-registrationDate"
+                            type="date"
+                            value={registrationDate}
+                            max={new Date().toISOString().slice(0, 10)}
+                            onChange={(e) => setRegistrationDate(e.target.value)}
+                        />
+                    </div>
+
                     {/* Name Row */}
                     <div className="grid grid-cols-2 gap-3">
                         <div className="space-y-1.5">
