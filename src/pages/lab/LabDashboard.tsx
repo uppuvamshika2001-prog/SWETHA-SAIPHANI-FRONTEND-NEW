@@ -42,6 +42,7 @@ export default function LabDashboard() {
 
   useEffect(() => {
     const fetchData = () => {
+      console.log(`[API] LabDashboard fetching orders for date: ${selectedDate ? format(selectedDate, 'yyyy-MM-dd') : 'all'}`);
       if (selectedDate) {
         fetchLabOrders(undefined, selectedDate);
       } else {
@@ -49,11 +50,18 @@ export default function LabDashboard() {
       }
     };
 
-    fetchData(); // Fetch immediately on mount/date change
+    fetchData(); // Initial fetch
 
-    const interval = setInterval(fetchData, 5000); // Poll every 5 seconds
-    return () => clearInterval(interval);
-  }, [fetchLabOrders, selectedDate]);
+    const interval = setInterval(() => {
+      console.log(`[API] LabDashboard polling orders for date: ${selectedDate ? format(selectedDate, 'yyyy-MM-dd') : 'all'}`);
+      fetchData();
+    }, 5000);
+
+    return () => {
+      console.log('[API] LabDashboard clearing poll interval');
+      clearInterval(interval);
+    };
+  }, [selectedDate, fetchLabOrders]); // Removed fetchLabOrders if it was causing unnecessary re-runs, but it's memoized so it's fine. Main thing is selectedDate.
 
   const labOrders = rawOrders.map(order => ({
     id: order.id,

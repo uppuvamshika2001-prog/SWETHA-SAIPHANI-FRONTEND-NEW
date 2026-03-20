@@ -216,7 +216,7 @@ class ApiService {
         return res as T;
     }
 
-    async get<T>(endpoint: string, options?: { params?: Record<string, string | number | boolean> }): Promise<T> {
+    async get<T>(endpoint: string, options?: { params?: Record<string, string | number | boolean>, signal?: AbortSignal }): Promise<T> {
         const execute = async () => {
             let url = `${API_URL}${endpoint}`;
             if (options?.params) {
@@ -234,13 +234,14 @@ class ApiService {
             const response = await fetch(url, {
                 method: 'GET',
                 headers: this.getHeaders(),
+                signal: options?.signal,
             });
             return this.handleResponse<T>(response, execute);
         };
         return execute();
     }
 
-    async post<T>(endpoint: string, body: any): Promise<T> {
+    async post<T>(endpoint: string, body: any, options?: { signal?: AbortSignal }): Promise<T> {
         const execute = async () => {
             const headers = this.getHeaders();
             let requestBody;
@@ -255,37 +256,40 @@ class ApiService {
                 method: 'POST',
                 headers,
                 body: requestBody,
+                signal: options?.signal,
             });
             return this.handleResponse<T>(response, execute);
         };
         return execute();
     }
 
-    async patch<T>(endpoint: string, body: any): Promise<T> {
+    async patch<T>(endpoint: string, body: any, options?: { signal?: AbortSignal }): Promise<T> {
         const execute = async () => {
             const response = await fetch(`${API_URL}${endpoint}`, {
                 method: 'PATCH',
                 headers: this.getHeaders(),
                 body: JSON.stringify(body),
+                signal: options?.signal,
             });
             return this.handleResponse<T>(response, execute);
         };
         return execute();
     }
 
-    async put<T>(endpoint: string, body: any): Promise<T> {
+    async put<T>(endpoint: string, body: any, options?: { signal?: AbortSignal }): Promise<T> {
         const execute = async () => {
             const response = await fetch(`${API_URL}${endpoint}`, {
                 method: 'PUT',
                 headers: this.getHeaders(),
                 body: JSON.stringify(body),
+                signal: options?.signal,
             });
             return this.handleResponse<T>(response, execute);
         };
         return execute();
     }
 
-    async delete<T>(endpoint: string, options?: { params?: Record<string, string | number | boolean> }): Promise<T> {
+    async delete<T>(endpoint: string, options?: { params?: Record<string, string | number | boolean>, signal?: AbortSignal }): Promise<T> {
         const execute = async () => {
             let url = `${API_URL}${endpoint}`;
             if (options?.params) {
@@ -303,6 +307,7 @@ class ApiService {
             const response = await fetch(url, {
                 method: 'DELETE',
                 headers: this.getHeaders(),
+                signal: options?.signal,
             });
             return this.handleResponse<T>(response, execute);
         };

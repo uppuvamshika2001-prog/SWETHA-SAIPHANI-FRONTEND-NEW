@@ -107,8 +107,11 @@ export function BillGenerationDialog({
     const fetchPatientSummary = async () => {
         try {
             const response = await billingService.getPatientSummary(patientId);
-            const lab_orders = response.lab_orders || [];
-            console.log("Lab Orders:", lab_orders);
+            console.log("FULL RESPONSE:", response);
+
+            // Flexible extraction as requested
+            const labOrders = response.items || response.lab_orders || [];
+            console.log("Lab Orders Extracted:", labOrders);
 
             const options = [
                 {
@@ -119,18 +122,19 @@ export function BillGenerationDialog({
                     type: "consultation",
                     description: "Consultation Fee"
                 },
-                ...lab_orders.map((order: any) => ({
+                ...labOrders.map((order: any) => ({
                     id: `lab_${order.id}`,
-                    label: order.testName,
+                    label: order.testName || order.test_name || "Lab Test",
                     value: order.id,
                     price: order.price || 0,
                     type: "lab",
-                    description: `Lab: ${order.testName}`,
+                    description: `Lab: ${order.testName || order.test_name || "Lab Test"}`,
                     lab_order_id: order.id
                 }))
             ];
 
             setServices(options);
+            console.log("Services:", options);
             setPatientSummary(response);
         } catch (error) {
             console.error("Failed to fetch patient summary", error);

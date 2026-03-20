@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback, useEffect, ReactNode, FC } from 'react';
+import { createContext, useContext, useState, useCallback, useEffect, ReactNode, FC, useRef } from 'react';
 import { api } from '@/services/api';
 import { useAuth } from './AuthContext';
 
@@ -100,11 +100,23 @@ export const LabProvider: FC<{ children: ReactNode }> = ({ children }) => {
     const [error, setError] = useState<string | null>(null);
     const [hasFetchedOrders, setHasFetchedOrders] = useState(false);
     const [hasFetchedMyOrders, setHasFetchedMyOrders] = useState(false);
+    const abortControllerRef = useRef<AbortController | null>(null);
+    const myOrdersAbortControllerRef = useRef<AbortController | null>(null);
 
     // Fetch all lab orders (for lab technicians)
     const fetchLabOrders = useCallback(async (status?: string, date?: Date) => {
+        // Cancel previous request if any
+        if (abortControllerRef.current) {
+            abortControllerRef.current.abort();
+        }
+        
+        // Create new controller for this request
+        const controller = new AbortController();
+        abortControllerRef.current = controller;
+
         setLoading(true);
         setError(null);
+        
         try {
             const params = new URLSearchParams({ limit: '50' });
             if (status) params.append('status', status);
@@ -118,24 +130,48 @@ export const LabProvider: FC<{ children: ReactNode }> = ({ children }) => {
                 params.append('endDate', end.toISOString());
             }
 
-            const response = await api.get<{ items: LabOrder[] }>(`/lab/orders?${params}`);
+            console.log(`[API] fetchLabOrders context call: /lab/orders?${params.toString()}`);
+            
+            const response = await api.get<{ items: LabOrder[] }>(`/lab/orders?${params}`, {
+                signal: controller.signal
+            });
+            
             console.log("Lab Orders API Response:", response);
-            // Result is now either inside .data.items (via api.get wrapper) or direct
             const items = (response as any).items || response;
-            setLabOrders(Array.isArray(items) ? items : []);
+            
+            // Only update if this request wasn't aborted
+            if (!controller.signal.aborted) {
+                setLabOrders(Array.isArray(items) ? items : []);
+            }
         } catch (err: any) {
+            if (err.name === 'AbortError') {
+                console.log('[LabContext] fetchLabOrders aborted');
+                return;
+            }
             setError(err.message || 'Failed to fetch lab orders');
             console.error('[LabContext] fetchLabOrders error:', err);
         } finally {
-            setLoading(false);
-            setHasFetchedOrders(true);
+            if (!controller.signal.aborted) {
+                setLoading(false);
+                setHasFetchedOrders(true);
+            }
         }
     }, []);
 
     // Fetch doctor's own orders
     const fetchMyLabOrders = useCallback(async (date?: Date) => {
+        // Cancel previous request if any
+        if (myOrdersAbortControllerRef.current) {
+            myOrdersAbortControllerRef.current.abort();
+        }
+        
+        // Create new controller for this request
+        const controller = new AbortController();
+        myOrdersAbortControllerRef.current = controller;
+
         setLoading(true);
         setError(null);
+        
         try {
             const params = new URLSearchParams({ limit: '50' });
             if (date) {
@@ -147,15 +183,28 @@ export const LabProvider: FC<{ children: ReactNode }> = ({ children }) => {
                 params.append('endDate', end.toISOString());
             }
 
-            const response = await api.get<{ items: LabOrder[] }>(`/lab/orders/my-orders?${params}`);
+            const response = await api.get<{ items: LabOrder[] }>(`/lab/orders/my-orders?${params}`, {
+                signal: controller.signal
+            });
+            
             const items = (response as any).items || response;
-            setMyLabOrders(Array.isArray(items) ? items : []);
+            
+            // Only update if this request wasn't aborted
+            if (!controller.signal.aborted) {
+                setMyLabOrders(Array.isArray(items) ? items : []);
+            }
         } catch (err: any) {
+            if (err.name === 'AbortError') {
+                console.log('[LabContext] fetchMyLabOrders aborted');
+                return;
+            }
             setError(err.message || 'Failed to fetch my lab orders');
             console.error('[LabContext] fetchMyLabOrders error:', err);
         } finally {
-            setLoading(false);
-            setHasFetchedMyOrders(true);
+            if (!controller.signal.aborted) {
+                setLoading(false);
+                setHasFetchedMyOrders(true);
+            }
         }
     }, []);
 
@@ -251,17 +300,8 @@ export const LabProvider: FC<{ children: ReactNode }> = ({ children }) => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [user, authLoading]);
 
-    // Auto-refresh every 5 seconds for live data on pending tests & dashboard
-    useEffect(() => {
-        if (!user || authLoading) return;
-        if (user.role === 'lab_technician' || user.role === 'admin' || user.role === 'receptionist') {
-            const interval = setInterval(() => {
-                fetchLabOrders();
-            }, 5000); // 5 seconds
-            return () => clearInterval(interval);
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [user, authLoading]);
+    // Removed conflicting auto-refresh interval from context. 
+    // Polling is now managed by the specific dashboards to avoid filter conflicts.
 
     return (
         <LabContext.Provider value={{
