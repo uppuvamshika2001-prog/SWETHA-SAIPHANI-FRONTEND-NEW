@@ -21,13 +21,11 @@ import {
 } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
-import { FileText, Plus, Trash2, Loader2, IndianRupee, TestTube2, Stethoscope, Microscope, Check, UserPlus } from "lucide-react";
+import { FileText, Plus, Trash2, Loader2, Check, User } from "lucide-react";
 import { patientService } from "@/services/patientService";
 import { billingService } from "@/services/billingService";
-import { labService } from "@/services/labService";
 import { Patient } from "@/types";
 import { Separator } from "@/components/ui/separator";
-import { MultiSelect } from "@/components/ui/multi-select";
 import { WalkInLabPatientDialog } from "@/components/patients/WalkInLabPatientDialog";
 
 const DEFAULT_LAB_PRICE = 500;
@@ -66,28 +64,11 @@ export function BillGenerationDialog({
     const [quantity, setQuantity] = useState("1");
     const [discount, setDiscount] = useState("0");
 
-    // Manual Item State
-    const [entryMode, setEntryMode] = useState<'service' | 'lab_multi'>('service');
-    // Multi-Select Lab Tests
-    const [selectedMultiLabTests, setSelectedMultiLabTests] = useState<string[]>([]);
-
-    const [availableTests, setAvailableTests] = useState<any[]>([]);
-
     useEffect(() => {
         if (showOpen) {
             fetchPatients();
-            fetchAvailableTests();
         }
     }, [showOpen]);
-
-    const fetchAvailableTests = async () => {
-        try {
-            const tests = await labService.getLabTests();
-            setAvailableTests(tests);
-        } catch (error) {
-            console.error("Failed to fetch lab tests", error);
-        }
-    };
 
     const fetchPatients = async () => {
         setLoadingPatients(true);
@@ -125,11 +106,11 @@ export function BillGenerationDialog({
     };
 
     const summaryOptions = (() => {
-        const opts = [];
+        const opts: { id: string; label: string; description: string; type: string; price: number; lab_order_id?: string }[] = [];
         if (patientSummary?.consultation) {
             opts.push({ 
                 id: 'consultation', 
-                label: `Consultation Fee (₹${patientSummary.consultation.fee})`, 
+                label: 'Consultation Fee', 
                 description: 'Consultation Fee', 
                 type: 'consultation',
                 price: patientSummary.consultation.fee 
@@ -137,10 +118,10 @@ export function BillGenerationDialog({
         }
         if (patientSummary?.lab_orders?.length > 0) {
             patientSummary.lab_orders.forEach((order: any) => {
-               const testName = order.testName || order.test_name;
+               const testName = order.testName || order.test_name || 'Lab Test';
                opts.push({
                     id: `lab_${order.id}`,
-                    label: `Lab: ${testName} (₹${order.price})`,
+                    label: testName,
                     description: `Lab: ${testName}`,
                     type: 'lab',
                     lab_order_id: order.id,
@@ -151,32 +132,7 @@ export function BillGenerationDialog({
         return opts;
     })();
 
-    const handleAddMultiLabTests = () => {
-        if (selectedMultiLabTests.length === 0) return;
 
-        const newItems = [...items];
-        let addedCount = 0;
-
-        selectedMultiLabTests.forEach(testId => {
-            const test = availableTests.find(t => t.id === testId);
-            if (test) {
-                const price = test.price;
-                const description = `Lab: ${test.name}`;
-
-                newItems.push({
-                    description,
-                    quantity: 1,
-                    unitPrice: Number(price),
-                    total: Number(price)
-                });
-                addedCount++;
-            }
-        });
-
-        setItems(newItems);
-        setSelectedMultiLabTests([]);
-        toast.success(`Added ${addedCount} lab tests to bill.`);
-    };
 
     const handleAddItem = () => {
         if (!selectedServiceId || !unitPrice || !quantity) return;
@@ -312,78 +268,103 @@ export function BillGenerationDialog({
                 </DialogHeader>
 
                 <div className="flex-1 overflow-y-auto p-6 space-y-6">
-                    {/* Patient Selection - Searchable Combobox */}
+                    {/* Patient Selection */}
                     <div className="space-y-2">
                         <div className="flex items-center justify-between">
-                            <Label htmlFor="patient" className="text-sm font-medium text-slate-700 dark:text-slate-300">Select Patient</Label>
-                            <WalkInLabPatientDialog onPatientCreated={(patient) => {
-                                setPatientId(patient.uhid);
-                                setPatientSearch(`${patient.full_name} (${patient.uhid})`);
-                                setShowPatientResults(false);
-                            }} />
-                        </div>
-                        <div className="relative">
-                            <Input
-                                id="patient"
-                                placeholder="Search patient by name or UHID..."
-                                value={patientSearch}
-                                onChange={(e) => {
-                                    setPatientSearch(e.target.value);
-                                    setShowPatientResults(true);
-                                    if (!e.target.value) {
-                                        setPatientId("");
-                                    }
-                                }}
-                                onFocus={() => setShowPatientResults(true)}
-                                className="h-11 border-slate-200 focus:ring-teal-500"
-                                disabled={loadingPatients}
-                                autoComplete="off"
-                            />
-                            {showPatientResults && patientSearch.length > 0 && (
-                                <div className="absolute z-50 w-full mt-1 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg max-h-48 overflow-y-auto">
-                                    {(() => {
-                                        const filtered = patientList.filter(p => {
-                                            const search = patientSearch.toLowerCase();
-                                            return p.full_name?.toLowerCase().includes(search) ||
-                                                p.uhid?.toLowerCase().includes(search);
-                                        });
-                                        if (filtered.length === 0) {
-                                            return (
-                                                <div className="px-4 py-3 text-sm text-center space-y-2">
-                                                    <p className="text-slate-500">No patients found</p>
-                                                    <WalkInLabPatientDialog onPatientCreated={(patient) => {
-                                                        setPatientId(patient.uhid);
-                                                        setPatientSearch(`${patient.full_name} (${patient.uhid})`);
-                                                        setShowPatientResults(false);
-                                                    }}>
-                                                        <button className="text-blue-600 hover:text-blue-700 text-sm font-medium hover:underline">
-                                                            + Register Walk-in Lab Patient
-                                                        </button>
-                                                    </WalkInLabPatientDialog>
-                                                </div>
-                                            );
-                                        }
-                                        return filtered.map((p) => (
-                                            <div
-                                                key={p.uhid}
-                                                className={`px-4 py-2.5 cursor-pointer hover:bg-teal-50 dark:hover:bg-slate-800 flex items-center gap-2 border-b border-slate-50 dark:border-slate-800 last:border-b-0 ${patientId === p.uhid ? 'bg-teal-50 dark:bg-slate-800' : ''}`}
-                                                onClick={() => {
-                                                    setPatientId(p.uhid);
-                                                    setPatientSearch(`${p.full_name} (${p.uhid})`);
-                                                    setShowPatientResults(false);
-                                                }}
-                                            >
-                                                {patientId === p.uhid && <Check className="h-4 w-4 text-teal-600 shrink-0" />}
-                                                <div className="flex flex-col">
-                                                    <span className="font-medium text-sm text-slate-800 dark:text-slate-200">{p.full_name}</span>
-                                                    <span className="text-xs text-slate-500">{p.uhid}</span>
-                                                </div>
-                                            </div>
-                                        ));
-                                    })()}
-                                </div>
+                            <Label htmlFor="patient" className="text-sm font-medium text-slate-700 dark:text-slate-300">Patient *</Label>
+                            {!selectedPatient && (
+                                <WalkInLabPatientDialog onPatientCreated={(patient) => {
+                                    setPatientId(patient.uhid);
+                                    setPatientSearch(`${patient.full_name} (${patient.uhid})`);
+                                    setShowPatientResults(false);
+                                }} />
                             )}
                         </div>
+
+                        {selectedPatient ? (
+                            <div className="flex items-center justify-between p-3 bg-green-50 dark:bg-green-900/20 rounded-md border border-green-200 dark:border-green-800">
+                                <div className="flex items-center gap-3">
+                                    <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                                        <User className="h-5 w-5 text-primary" />
+                                    </div>
+                                    <div>
+                                        <p className="font-medium">{selectedPatient.full_name}</p>
+                                        <p className="text-sm text-muted-foreground">
+                                            {selectedPatient.uhid} · {selectedPatient.phone}
+                                        </p>
+                                    </div>
+                                </div>
+                                <Button variant="ghost" size="sm" onClick={() => {
+                                    setPatientId("");
+                                    setPatientSearch("");
+                                    setItems([]);
+                                    setSelectedServiceId("");
+                                }}>Change</Button>
+                            </div>
+                        ) : (
+                            <div className="relative">
+                                <Input
+                                    id="patient"
+                                    placeholder="Search patient by name or UHID..."
+                                    value={patientSearch}
+                                    onChange={(e) => {
+                                        setPatientSearch(e.target.value);
+                                        setShowPatientResults(true);
+                                        if (!e.target.value) {
+                                            setPatientId("");
+                                        }
+                                    }}
+                                    onFocus={() => setShowPatientResults(true)}
+                                    className="h-11 border-slate-200 focus:ring-teal-500"
+                                    disabled={loadingPatients}
+                                    autoComplete="off"
+                                />
+                                {showPatientResults && patientSearch.length > 0 && (
+                                    <div className="absolute z-50 w-full mt-1 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                                        {(() => {
+                                            const filtered = patientList.filter(p => {
+                                                const search = patientSearch.toLowerCase();
+                                                return p.full_name?.toLowerCase().includes(search) ||
+                                                    p.uhid?.toLowerCase().includes(search);
+                                            });
+                                            if (filtered.length === 0) {
+                                                return (
+                                                    <div className="px-4 py-3 text-sm text-center space-y-2">
+                                                        <p className="text-slate-500">No patients found</p>
+                                                        <WalkInLabPatientDialog onPatientCreated={(patient) => {
+                                                            setPatientId(patient.uhid);
+                                                            setPatientSearch(`${patient.full_name} (${patient.uhid})`);
+                                                            setShowPatientResults(false);
+                                                        }}>
+                                                            <button className="text-blue-600 hover:text-blue-700 text-sm font-medium hover:underline">
+                                                                + Register Walk-in Lab Patient
+                                                            </button>
+                                                        </WalkInLabPatientDialog>
+                                                    </div>
+                                                );
+                                            }
+                                            return filtered.map((p) => (
+                                                <div
+                                                    key={p.uhid}
+                                                    className={`px-4 py-2.5 cursor-pointer hover:bg-teal-50 dark:hover:bg-slate-800 flex items-center gap-2 border-b border-slate-50 dark:border-slate-800 last:border-b-0 ${patientId === p.uhid ? 'bg-teal-50 dark:bg-slate-800' : ''}`}
+                                                    onClick={() => {
+                                                        setPatientId(p.uhid);
+                                                        setPatientSearch("");
+                                                        setShowPatientResults(false);
+                                                    }}
+                                                >
+                                                    {patientId === p.uhid && <Check className="h-4 w-4 text-teal-600 shrink-0" />}
+                                                    <div className="flex flex-col">
+                                                        <span className="font-medium text-sm text-slate-800 dark:text-slate-200">{p.full_name}</span>
+                                                        <span className="text-xs text-slate-500">{p.uhid}</span>
+                                                    </div>
+                                                </div>
+                                            ));
+                                        })()}
+                                    </div>
+                                )}
+                            </div>
+                        )}
                     </div>
 
                     <Separator className="bg-slate-100 dark:bg-slate-800" />
@@ -415,64 +396,33 @@ export function BillGenerationDialog({
                                     </SelectContent>
                                 </Select>
                             </div>
-
-                            {entryMode === 'service' ? (
-                                <>
-                                    <div className="w-full md:w-24 space-y-1.5">
-                                        <Label htmlFor="qty" className="text-xs text-slate-500">Qty</Label>
-                                        <Input
-                                            id="qty"
-                                            type="number"
-                                            min="1"
-                                            value={quantity}
-                                            onChange={(e) => setQuantity(e.target.value)}
-                                            className="bg-white dark:bg-slate-950 h-9 text-right"
-                                        />
-                                    </div>
-                                    <div className="w-full md:w-32 space-y-1.5">
-                                        <Label htmlFor="price" className="text-xs text-slate-500">Unit Price (₹)</Label>
-                                        <Input
-                                            id="price"
-                                            type="number"
-                                            value={unitPrice}
-                                            onChange={(e) => setUnitPrice(e.target.value)}
-                                            placeholder="0.00"
-                                            className="bg-white dark:bg-slate-950 h-9 text-right"
-                                        />
-                                    </div>
-                                    <div className="w-full md:w-auto">
-                                        <Button onClick={handleAddItem} size="sm" className="w-full md:w-auto bg-slate-800 hover:bg-slate-900 text-white dark:bg-slate-700 dark:hover:bg-slate-600 h-9 px-4">
-                                            <Plus className="h-3.5 w-3.5 mr-1.5" /> Add
-                                        </Button>
-                                    </div>
-                                </>
-                            ) : (
-                                <>
-                                    <div className="flex-1 space-y-1.5 w-full">
-                                        <Label className="text-xs text-slate-500">Select Lab Tests (Multiple)</Label>
-                                        <MultiSelect
-                                            options={availableTests.map((test) => ({
-                                                label: `${test.name} (₹${test.price})`,
-                                                value: test.id
-                                            }))}
-                                            selected={selectedMultiLabTests}
-                                            onChange={setSelectedMultiLabTests}
-                                            placeholder="Select lab tests..."
-                                            className="bg-white dark:bg-slate-950 w-full"
-                                        />
-                                    </div>
-                                    <div className="w-full md:w-auto">
-                                        <Button
-                                            onClick={handleAddMultiLabTests}
-                                            disabled={selectedMultiLabTests.length === 0}
-                                            size="sm"
-                                            className="w-full md:w-auto bg-blue-600 hover:bg-blue-700 text-white h-9 px-4"
-                                        >
-                                            <Plus className="h-3.5 w-3.5 mr-1.5" /> Add Items
-                                        </Button>
-                                    </div>
-                                </>
-                            )}
+                            <div className="w-full md:w-24 space-y-1.5">
+                                <Label htmlFor="qty" className="text-xs text-slate-500">Qty</Label>
+                                <Input
+                                    id="qty"
+                                    type="number"
+                                    min="1"
+                                    value={quantity}
+                                    onChange={(e) => setQuantity(e.target.value)}
+                                    className="bg-white dark:bg-slate-950 h-9 text-right"
+                                />
+                            </div>
+                            <div className="w-full md:w-32 space-y-1.5">
+                                <Label htmlFor="price" className="text-xs text-slate-500">Unit Price (₹)</Label>
+                                <Input
+                                    id="price"
+                                    type="number"
+                                    value={unitPrice}
+                                    onChange={(e) => setUnitPrice(e.target.value)}
+                                    placeholder="0.00"
+                                    className="bg-white dark:bg-slate-950 h-9 text-right"
+                                />
+                            </div>
+                            <div className="w-full md:w-auto">
+                                <Button onClick={handleAddItem} size="sm" className="w-full md:w-auto bg-slate-800 hover:bg-slate-900 text-white dark:bg-slate-700 dark:hover:bg-slate-600 h-9 px-4">
+                                    <Plus className="h-3.5 w-3.5 mr-1.5" /> Add
+                                </Button>
+                            </div>
                         </div>
                     </div>
 

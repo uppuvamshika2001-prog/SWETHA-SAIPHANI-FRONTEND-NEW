@@ -251,13 +251,13 @@ export const LabProvider: FC<{ children: ReactNode }> = ({ children }) => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [user, authLoading]);
 
-    // Auto-refresh for lab technicians to pick up new orders from reception
+    // Auto-refresh every 5 seconds for live data on pending tests & dashboard
     useEffect(() => {
         if (!user || authLoading) return;
-        if (user.role === 'lab_technician') {
+        if (user.role === 'lab_technician' || user.role === 'admin' || user.role === 'receptionist') {
             const interval = setInterval(() => {
                 fetchLabOrders();
-            }, 30000); // 30 seconds
+            }, 5000); // 5 seconds
             return () => clearInterval(interval);
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps

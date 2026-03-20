@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { FlaskConical, Search, Clock, CheckCircle, RotateCcw, Loader2, FileText, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { useLab, LabOrder } from "@/contexts/LabContext";
 import { useNavigate } from "react-router-dom";
@@ -19,6 +19,15 @@ const LabPendingTests = () => {
     const navigate = useNavigate();
 
     const { labOrders, loading, fetchLabOrders, updateOrderStatus, deleteLabOrder } = useLab();
+
+    // Auto-refresh every 5 seconds for live data
+    useEffect(() => {
+        fetchLabOrders(); // Fetch immediately on mount
+        const interval = setInterval(() => {
+            fetchLabOrders();
+        }, 5000);
+        return () => clearInterval(interval);
+    }, [fetchLabOrders]);
 
     // Filter for pending orders (excluding payment pending orders as per requirement)
     const pendingOrders = labOrders.filter(order =>

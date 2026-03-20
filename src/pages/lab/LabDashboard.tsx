@@ -41,11 +41,18 @@ export default function LabDashboard() {
   const { labOrders: rawOrders, loading, fetchLabOrders } = useLab();
 
   useEffect(() => {
-    if (selectedDate) {
-      fetchLabOrders(undefined, selectedDate);
-    } else {
-      fetchLabOrders();
-    }
+    const fetchData = () => {
+      if (selectedDate) {
+        fetchLabOrders(undefined, selectedDate);
+      } else {
+        fetchLabOrders();
+      }
+    };
+
+    fetchData(); // Fetch immediately on mount/date change
+
+    const interval = setInterval(fetchData, 5000); // Poll every 5 seconds
+    return () => clearInterval(interval);
   }, [fetchLabOrders, selectedDate]);
 
   const labOrders = rawOrders.map(order => ({
