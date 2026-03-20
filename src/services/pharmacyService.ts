@@ -35,7 +35,8 @@ export const pharmacyService = {
         name: string;
         genericName?: string;
         manufacturer?: string;
-        category?: string;
+        categoryId?: number;
+        unit?: string;
         distributorName: string;
         batchNumber: string;
         manufacturingDate?: string;
@@ -152,7 +153,7 @@ export const pharmacyService = {
     
     async getCategories(): Promise<any[]> {
         const response: any = await api.get('/pharmacy/categories');
-        return Array.isArray(response) ? response : (response.data || []);
+        return Array.isArray(response) ? response : (response.data || response.items || []);
     },
 
     async createCategory(name: string): Promise<any> {

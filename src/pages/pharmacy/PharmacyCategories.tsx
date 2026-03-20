@@ -50,7 +50,7 @@ const PharmacyCategories = () => {
         }
     };
 
-    const handleDeleteCategory = async (id: string) => {
+    const handleDeleteCategory = async (id: any) => {
         if (!confirm("Are you sure you want to delete this category?")) return;
 
         try {

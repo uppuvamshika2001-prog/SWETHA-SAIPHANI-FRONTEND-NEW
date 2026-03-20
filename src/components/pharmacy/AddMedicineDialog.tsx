@@ -88,7 +88,7 @@ export function AddMedicineDialog({ children, onAdd }: AddMedicineDialogProps) {
             const medicinePayload = {
                 name: formData.name,
                 genericName: formData.generic_name,
-                category: formData.category,
+                categoryId: formData.category ? parseInt(formData.category) : undefined,
                 manufacturer: formData.manufacturer || undefined,
                 distributorName: formData.distributor_name,
                 batchNumber: formData.batch_number,
@@ -196,7 +196,7 @@ export function AddMedicineDialog({ children, onAdd }: AddMedicineDialogProps) {
                                 <SelectContent>
                                     {categories.length > 0 ? (
                                         categories.map(cat => (
-                                            <SelectItem key={cat.id} value={cat.name}>{cat.name}</SelectItem>
+                                            <SelectItem key={cat.id} value={cat.id.toString()}>{cat.name}</SelectItem>
                                         ))
                                     ) : (
                                         <>
