@@ -84,6 +84,7 @@ const PharmacyStockReturns = lazy(() => import("./pages/pharmacy/StockReturns"))
 const MarginReports = lazy(() => import("@/pages/pharmacy/PharmacyMarginReports"));
 const DistributorPayments = lazy(() => import("@/pages/pharmacy/PharmacyDistributorPayments"));
 const PharmacyReports = lazy(() => import("./pages/pharmacy/PharmacyReports"));
+const PharmacyCategories = lazy(() => import("./pages/pharmacy/PharmacyCategories"));
 
 // Lab
 const LabLogin = lazy(() => import("./pages/lab/LabLogin"));
@@ -218,6 +219,7 @@ const App = () => {
                         <Route path="/pharmacy/margin-reports" element={<MarginReports />} />
                         <Route path="/pharmacy/reports" element={<PharmacyReports />} />
                         <Route path="/pharmacy/purchases" element={<DistributorPayments />} />
+                        <Route path="/pharmacy/categories" element={<PharmacyCategories />} />
                         <Route path="/pharmacy/profile" element={<PharmacySettings />} />
                       </Route>
 

@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { api } from "@/services/api";
+import { pharmacyService } from "@/services/pharmacyService";
 
 export function EditMedicineDialog({ 
     open, 
@@ -20,6 +21,19 @@ export function EditMedicineDialog({
 }) {
     const [loading, setLoading] = useState(false);
     const [formData, setFormData] = useState<any>({});
+    const [categories, setCategories] = useState<any[]>([]);
+
+    useEffect(() => {
+        const fetchCategories = async () => {
+            try {
+                const data = await pharmacyService.getCategories();
+                setCategories(data || []);
+            } catch (error) {
+                console.error("Failed to fetch categories", error);
+            }
+        };
+        fetchCategories();
+    }, []);
 
     useEffect(() => {
         if (medicine && open) {
@@ -95,12 +109,18 @@ export function EditMedicineDialog({
                                     <SelectValue placeholder="Select Category" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="Antibiotics">Antibiotics</SelectItem>
-                                    <SelectItem value="Painkillers">Painkillers</SelectItem>
-                                    <SelectItem value="Vitamins">Vitamins</SelectItem>
-                                    <SelectItem value="Syrup">Syrup</SelectItem>
-                                    <SelectItem value="Injection">Injection</SelectItem>
-                                    <SelectItem value="Other">Other</SelectItem>
+                                    {categories.length > 0 ? (
+                                        categories.map(cat => (
+                                            <SelectItem key={cat.id} value={cat.name}>{cat.name}</SelectItem>
+                                        ))
+                                    ) : (
+                                        <>
+                                            <SelectItem value="Antibiotics">Antibiotics</SelectItem>
+                                            <SelectItem value="Painkillers">Painkillers</SelectItem>
+                                            <SelectItem value="Vitamins">Vitamins</SelectItem>
+                                            <SelectItem value="Other">Other</SelectItem>
+                                        </>
+                                    )}
                                 </SelectContent>
                             </Select>
                         </div>

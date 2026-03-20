@@ -29,6 +29,7 @@ import { Separator } from "@/components/ui/separator";
 import { WalkInLabPatientDialog } from "@/components/patients/WalkInLabPatientDialog";
 
 const DEFAULT_LAB_PRICE = 500;
+const CUSTOM_SERVICE_ID = "custom";
 
 interface BillGenerationDialogProps {
     children?: React.ReactNode;
@@ -64,6 +65,8 @@ export function BillGenerationDialog({
     const [unitPrice, setUnitPrice] = useState("");
     const [quantity, setQuantity] = useState("1");
     const [discount, setDiscount] = useState("0");
+    const [isCustomMode, setIsCustomMode] = useState(false);
+    const [customDescription, setCustomDescription] = useState("");
 
     useEffect(() => {
         if (showOpen) {
@@ -93,14 +96,24 @@ export function BillGenerationDialog({
             fetchPatientSummary();
         } else {
             setPatientSummary(null);
-            setServices([{
-                id: 'consultation',
-                label: "Consultation Fee",
-                value: "consultation",
-                price: 300,
-                type: "consultation",
-                description: "Consultation Fee"
-            }]);
+            setServices([
+                {
+                    id: 'consultation',
+                    label: "Consultation Fee",
+                    value: "consultation",
+                    price: 300,
+                    type: "consultation",
+                    description: "Consultation Fee"
+                },
+                {
+                    id: CUSTOM_SERVICE_ID,
+                    label: "Other / Custom Service",
+                    value: CUSTOM_SERVICE_ID,
+                    price: 0,
+                    type: "CUSTOM",
+                    description: ""
+                }
+            ]);
         }
     }, [patientId]);
 
@@ -130,7 +143,15 @@ export function BillGenerationDialog({
                     type: "lab",
                     description: `Lab: ${order.testName || order.test_name || "Lab Test"}`,
                     lab_order_id: order.id
-                }))
+                })),
+                {
+                    id: CUSTOM_SERVICE_ID,
+                    label: "Other / Custom Service",
+                    value: CUSTOM_SERVICE_ID,
+                    price: 0,
+                    type: "CUSTOM",
+                    description: ""
+                }
             ];
 
             setServices(options);
@@ -139,14 +160,24 @@ export function BillGenerationDialog({
         } catch (error) {
             console.error("Failed to fetch patient summary", error);
             setPatientSummary(null);
-            setServices([{
-                id: 'consultation',
-                label: "Consultation Fee",
-                value: "consultation",
-                price: 300,
-                type: "consultation",
-                description: "Consultation Fee"
-            }]);
+            setServices([
+                {
+                    id: 'consultation',
+                    label: "Consultation Fee",
+                    value: "consultation",
+                    price: 300,
+                    type: "consultation",
+                    description: "Consultation Fee"
+                },
+                {
+                    id: CUSTOM_SERVICE_ID,
+                    label: "Other / Custom Service",
+                    value: CUSTOM_SERVICE_ID,
+                    price: 0,
+                    type: "CUSTOM",
+                    description: ""
+                }
+            ]);
         }
     };
 
@@ -156,6 +187,12 @@ export function BillGenerationDialog({
 
     const handleAddItem = () => {
         if (!selectedServiceId || !unitPrice || !quantity) return;
+        
+        if (selectedServiceId === CUSTOM_SERVICE_ID && !customDescription.trim()) {
+            toast.error("Please enter service description");
+            return;
+        }
+
         const qty = parseInt(quantity);
         const price = parseFloat(unitPrice);
 
@@ -177,8 +214,10 @@ export function BillGenerationDialog({
         }
 
         const total = qty * price;
+        const description = selectedServiceId === CUSTOM_SERVICE_ID ? customDescription : opt.description;
+
         setItems([...items, { 
-            description: opt.description, 
+            description, 
             quantity: qty, 
             unitPrice: price, 
             total,
@@ -190,6 +229,8 @@ export function BillGenerationDialog({
         setSelectedServiceId("");
         setUnitPrice("");
         setQuantity("1");
+        setIsCustomMode(false);
+        setCustomDescription("");
     };
 
     const handleRemoveItem = (index: number) => {
@@ -395,25 +436,54 @@ export function BillGenerationDialog({
                         <div className="flex flex-col md:flex-row gap-4 items-end">
                             <div className="w-full md:w-1/3 space-y-1.5">
                                 <Label htmlFor="desc" className="text-xs text-slate-500">Service Description</Label>
-                                <Select value={selectedServiceId} onValueChange={(val) => {
-                                    setSelectedServiceId(val);
-                                    const opt = summaryOptions.find(o => o.id === val);
-                                    if (opt) {
-                                        setUnitPrice(opt.price.toString());
-                                        setQuantity("1");
-                                    }
-                                }}>
-                                    <SelectTrigger id="desc" className="bg-white dark:bg-slate-950 h-9 w-full">
-                                        <SelectValue placeholder="Select service" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {summaryOptions.map(opt => (
-                                            <SelectItem key={opt.id} value={opt.id}>
-                                                {opt.label}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
+                                {isCustomMode ? (
+                                    <div className="flex gap-2">
+                                        <Input
+                                            placeholder="Enter service name..."
+                                            value={customDescription}
+                                            onChange={(e) => setCustomDescription(e.target.value)}
+                                            className="bg-white dark:bg-slate-950 h-9"
+                                        />
+                                        <Button 
+                                            variant="ghost" 
+                                            size="sm" 
+                                            className="h-9 px-2 text-xs"
+                                            onClick={() => {
+                                                setIsCustomMode(false);
+                                                setSelectedServiceId("");
+                                                setCustomDescription("");
+                                            }}
+                                        >
+                                            Reset
+                                        </Button>
+                                    </div>
+                                ) : (
+                                    <Select value={selectedServiceId} onValueChange={(val) => {
+                                        setSelectedServiceId(val);
+                                        if (val === CUSTOM_SERVICE_ID) {
+                                            setIsCustomMode(true);
+                                            setUnitPrice("");
+                                            setQuantity("1");
+                                            return;
+                                        }
+                                        const opt = summaryOptions.find(o => o.id === val);
+                                        if (opt) {
+                                            setUnitPrice(opt.price.toString());
+                                            setQuantity("1");
+                                        }
+                                    }}>
+                                        <SelectTrigger id="desc" className="bg-white dark:bg-slate-950 h-9 w-full">
+                                            <SelectValue placeholder="Select service" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {summaryOptions.map(opt => (
+                                                <SelectItem key={opt.id} value={opt.id}>
+                                                    {opt.label}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                )}
                             </div>
                             <div className="w-full md:w-24 space-y-1.5">
                                 <Label htmlFor="qty" className="text-xs text-slate-500">Qty</Label>

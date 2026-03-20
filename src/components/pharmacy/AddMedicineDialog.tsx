@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Loader2 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { pharmacyService } from "@/services/pharmacyService";
 
@@ -41,6 +41,19 @@ export function AddMedicineDialog({ children, onAdd }: AddMedicineDialogProps) {
         min_stock_level: "10",
         invoice_number: "",
     });
+    const [categories, setCategories] = useState<any[]>([]);
+
+    useEffect(() => {
+        const fetchCategories = async () => {
+            try {
+                const data = await pharmacyService.getCategories();
+                setCategories(data || []);
+            } catch (error) {
+                console.error("Failed to fetch categories", error);
+            }
+        };
+        fetchCategories();
+    }, []);
 
     const profit = formData.sale_price && formData.purchase_price 
         ? parseFloat(formData.sale_price) - parseFloat(formData.purchase_price)
@@ -181,14 +194,18 @@ export function AddMedicineDialog({ children, onAdd }: AddMedicineDialogProps) {
                                     <SelectValue placeholder="Select category" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="Analgesics">Analgesics</SelectItem>
-                                    <SelectItem value="Antibiotics">Antibiotics</SelectItem>
-                                    <SelectItem value="Antacids">Antacids</SelectItem>
-                                    <SelectItem value="Antipyretics">Antipyretics</SelectItem>
-                                    <SelectItem value="Cardiac">Cardiac</SelectItem>
-                                    <SelectItem value="Diabetes">Diabetes</SelectItem>
-                                    <SelectItem value="Vitamins">Vitamins</SelectItem>
-                                    <SelectItem value="Other">Other</SelectItem>
+                                    {categories.length > 0 ? (
+                                        categories.map(cat => (
+                                            <SelectItem key={cat.id} value={cat.name}>{cat.name}</SelectItem>
+                                        ))
+                                    ) : (
+                                        <>
+                                            <SelectItem value="Analgesics">Analgesics</SelectItem>
+                                            <SelectItem value="Antibiotics">Antibiotics</SelectItem>
+                                            <SelectItem value="Vitamins">Vitamins</SelectItem>
+                                            <SelectItem value="Other">Other</SelectItem>
+                                        </>
+                                    )}
                                 </SelectContent>
                             </Select>
                         </div>

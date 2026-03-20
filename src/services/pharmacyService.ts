@@ -148,5 +148,18 @@ export const pharmacyService = {
 
     async getPurchasePayments(purchaseId: string): Promise<any> {
         return api.get(`/pharmacy/purchases/${purchaseId}/payments`);
+    },
+    
+    async getCategories(): Promise<any[]> {
+        const response: any = await api.get('/pharmacy/categories');
+        return Array.isArray(response) ? response : (response.data || []);
+    },
+
+    async createCategory(name: string): Promise<any> {
+        return api.post('/pharmacy/categories', { name });
+    },
+
+    async deleteCategory(id: string): Promise<any> {
+        return api.delete(`/pharmacy/categories/${id}`);
     }
 };

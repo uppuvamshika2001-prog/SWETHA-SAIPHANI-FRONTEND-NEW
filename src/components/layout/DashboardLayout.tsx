@@ -38,6 +38,7 @@ import {
     Package,
     RotateCcw,
     TrendingUp,
+    Tag,
 } from 'lucide-react';
 import {
     Collapsible,
@@ -117,6 +118,7 @@ const getNavItems = (role: AppRole, basePath: string): NavItem[] => {
                 ...baseItems,
                 { title: 'Pending Orders', href: `${basePath}/orders`, icon: <ClipboardList className="h-5 w-5" /> },
                 { title: 'Inventory', href: `${basePath}/inventory`, icon: <Pill className="h-5 w-5" /> },
+                { title: 'Categories', href: `${basePath}/categories`, icon: <Tag className="h-5 w-5" /> },
                 { title: 'Distributor Payments', href: `${basePath}/purchases`, icon: <IndianRupee className="h-5 w-5" /> },
                 { title: 'Dispensing', href: `${basePath}/dispensing`, icon: <Package className="h-5 w-5" /> },
                 { title: 'Billing', href: `${basePath}/billing`, icon: <IndianRupee className="h-5 w-5" /> },

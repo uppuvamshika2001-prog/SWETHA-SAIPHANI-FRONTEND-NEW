@@ -28,12 +28,29 @@ const PharmacyDispensing = () => {
     const loadDispensedHistory = async () => {
         try {
             const data = await pharmacyService.getDispensedHistory();
-            setDispensedItems(data.map(item => ({
-                ...item,
-                order_id: item.id,
-                patient_name: `${item.patient.firstName} ${item.patient.lastName}`,
-                dispensedAt: item.vitalSigns?.dispensedAt ? new Date(item.vitalSigns.dispensedAt).toLocaleString() : new Date(item.updatedAt).toLocaleString()
-            })));
+            setDispensedItems(data.map(item => {
+                // Ensure total_amount is a valid number
+                let totalAmount = Number(item.totalAmount || item.total_amount || 0);
+                if (isNaN(totalAmount)) totalAmount = 0;
+                
+                // Safe date handling: try dispensedAt (backend populated), then updatedAt, then createdAt
+                let safeDateString = "—";
+                const dateSource = item.dispensedAt || item.updatedAt || item.createdAt;
+                if (dateSource) {
+                    const date = new Date(dateSource);
+                    if (!isNaN(date.getTime())) {
+                        safeDateString = date.toLocaleString();
+                    }
+                }
+
+                return {
+                    ...item,
+                    order_id: item.id.slice(0, 8), // Show short ID for better UI
+                    patient_name: `${item.patient?.firstName || ''} ${item.patient?.lastName || ''}`,
+                    total_amount: totalAmount,
+                    dispensedAt: safeDateString
+                };
+            }));
         } catch (e) {
             console.error("Failed to load dispensed history", e);
         }
