@@ -89,16 +89,10 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     fetchDashboardData();
-
-    // Polling every 30 seconds for "live" data
-    const pollingInterval = setInterval(() => {
-      fetchDashboardData(false);
-    }, 30000);
-
-    return () => {
-      clearInterval(pollingInterval);
-    };
-  }, []); // Remove currentDate dependency to prevent refetching loop if we used it in fetch
+    // Polling removed as per project-wide "no-polling" policy. 
+    // Data remains stable until manual refresh or date change.
+  }, []);
+ // Remove currentDate dependency to prevent refetching loop if we used it in fetch
 
   const todayAppointments = appointments.filter(
     (apt) => format(new Date(apt.date), 'yyyy-MM-dd') === currentDate

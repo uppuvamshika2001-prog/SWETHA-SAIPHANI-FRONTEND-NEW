@@ -45,9 +45,8 @@ export default function OPDConsultation() {
 
     useEffect(() => {
         fetchRecords();
-        const interval = setInterval(() => fetchRecords(), 30000);
-        return () => clearInterval(interval);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
+        // Polling removed as per project-wide "no-polling" policy.
+        // Data remains stable until manual refresh.
     }, []);
 
     const getPatientName = (record: MedicalRecord) => {

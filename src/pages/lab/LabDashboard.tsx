@@ -19,7 +19,8 @@ import {
   Camera,
   Microscope,
   Dna,
-  Activity
+  Activity,
+  RotateCcw
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { Input } from '@/components/ui/input';
@@ -28,7 +29,7 @@ import { LabResultEntryDialog } from '@/components/lab/LabResultEntryDialog';
 import { LabResultDetailsDialog } from '@/components/lab/LabResultDetailsDialog';
 import { useNavigate, Link } from 'react-router-dom';
 import { toast } from 'sonner';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useLab } from '@/contexts/LabContext';
 
 export default function LabDashboard() {
@@ -46,6 +47,7 @@ export default function LabDashboard() {
   useEffect(() => {
     const fetchData = async () => {
       // Log the filter as requested for debugging
+      console.log("API triggered");
       console.log("Fetching with:", selectedDate ? format(selectedDate, 'yyyy-MM-dd') : 'all');
       
       try {
@@ -289,6 +291,10 @@ export default function LabDashboard() {
               date={selectedDate}
               setDate={setSelectedDate}
             />
+            <Button variant="outline" size="sm" onClick={() => fetchLabOrders(undefined, selectedDate)}>
+              <RotateCcw className="h-4 w-4 mr-2" />
+              Refresh
+            </Button>
             <Button variant="outline" size="sm" asChild>
               <Link to="/lab/test-catalog">
                 <Beaker className="h-4 w-4 mr-2" />

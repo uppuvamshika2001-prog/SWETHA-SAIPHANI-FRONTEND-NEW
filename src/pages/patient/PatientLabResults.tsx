@@ -93,16 +93,8 @@ const PatientLabResults = () => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    // Polling every 30 seconds for near real-time updates
-    useEffect(() => {
-        const interval = setInterval(() => {
-            if (document.visibilityState === 'visible') {
-                fetchData(false, selectedDate);
-            }
-        }, 30000); // 30 seconds
-        return () => clearInterval(interval);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    // Auto-refresh on mount or when user returns to tab is kept.
+    // Background 30s polling is removed as per project policy.
 
     if (loading) {
         return <div className="p-8 text-center">Loading lab results...</div>;
