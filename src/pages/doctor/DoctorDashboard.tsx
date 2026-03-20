@@ -20,10 +20,9 @@ import { format } from 'date-fns';
 import { useToast } from '@/components/ui/use-toast';
 import { useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
+import { Input } from '@/components/ui/input';
 import { useAuth } from '@/contexts/AuthContext';
-import { usePatients } from '@/contexts/PatientContext';
-import { useLab } from '@/contexts/LabContext';
-import { appointmentService } from '@/services/appointmentService';
+import { doctorService } from '@/services/doctorService';
 import { Appointment, Patient } from '@/types';
 
 export default function DoctorDashboard() {
@@ -31,60 +30,59 @@ export default function DoctorDashboard() {
   const { user } = useAuth();
   const { toast } = useToast();
 
-  // Use shared contexts instead of direct API calls to avoid duplicate fetches
-  const { patients, loading: patientsLoading } = usePatients();
-  const { myLabOrders, loading: labLoading } = useLab();
+  const getTodayString = () => new Date().toLocaleDateString('en-CA');
 
-  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [selectedDate, setSelectedDate] = useState(getTodayString());
+  const [dashboardData, setDashboardData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
+  const fetchDashboardData = async (date: string) => {
+    try {
+      setLoading(true);
+      const data = await doctorService.getDashboardStats(date);
+      setDashboardData(data);
+    } catch (error) {
+      console.error("Failed to fetch doctor dashboard data", error);
+      toast({
+        title: "Error",
+        description: "Failed to load dashboard data",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        // Only fetch appointments - patients and lab orders come from contexts
-        const fetchedAppointments = await appointmentService.getAppointments();
+    fetchDashboardData(selectedDate);
 
-        // Filter appointments for this doctor
-        const myAppointments = user?.id
-          ? fetchedAppointments.filter((a: any) => a.doctorId === user.id || a.doctor_id === user.id)
-          : fetchedAppointments;
+    // Auto refresh every 5 minutes (300000 ms) instead of full 24 hours to keep 'today' accurate during a shift
+    // The requirement mentions 'refreshes automatically each day' - re-fetching handles day change if user keeps tab open.
+    // For a real-time dashboard, a shorter interval is better.
+    const interval = setInterval(() => {
+        // If they are on 'today', check if day rolled over
+        const currentToday = getTodayString();
+        if (selectedDate === currentToday) {
+            fetchDashboardData(currentToday);
+        }
+    }, 5 * 60 * 1000);
 
-        setAppointments(myAppointments);
-      } catch (error) {
-        console.error("Failed to fetch doctor dashboard data", error);
-        toast({
-          title: "Error",
-          description: "Failed to load appointments",
-          variant: "destructive"
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchData();
-  }, [user?.id, toast]);
+    return () => clearInterval(interval);
+  }, [selectedDate, toast]);
 
-  // Combined loading state
-  const isLoading = loading || patientsLoading || labLoading;
+  const isLoading = loading;
 
-
-  const todayAppointments = appointments.filter(
-    (apt) => format(new Date(apt.date), 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd')
-  );
-
-  // Lab orders processing status (using myLabOrders from context)
-  // Valid statuses: "ordered", "sample_collected", "completed", "cancelled"
-  const pendingLabResults = myLabOrders.filter((t) => t.status === 'ORDERED' || t.status === 'SAMPLE_COLLECTED').length;
-  const scheduledAppointments = appointments.filter((a) => a.status === 'scheduled').length;
-  const myPatients = patients.slice(0, 8);
-
+  const todayAppointments = dashboardData?.appointments || [];
+  const pendingLabResults = dashboardData?.labOrders?.filter((t: any) => t.status === 'ORDERED' || t.status === 'SAMPLE_COLLECTED').length || 0;
+  const scheduledAppointments = dashboardData?.pendingConsultations || 0;
+  const myPatients = dashboardData?.patients || [];
   const upcomingAppointments = todayAppointments.slice(0, 5);
 
   const appointmentColumns = [
     {
       key: 'patient_name',
       header: 'Patient',
-      render: (apt: Appointment) => (
+      render: (apt: any) => (
         <div className="flex items-center gap-3">
           <Avatar className="h-8 w-8">
             <AvatarFallback className="bg-primary/10 text-primary text-xs">
@@ -156,10 +154,19 @@ export default function DoctorDashboard() {
           <div>
             <h1 className="text-2xl font-bold">Good Morning, Doctor</h1>
             <p className="text-muted-foreground">
-              You have {todayAppointments.length} appointments scheduled for today
+              You have {todayAppointments.length} appointments scheduled for {selectedDate === getTodayString() ? 'today' : format(new Date(selectedDate), 'MMMM d, yyyy')}
             </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-md border shadow-sm">
+              <Calendar className="h-4 w-4 text-muted-foreground" />
+              <Input
+                type="date"
+                className="border-0 p-0 h-auto w-auto min-w-[130px] focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent text-sm font-medium"
+                value={selectedDate}
+                onChange={(e) => setSelectedDate(e.target.value)}
+              />
+            </div>
             <Button variant="outline" size="sm" onClick={() => navigate('/doctor/appointments')}>
               <Calendar className="h-4 w-4 mr-2" />
               View Calendar
@@ -170,7 +177,7 @@ export default function DoctorDashboard() {
               } else {
                 toast({
                   title: "No Appointments",
-                  description: "You have no appointments scheduled for today.",
+                  description: `You have no appointments scheduled for ${selectedDate === getTodayString() ? 'today' : 'this date'}.`,
                   variant: "default"
                 });
               }
@@ -213,10 +220,10 @@ export default function DoctorDashboard() {
           ) : (
             <>
               <StatsCard
-                title="Today's Appointments"
+                title={selectedDate === getTodayString() ? "Today's Appointments" : "Appointments"}
                 value={todayAppointments.length}
                 icon={<Calendar className="h-5 w-5" />}
-                description="Scheduled for today"
+                description={`Scheduled for ${selectedDate === getTodayString() ? 'today' : format(new Date(selectedDate), 'MMM d')}`}
                 variant="primary"
                 onClick={() => navigate('/doctor/appointments')}
               />
@@ -228,10 +235,10 @@ export default function DoctorDashboard() {
                 onClick={() => navigate('/doctor/appointments')}
               />
               <StatsCard
-                title="My Patients"
-                value={patients.length} // Use total patients count
+                title="Patients"
+                value={dashboardData?.patients?.length || 0}
                 icon={<Users className="h-5 w-5" />}
-                description="Under your care"
+                description="Unique patients seen"
                 onClick={() => navigate('/doctor/patients')}
               />
               <StatsCard
@@ -252,10 +259,10 @@ export default function DoctorDashboard() {
             <div>
               <CardTitle className="text-lg flex items-center gap-2">
                 <Calendar className="h-5 w-5 text-primary" />
-                Today's Appointments
+                {selectedDate === getTodayString() ? "Today's Appointments" : "Appointments"}
               </CardTitle>
               <CardDescription>
-                {format(new Date(), 'EEEE, MMMM d, yyyy')}
+                {format(new Date(selectedDate), 'EEEE, MMMM d, yyyy')}
               </CardDescription>
             </div>
             <Button variant="ghost" size="sm" className="gap-1" onClick={() => navigate('/doctor/appointments')}>
@@ -317,7 +324,7 @@ export default function DoctorDashboard() {
               <DataTable
                 data={myPatients.slice(0, 4)}
                 columns={patientColumns}
-                emptyMessage="No patients found"
+                emptyMessage="No patients found for this date"
                 loading={loading}
               />
             </CardContent>
@@ -335,10 +342,10 @@ export default function DoctorDashboard() {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {myLabOrders.filter(t => t.status === 'ORDERED' || t.status === 'SAMPLE_COLLECTED').slice(0, 3).map((order) => (
+              {(dashboardData?.labOrders || []).filter((t: any) => t.status === 'ORDERED' || t.status === 'SAMPLE_COLLECTED').slice(0, 3).map((order: any) => (
                 <div key={order.id} className="flex items-center justify-between p-3 rounded-lg bg-card/50">
                   <div>
-                    <p className="font-medium">{order.patient?.firstName} {order.patient?.lastName}</p>
+                    <p className="font-medium">{order.patientName}</p>
                     <p className="text-sm text-muted-foreground">{order.testName}</p>
                   </div>
                   <div className="flex items-center gap-2">
@@ -347,6 +354,9 @@ export default function DoctorDashboard() {
                   </div>
                 </div>
               ))}
+              {(!dashboardData?.labOrders || dashboardData.labOrders.filter((t: any) => t.status === 'ORDERED' || t.status === 'SAMPLE_COLLECTED').length === 0) && (
+                <div className="text-sm text-muted-foreground py-2text-center">No pending lab results.</div>
+              )}
             </div>
           </CardContent>
         </Card>
