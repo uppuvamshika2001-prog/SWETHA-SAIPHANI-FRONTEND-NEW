@@ -182,6 +182,10 @@ export function DashboardLayout({ children, role }: DashboardLayoutProps) {
     const navItems = getNavItems(role, basePath);
 
     const fetchNotifications = async () => {
+        // Guard: Don't call the API if no auth token exists
+        const token = localStorage.getItem('accessToken');
+        if (!token) return;
+
         try {
             const data = await notificationService.getNotifications();
             setNotifications(data);
@@ -189,17 +193,21 @@ export function DashboardLayout({ children, role }: DashboardLayoutProps) {
             setUnreadCount(data.filter(n => !n.read).length);
         } catch (error) {
             console.error('Failed to fetch notifications', error);
-            // Fallback or empty state
+            // Silently fail — don't break the UI for notification failures
         }
     };
 
     useEffect(() => {
+        // Only start fetching notifications once the user is authenticated
+        const token = localStorage.getItem('accessToken');
+        if (!token || !profile) return;
+
         fetchNotifications();
         // Poll every 30s
         const interval = setInterval(fetchNotifications, 30000);
         return () => clearInterval(interval);
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [profile]);
 
     const handleMarkAllRead = async (e: React.MouseEvent) => {
         e.preventDefault();

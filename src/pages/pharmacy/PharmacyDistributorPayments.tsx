@@ -334,6 +334,12 @@ export default function DistributorPayments() {
                     </TabsContent>
                 </Tabs>
             </div>
+
+            <AddPurchaseDialog
+                open={isAddPurchaseOpen}
+                onOpenChange={setIsAddPurchaseOpen}
+                onSuccess={fetchData}
+            />
         </DashboardLayout>
     );
 }
