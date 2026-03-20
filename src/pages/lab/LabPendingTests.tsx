@@ -20,13 +20,9 @@ const LabPendingTests = () => {
 
     const { labOrders, loading, fetchLabOrders, updateOrderStatus, deleteLabOrder } = useLab();
 
-    // Auto-refresh every 5 seconds for live data
+    // Auto-refresh removed to prevent flickering. Manual refresh via the RotateCcw button is preferred.
     useEffect(() => {
         fetchLabOrders(); // Fetch immediately on mount
-        const interval = setInterval(() => {
-            fetchLabOrders();
-        }, 5000);
-        return () => clearInterval(interval);
     }, [fetchLabOrders]);
 
     // Filter for pending orders (excluding payment pending orders as per requirement)

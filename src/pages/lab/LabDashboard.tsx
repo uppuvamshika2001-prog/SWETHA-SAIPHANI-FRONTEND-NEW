@@ -40,28 +40,30 @@ export default function LabDashboard() {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const { labOrders: rawOrders, loading, fetchLabOrders } = useLab();
 
+  // Use a ref to track if we've done the initial fetch to avoid flickering
+  const initialFetchDone = useRef(false);
+
   useEffect(() => {
-    const fetchData = () => {
-      console.log(`[API] LabDashboard fetching orders for date: ${selectedDate ? format(selectedDate, 'yyyy-MM-dd') : 'all'}`);
-      if (selectedDate) {
-        fetchLabOrders(undefined, selectedDate);
-      } else {
-        fetchLabOrders();
+    const fetchData = async () => {
+      // Log the filter as requested for debugging
+      console.log("Fetching with:", selectedDate ? format(selectedDate, 'yyyy-MM-dd') : 'all');
+      
+      try {
+        if (selectedDate) {
+          await fetchLabOrders(undefined, selectedDate);
+        } else {
+          await fetchLabOrders();
+        }
+      } finally {
+        initialFetchDone.current = true;
       }
     };
 
-    fetchData(); // Initial fetch
+    fetchData();
 
-    const interval = setInterval(() => {
-      console.log(`[API] LabDashboard polling orders for date: ${selectedDate ? format(selectedDate, 'yyyy-MM-dd') : 'all'}`);
-      fetchData();
-    }, 5000);
-
-    return () => {
-      console.log('[API] LabDashboard clearing poll interval');
-      clearInterval(interval);
-    };
-  }, [selectedDate, fetchLabOrders]); // Removed fetchLabOrders if it was causing unnecessary re-runs, but it's memoized so it's fine. Main thing is selectedDate.
+    // Removed aggressive 5s polling to prevent flickering and excessive API load
+    // If auto-refresh is needed, consider 60s or WebSocket
+  }, [selectedDate, fetchLabOrders]);
 
   const labOrders = rawOrders.map(order => ({
     id: order.id,
@@ -259,7 +261,9 @@ export default function LabDashboard() {
 
   const activeUrgentTests = labOrders.filter(t => (t.priority === 'urgent' || t.priority === 'stat') && !processedTests.includes(t.id));
 
-  if (loading) {
+  // Only show full-page loading on initial mount. 
+  // Subsequent refreshes (like changing date) should be smooth.
+  if (loading && !initialFetchDone.current) {
     return (
       <DashboardLayout role="lab_technician">
         <div className="flex items-center justify-center min-h-[400px]">

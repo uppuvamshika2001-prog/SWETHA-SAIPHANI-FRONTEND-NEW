@@ -151,7 +151,8 @@ export const LabProvider: FC<{ children: ReactNode }> = ({ children }) => {
             setError(err.message || 'Failed to fetch lab orders');
             console.error('[LabContext] fetchLabOrders error:', err);
         } finally {
-            if (!controller.signal.aborted) {
+            // Need to check signal again to be safe
+            if (controller && !controller.signal.aborted) {
                 setLoading(false);
                 setHasFetchedOrders(true);
             }
@@ -293,8 +294,9 @@ export const LabProvider: FC<{ children: ReactNode }> = ({ children }) => {
             fetchMyLabOrders();
         }
 
-        // Fetch all orders for lab tech/admin/receptionist (only if not already fetched)
-        if ((user.role === 'lab_technician' || user.role === 'admin' || user.role === 'receptionist') && !hasFetchedOrders) {
+        // Fetch all orders for lab tech/admin/receptionist (only if CURRENTLY NOT on a page that handles its own fetching)
+        // We'll skip the auto-fetch here if the user is a lab technician, as the LabDashboard handles its own dated fetch.
+        if ((user.role === 'admin' || user.role === 'receptionist') && !hasFetchedOrders) {
             fetchLabOrders();
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
