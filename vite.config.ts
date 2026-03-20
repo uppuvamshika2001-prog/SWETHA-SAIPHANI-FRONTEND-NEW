@@ -48,6 +48,7 @@ export default defineConfig(({ mode }) => ({
           "vendor-pdf": ["jspdf", "jspdf-autotable"],
           "vendor-charts": ["recharts"],
           "vendor-query": ["@tanstack/react-query"],
+          "vendor-icons": ["lucide-react"],
           "vendor-ui": [
             "@radix-ui/react-dialog",
             "@radix-ui/react-dropdown-menu",
