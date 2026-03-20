@@ -31,6 +31,7 @@ interface TestParameter {
     department?: string;
     inputType?: string;
     options?: string[];
+    isManual?: boolean;
 }
 
 interface TestCategory {
@@ -120,8 +121,12 @@ const LabResultsEntry = () => {
                     // Report types don't need structured parameters
                     setCategories([]);
                 } else {
-                    setError("No structured parameters found for this test. Please add them manually or sync the test catalog.");
-                    setCategories([]);
+                    // No structured parameters — initialize a blank editable category
+                    // so the technician can add manual parameters immediately
+                    setCategories([{
+                        name: response?.testName || selectedOrder?.testName || 'General',
+                        parameters: [{ name: '', value: '', unit: '', referenceRange: '', flag: 'NORMAL', isManual: true }]
+                    }]);
                 }
             } catch (error: any) {
                 console.error("Failed to fetch parameters", error);
@@ -202,7 +207,8 @@ const LabResultsEntry = () => {
             value: "",
             unit: "",
             referenceRange: "",
-            flag: 'NORMAL'
+            flag: 'NORMAL',
+            isManual: true
         });
         setCategories(updated);
     };
@@ -289,12 +295,13 @@ const LabResultsEntry = () => {
                 orderId: selectedOrderId,
                 result: {
                     parameters: validParams.map(p => ({
-                        parameterId: p.id,
+                        parameterId: p.id || undefined,
                         name: p.name,
                         value: p.value,
                         unit: p.unit || undefined,
                         referenceRange: p.referenceRange || undefined,
-                        flag: p.flag
+                        flag: p.flag,
+                        isManual: p.isManual || !p.id
                     })),
                 },
                 interpretation: interpretation || undefined,
