@@ -75,5 +75,9 @@ export const billingService = {
 
     async deleteBill(id: string) {
         return api.delete(`/billing/${id}`);
+    },
+
+    async getUnbilledLabOrders(patientId: string) {
+        return api.get<any[]>(`/billing/unbilled-lab-orders/${patientId}`);
     }
 };

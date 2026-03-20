@@ -109,19 +109,20 @@ export function BillGenerationDialog({
 
     useEffect(() => {
         if (patientId) {
-            fetchPendingLabOrders();
+            fetchUnbilledLabOrders();
         } else {
             setPendingLabOrders([]);
         }
     }, [patientId]);
 
-    const fetchPendingLabOrders = async () => {
+    const fetchUnbilledLabOrders = async () => {
         try {
-            // Fetch 'PAYMENT_PENDING' orders (new default status)
-            const orders = await labService.getLabOrders({ patientId, status: 'PAYMENT_PENDING' });
-            setPendingLabOrders(orders);
+            // Fetch PAID but UNBILLED lab orders for this patient
+            const orders = await billingService.getUnbilledLabOrders(patientId);
+            setPendingLabOrders(Array.isArray(orders) ? orders : []);
         } catch (error) {
-            console.error("Failed to fetch lab orders", error);
+            console.error("Failed to fetch unbilled lab orders", error);
+            setPendingLabOrders([]);
         }
     };
 

@@ -8,6 +8,7 @@ import { Search, Filter } from "lucide-react";
 import { useState, useEffect } from "react";
 import { formatCurrency } from "@/utils/format";
 import { AddMedicineDialog } from "@/components/pharmacy/AddMedicineDialog";
+import { EditMedicineDialog } from "@/components/pharmacy/EditMedicineDialog";
 import { MedicineDetailsDialog } from "@/components/pharmacy/MedicineDetailsDialog";
 import { toast } from "sonner";
 import { pharmacyService } from "@/services/pharmacyService";
@@ -66,8 +67,26 @@ const PharmacyInventory = () => {
         await fetchMedicines();
     };
 
-    const handleDeleteMedicine = (id: string) => {
-        setMedicineList(prev => prev.filter(med => med.id !== id));
+    const handleDeleteMedicine = async (id: string) => {
+        try {
+            await pharmacyService.deleteMedicine(id);
+            setMedicineList(prev => prev.filter(med => med.id !== id));
+            toast.success("Medicine deleted successfully");
+        } catch (error) {
+            console.error("Failed to delete medicine", error);
+            toast.error("Failed to delete medicine");
+        }
+    };
+
+    const [editingMedicine, setEditingMedicine] = useState<Medicine | null>(null);
+
+    const handleEditMedicine = (medicine: Medicine) => {
+        setEditingMedicine(medicine);
+    };
+
+    const handleEditSuccess = () => {
+        setEditingMedicine(null);
+        fetchMedicines();
     };
 
     const handleFilterToggle = () => {
@@ -209,6 +228,7 @@ const PharmacyInventory = () => {
                                                 <TableCell className="text-right">
                                                     <MedicineDetailsDialog
                                                         medicine={med}
+                                                        onEdit={handleEditMedicine}
                                                         onDelete={handleDeleteMedicine}
                                                     />
                                                 </TableCell>
@@ -220,6 +240,13 @@ const PharmacyInventory = () => {
                         )}
                     </CardContent>
                 </Card>
+                
+                <EditMedicineDialog 
+                    open={!!editingMedicine} 
+                    onOpenChange={(open) => !open && setEditingMedicine(null)}
+                    medicine={editingMedicine}
+                    onSuccess={handleEditSuccess}
+                />
             </div>
         </DashboardLayout>
     );
