@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, Filter, IndianRupee, AlertCircle, Calendar, ArrowUpRight, ArrowDownRight, Loader2 } from "lucide-react";
+import { Search, Filter, IndianRupee, AlertCircle, Calendar, ArrowUpRight, ArrowDownRight, Loader2, Plus } from "lucide-react";
 import { pharmacyService } from "@/services/pharmacyService";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -22,9 +22,11 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Receipt } from "lucide-react";
+import { AddPurchaseDialog } from "@/components/pharmacy/AddPurchaseDialog";
 
 export default function DistributorPayments() {
     const [purchases, setPurchases] = useState<any[]>([]);
+    const [isAddPurchaseOpen, setIsAddPurchaseOpen] = useState(false);
     const [report, setReport] = useState<any>({
         stats: {
             totalAmount: 0,
@@ -106,9 +108,15 @@ export default function DistributorPayments() {
     return (
         <DashboardLayout role="pharmacist">
             <div className="p-6 space-y-6">
-                <div>
-                    <h1 className="text-2xl font-bold text-slate-800">Distributor Payments</h1>
-                    <p className="text-slate-500">Track and manage distributor invoices and payments</p>
+                <div className="flex justify-between items-center">
+                    <div>
+                        <h1 className="text-2xl font-bold text-slate-800">Distributor Payments</h1>
+                        <p className="text-slate-500">Track and manage distributor invoices and payments</p>
+                    </div>
+                    <Button onClick={() => setIsAddPurchaseOpen(true)} className="bg-purple-600 hover:bg-purple-700">
+                        <Plus className="mr-2 h-4 w-4" />
+                        New Purchase
+                    </Button>
                 </div>
 
                 {report && (

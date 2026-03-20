@@ -79,5 +79,9 @@ export const billingService = {
 
     async getUnbilledLabOrders(patientId: string) {
         return api.get<any[]>(`/billing/unbilled-lab-orders/${patientId}`);
+    },
+
+    async getPatientSummary(patientId: string) {
+        return api.get<any>(`/billing/patient-summary/${patientId}`);
     }
 };

@@ -138,6 +138,10 @@ export const pharmacyService = {
         return api.get('/pharmacy/margin-reports', { params });
     },
 
+    async createPurchase(data: any): Promise<any> {
+        return api.post('/pharmacy/purchases', data);
+    },
+
     async recordPayment(purchaseId: string, data: any): Promise<any> {
         return api.post(`/pharmacy/purchases/${purchaseId}/payments`, data);
     },

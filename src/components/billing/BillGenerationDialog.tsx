@@ -60,8 +60,8 @@ export function BillGenerationDialog({
     const [showPatientResults, setShowPatientResults] = useState(false);
 
     // Item State
-    const [items, setItems] = useState<{ description: string, quantity: number, unitPrice: number, total: number }[]>([]);
-    const [description, setDescription] = useState("");
+    const [items, setItems] = useState<{ description: string, quantity: number, unitPrice: number, total: number, type?: 'consultation' | 'lab', lab_order_id?: string }[]>([]);
+    const [selectedServiceId, setSelectedServiceId] = useState("");
     const [unitPrice, setUnitPrice] = useState("");
     const [quantity, setQuantity] = useState("1");
     const [discount, setDiscount] = useState("0");
@@ -102,54 +102,54 @@ export function BillGenerationDialog({
         }
     };
 
-    // Lab Orders Logic
+    // Combined Flow Logic
     const selectedPatient = patientList.find(p => p.uhid === patientId);
-    const [pendingLabOrders, setPendingLabOrders] = useState<any[]>([]);
-    const [selectedLabOrderIds, setSelectedLabOrderIds] = useState<string[]>([]);
+    const [patientSummary, setPatientSummary] = useState<any>(null);
 
     useEffect(() => {
         if (patientId) {
-            fetchUnbilledLabOrders();
+            fetchPatientSummary();
         } else {
-            setPendingLabOrders([]);
+            setPatientSummary(null);
         }
     }, [patientId]);
 
-    const fetchUnbilledLabOrders = async () => {
+    const fetchPatientSummary = async () => {
         try {
-            // Fetch PAID but UNBILLED lab orders for this patient
-            const orders = await billingService.getUnbilledLabOrders(patientId);
-            setPendingLabOrders(Array.isArray(orders) ? orders : []);
+            const summary = await billingService.getPatientSummary(patientId);
+            setPatientSummary(summary);
         } catch (error) {
-            console.error("Failed to fetch unbilled lab orders", error);
-            setPendingLabOrders([]);
+            console.error("Failed to fetch patient summary", error);
+            setPatientSummary(null);
         }
     };
 
-    const handleAddLabOrder = (order: any) => {
-        if (selectedLabOrderIds.includes(order.id)) return;
-
-        // Add to items — use test_name or testName with fallback
-        const testNames = order.test_name || order.testName || 'Unknown Test';
-        const description = `Lab: ${testNames} (Order #${order.order_id})`;
-
-        // Determine price
-        let amount = DEFAULT_LAB_PRICE;
-        // Find matching test in catalog
-        const matchingTest = availableTests.find(t =>
-            (t.name || '').toLowerCase() === testNames.toLowerCase() ||
-            testNames.toLowerCase().includes((t.name || '').toLowerCase())
-        );
-
-        if (matchingTest) {
-            amount = matchingTest.price;
+    const summaryOptions = (() => {
+        const opts = [];
+        if (patientSummary?.consultation) {
+            opts.push({ 
+                id: 'consultation', 
+                label: `Consultation Fee (₹${patientSummary.consultation.fee})`, 
+                description: 'Consultation Fee', 
+                type: 'consultation',
+                price: patientSummary.consultation.fee 
+            });
         }
-
-        setItems([...items, { description, quantity: 1, unitPrice: Number(amount), total: Number(amount) }]);
-        setSelectedLabOrderIds([...selectedLabOrderIds, order.id]);
-
-        toast.info("Lab order added. Please verify price.");
-    };
+        if (patientSummary?.lab_orders?.length > 0) {
+            patientSummary.lab_orders.forEach((order: any) => {
+               const testName = order.testName || order.test_name;
+               opts.push({
+                    id: `lab_${order.id}`,
+                    label: `Lab: ${testName} (₹${order.price})`,
+                    description: `Lab: ${testName}`,
+                    type: 'lab',
+                    lab_order_id: order.id,
+                    price: order.price
+               });
+            });
+        }
+        return opts;
+    })();
 
     const handleAddMultiLabTests = () => {
         if (selectedMultiLabTests.length === 0) return;
@@ -179,7 +179,7 @@ export function BillGenerationDialog({
     };
 
     const handleAddItem = () => {
-        if (!description || !unitPrice || !quantity) return;
+        if (!selectedServiceId || !unitPrice || !quantity) return;
         const qty = parseInt(quantity);
         const price = parseFloat(unitPrice);
 
@@ -188,11 +188,31 @@ export function BillGenerationDialog({
             return;
         }
 
+        const opt = summaryOptions.find(o => o.id === selectedServiceId);
+        if (!opt) {
+            // For older generic logic if we expand back
+            toast.error("Invalid service selection");
+            return;
+        }
+
+        // Prevent duplicate lab adding
+        if (opt.type === 'lab' && items.some(i => i.lab_order_id === opt.lab_order_id)) {
+            toast.error("This lab test is already in the bill.");
+            return;
+        }
+
         const total = qty * price;
-        setItems([...items, { description, quantity: qty, unitPrice: price, total }]);
+        setItems([...items, { 
+            description: opt.description, 
+            quantity: qty, 
+            unitPrice: price, 
+            total,
+            type: opt.type as any,
+            lab_order_id: opt.lab_order_id
+        }]);
 
         // Reset fields
-        setDescription("");
+        setSelectedServiceId("");
         setUnitPrice("");
         setQuantity("1");
     };
@@ -244,24 +264,24 @@ export function BillGenerationDialog({
                 items: items.map(item => ({
                     description: item.description,
                     quantity: item.quantity,
-                    unitPrice: item.unitPrice
+                    unitPrice: item.unitPrice,
+                    type: item.type,
+                    lab_order_id: item.lab_order_id
                 })),
                 discount: calculateDiscountAmount(),
                 notes: calculateGST() > 0
                     ? `GST (18%): ₹${calculateGST().toFixed(2)} | Total with GST: ₹${calculateTotal().toFixed(2)}`
                     : `Total: ₹${calculateTotal().toFixed(2)}`,
                 gstPercent: 0, // Explicitly set GST to 0 for Lab/OPD bills
-                labOrderIds: selectedLabOrderIds,
                 isWalkInLab: selectedPatient?.patient_type === 'WALKIN_LAB'
             } as any);
 
             toast.success("Bill generated successfully!");
 
             // Reset and close
-            setPatientId("");
             setPatientSearch("");
             setItems([]);
-            setSelectedLabOrderIds([]);
+            setSelectedServiceId("");
             if (setShowOpen) setShowOpen(false);
             if (onSuccess) onSuccess();
 
@@ -368,72 +388,30 @@ export function BillGenerationDialog({
 
                     <Separator className="bg-slate-100 dark:bg-slate-800" />
 
-                    {/* Pending Lab Orders */}
-                    {pendingLabOrders.length > 0 && (
-                        <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-100 dark:border-blue-800">
-                            <h4 className="text-sm font-semibold text-blue-800 dark:text-blue-200 mb-2 flex items-center gap-2">
-                                <FileText className="h-4 w-4" /> Pending Lab Orders ({pendingLabOrders.length})
-                            </h4>
-                            <div className="space-y-2">
-                                {pendingLabOrders.map(order => (
-                                    <div key={order.id} className="flex justify-between items-center bg-white dark:bg-slate-950 p-3 rounded border border-blue-200 dark:border-blue-800">
-                                        <div>
-                                            <div className="font-medium text-sm">{order.order_id}</div>
-                                            <div className="text-xs text-muted-foreground flex items-center gap-2">
-                                                <span>{order.test_name || order.testName || 'Unknown Test'}</span>
-                                                <span className="font-semibold text-blue-600">
-                                                    ₹{(() => {
-                                                        const orderTestName = order.test_name || order.testName || '';
-                                                        const match = availableTests.find(t =>
-                                                            (t.name || '').toLowerCase() === orderTestName.toLowerCase() ||
-                                                            orderTestName.toLowerCase().includes((t.name || '').toLowerCase())
-                                                        );
-                                                        return match ? match.price : DEFAULT_LAB_PRICE;
-                                                    })()}
-                                                </span>
-                                            </div>
-                                        </div>
-                                        <Button
-                                            size="sm"
-                                            variant="outline"
-                                            className="h-8 border-blue-200 hover:bg-blue-50 text-blue-700"
-                                            onClick={() => handleAddLabOrder(order)}
-                                            disabled={selectedLabOrderIds.includes(order.id)}
-                                        >
-                                            {selectedLabOrderIds.includes(order.id) ? "Added" : "Add to Bill"}
-                                        </Button>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-
                     {/* Add Item Section */}
                     <div className="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-lg border border-slate-100 dark:border-slate-800 space-y-4">
                         <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-200">Add Service / Test</h4>
 
                         <div className="flex flex-col md:flex-row gap-4 items-end">
-                            {/* Service Description - Always Visible */}
                             <div className="w-full md:w-1/3 space-y-1.5">
                                 <Label htmlFor="desc" className="text-xs text-slate-500">Service Description</Label>
-                                <Select value={description} onValueChange={(val) => {
-                                    setDescription(val);
-                                    if (val === "Lab Fee") {
-                                        setEntryMode('lab_multi');
-                                    } else {
-                                        setEntryMode('service');
-                                        if (val === "Consultation Fee") setUnitPrice("500");
-                                        else setUnitPrice("");
+                                <Select value={selectedServiceId} onValueChange={(val) => {
+                                    setSelectedServiceId(val);
+                                    const opt = summaryOptions.find(o => o.id === val);
+                                    if (opt) {
+                                        setUnitPrice(opt.price.toString());
+                                        setQuantity("1");
                                     }
                                 }}>
                                     <SelectTrigger id="desc" className="bg-white dark:bg-slate-950 h-9 w-full">
                                         <SelectValue placeholder="Select service" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        {(!selectedPatient || selectedPatient.patient_type !== 'WALKIN_LAB') && (
-                                            <SelectItem value="Consultation Fee">Consultation Fee</SelectItem>
-                                        )}
-                                        <SelectItem value="Lab Fee">Lab Fee</SelectItem>
+                                        {summaryOptions.map(opt => (
+                                            <SelectItem key={opt.id} value={opt.id}>
+                                                {opt.label}
+                                            </SelectItem>
+                                        ))}
                                     </SelectContent>
                                 </Select>
                             </div>
