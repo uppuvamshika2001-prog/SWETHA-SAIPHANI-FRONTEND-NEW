@@ -45,12 +45,12 @@ export default function MarginReports() {
   }, []);
 
   const columns = [
-    { key: 'medicineName', header: 'Medicine Name' },
-    { key: 'quantitySold', header: 'Quantity Sold' },
+    { key: 'name', header: 'Medicine Name' },
+    { key: 'quantity', header: 'Quantity Sold' },
     { 
-      key: 'totalProfit', 
+      key: 'profit', 
       header: 'Total Profit',
-      render: (row: any) => <span className="font-medium text-green-600">₹{row.totalProfit.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+      render: (row: any) => <span className="font-medium text-green-600">₹{row.profit.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
     },
   ];
 
@@ -109,25 +109,25 @@ export default function MarginReports() {
         {/* Stats Cards */}
         <div className="grid gap-4 md:grid-cols-3">
           <StatsCard
-            title="Today's Margin"
-            value={`₹${data?.summary?.todayMargin?.toLocaleString('en-IN') || '0'}`}
+            title="Total Margin (Range)"
+            value={`₹${data?.totalProfit?.toLocaleString('en-IN') || '0'}`}
             icon={<TrendingUp className="h-5 w-5" />}
-            description="Net profit generated today"
+            description="Net profit in selected date range"
             variant="success"
           />
           <StatsCard
+            title="Today's Margin"
+            value={`₹${data?.todayProfit?.toLocaleString('en-IN') || '0'}`}
+            icon={<DollarSign className="h-5 w-5" />}
+            description="Total profit generated today"
+            variant="warning"
+          />
+          <StatsCard
             title="Monthly Margin"
-            value={`₹${data?.summary?.monthlyMargin?.toLocaleString('en-IN') || '0'}`}
+            value={`₹${data?.monthlyProfit?.toLocaleString('en-IN') || '0'}`}
             icon={<DollarSign className="h-5 w-5" />}
             description="Total profit this month"
             variant="primary"
-          />
-          <StatsCard
-            title="Medicines Sold Today"
-            value={data?.summary?.totalSoldToday || 0}
-            icon={<Pill className="h-5 w-5" />}
-            description="Total units dispensed"
-            variant="warning"
           />
         </div>
 
@@ -143,18 +143,18 @@ export default function MarginReports() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {data?.topProfitableMedicines?.map((m: any, i: number) => (
-                  <div key={m.medicineId} className="flex items-center justify-between">
+                {data?.topMedicines?.map((m: any, i: number) => (
+                  <div key={`${m.name}-${i}`} className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary">
                         {i + 1}
                       </div>
-                      <span className="text-sm font-medium">{m.medicineName}</span>
+                      <span className="text-sm font-medium">{m.name}</span>
                     </div>
-                    <span className="text-sm font-bold text-green-600">₹{m.totalProfit.toLocaleString('en-IN')}</span>
+                    <span className="text-sm font-bold text-green-600">₹{m.profit.toLocaleString('en-IN')}</span>
                   </div>
                 ))}
-                {!data?.topProfitableMedicines?.length && (
+                {!data?.topMedicines?.length && (
                   <p className="text-center text-muted-foreground py-4">No data available</p>
                 )}
               </div>

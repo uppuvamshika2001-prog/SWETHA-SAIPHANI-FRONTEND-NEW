@@ -9,8 +9,9 @@ export const notificationService = {
             const items = Array.isArray(response) ? response : (response.items || response.data || []);
             return items;
         } catch (error: any) {
-            // If the endpoint is missing (404), return empty list to prevent UI breakage
-            if (error.status === 404 || (error.message && error.message.includes('not found'))) {
+            // If the endpoint is missing (404) or auth fails (401), return empty list to prevent UI breakage
+            if (error.status === 404 || error.status === 401 ||
+                (error.message && (error.message.includes('not found') || error.message.includes('Session expired') || error.message.includes('Unauthorized')))) {
                 return [];
             }
             throw error;
@@ -22,7 +23,8 @@ export const notificationService = {
             const response = await api.get<{ count: number }>('/notifications/unread-count');
             return response.count;
         } catch (error: any) {
-            if (error.status === 404 || (error.message && error.message.includes('not found'))) {
+            if (error.status === 404 || error.status === 401 ||
+                (error.message && (error.message.includes('not found') || error.message.includes('Session expired') || error.message.includes('Unauthorized')))) {
                 return 0;
             }
             throw error;

@@ -11,6 +11,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { format, addDays, isBefore } from "date-fns";
+import axios from "axios";
 
 const RETURN_REASONS = [
     "Expired",
@@ -32,6 +33,7 @@ export default function StockReturns() {
     const [medicines, setMedicines] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
+    const [searching, setSearching] = useState(false);
     const [selectedMedicine, setSelectedMedicine] = useState<any>(null);
     const [returnItems, setReturnItems] = useState<any[]>([]);
     const [returnType, setReturnType] = useState('CREDIT_NOTE');
@@ -39,13 +41,12 @@ export default function StockReturns() {
     const [expiringSoon, setExpiringSoon] = useState<any[]>([]);
 
     useEffect(() => {
-        fetchMedicines();
+        fetchExpiringSoon();
     }, []);
 
-    const fetchMedicines = async () => {
+    const fetchExpiringSoon = async () => {
         try {
-            const data = await pharmacyService.getMedicines();
-            setMedicines(data);
+            const data = await pharmacyService.getMedicines({ limit: 100 });
             
             // Filter expiring soon (next 60 days)
             const soon = [];
@@ -62,18 +63,58 @@ export default function StockReturns() {
             }
             setExpiringSoon(soon);
         } catch (error) {
-            toast({
-                title: "Error",
-                description: "Failed to fetch inventory data.",
-                variant: "destructive"
-            });
+            console.error("Failed to fetch inventory data", error);
         } finally {
             setLoading(false);
         }
     };
 
-    const handleSelectBatch = (med: any, batch: any) => {
-        const existing = returnItems.find(item => item.batchId === batch.id);
+    useEffect(() => {
+        if (!searchQuery.trim() || searchQuery.length < 2) {
+            setMedicines([]);
+            return;
+        }
+
+        setSearching(true);
+        const delayDebounceOptions = setTimeout(async () => {
+            try {
+                const url = `${import.meta.env.VITE_API_URL?.replace(/\/+$/, '') || 'http://localhost:5000'}/api/pharmacy/medicines?search=${encodeURIComponent(searchQuery)}&format=returns&limit=50`;
+                const response = await axios.get(url, {
+                    headers: { Authorization: `Bearer ${localStorage.getItem('accessToken')}` }
+                });
+                
+                // CRITICAL REQUIREMENT LOGIC
+                setMedicines(response.data.items || []);
+            } catch (err) {
+                console.error("Search API failed:", err);
+            } finally {
+                setSearching(false);
+            }
+        }, 500);
+
+        return () => clearTimeout(delayDebounceOptions);
+    }, [searchQuery]);
+
+    const handleSelectBatch = (med: any, flatBatch?: any) => {
+        const item = flatBatch ? {
+            id: med.id,
+            name: med.name,
+            batchNumber: flatBatch.batchNumber, // from original batch model
+            distributor: flatBatch.distributorName,
+            stock: flatBatch.stockQuantity,
+            expiry: flatBatch.expiryDate,
+            purchasePrice: flatBatch.purchasePrice || 0
+        } : {
+            id: med.id,
+            name: med.name,
+            batchNumber: med.batch, // flat model maps batch
+            distributor: med.distributor,
+            stock: med.stock,
+            expiry: med.expiry,
+            purchasePrice: med.purchasePrice || 0
+        };
+
+        const existing = returnItems.find(ri => ri.batchNumber === item.batchNumber && ri.medicineId === item.id);
         if (existing) {
             toast({
                 title: "Already added",
@@ -83,16 +124,16 @@ export default function StockReturns() {
         }
 
         setReturnItems([...returnItems, {
-            medicineId: med.id,
-            batchId: batch.id,
-            medicineName: med.name,
-            batchNumber: batch.batchNumber,
-            distributor: batch.distributorName || "Unavailable",
-            availableStock: batch.stockQuantity,
-            expiryDate: batch.expiryDate,
+            medicineId: item.id,
+            batchId: `${item.id}-${item.batchNumber}`,
+            medicineName: item.name,
+            batchNumber: item.batchNumber,
+            distributor: item.distributor || "Unavailable",
+            availableStock: item.stock,
+            expiryDate: item.expiry,
             returnQty: 1,
-            returnReason: isBefore(new Date(batch.expiryDate), addDays(new Date(), 30)) ? "Expired" : "Near Expiry",
-            unitPrice: batch.purchasePrice || 0
+            returnReason: isBefore(new Date(item.expiry), addDays(new Date(), 30)) ? "Expired" : "Near Expiry",
+            unitPrice: item.purchasePrice || 0
         }]);
     };
 
@@ -148,7 +189,7 @@ export default function StockReturns() {
             });
 
             setReturnItems([]);
-            fetchMedicines(); // Refresh stock
+            setMedicines([]); // Refresh stock by clearing local list
         } catch (error: any) {
             toast({
                 title: "Return Failed",
@@ -159,11 +200,6 @@ export default function StockReturns() {
             setProcessing(false);
         }
     };
-
-    const filteredMedicines = medicines.filter(m => 
-        m.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        m.genericName?.toLowerCase().includes(searchQuery.toLowerCase())
-    );
 
     return (
         <div className="p-6 space-y-6">
@@ -248,32 +284,36 @@ export default function StockReturns() {
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
-                                            {filteredMedicines.map(med => (
-                                                med.batches?.filter((b: any) => b.isActive && b.stockQuantity > 0).map((batch: any) => (
-                                                    <TableRow key={batch.id}>
-                                                        <TableCell>
-                                                            <div className="font-medium">{med.name}</div>
-                                                            <div className="text-[10px] text-muted-foreground">{med.genericName}</div>
-                                                        </TableCell>
-                                                        <TableCell className="text-xs font-mono">{batch.batchNumber}</TableCell>
-                                                        <TableCell>{batch.stockQuantity}</TableCell>
-                                                        <TableCell className="text-xs">{batch.distributorName || "N/A"}</TableCell>
-                                                        <TableCell className="text-xs">
-                                                            {format(new Date(batch.expiryDate), 'MM/yyyy')}
-                                                        </TableCell>
-                                                        <TableCell className="text-right">
-                                                            <Button 
-                                                                size="sm" 
-                                                                variant="outline"
-                                                                onClick={() => handleSelectBatch(med, batch)}
-                                                            >
-                                                                Select
-                                                            </Button>
-                                                        </TableCell>
-                                                    </TableRow>
-                                                ))
+                                            {searching && (
+                                                <TableRow>
+                                                    <TableCell colSpan={6} className="text-center py-8">
+                                                        <Loader2 className="h-6 w-6 animate-spin mx-auto text-muted-foreground" />
+                                                    </TableCell>
+                                                </TableRow>
+                                            )}
+                                            {!searching && medicines.map((item: any, idx) => (
+                                                <TableRow key={`${item.id}-${item.batch}-${idx}`}>
+                                                    <TableCell>
+                                                        <div className="font-medium">{item.name}</div>
+                                                    </TableCell>
+                                                    <TableCell className="text-xs font-mono">{item.batch}</TableCell>
+                                                    <TableCell>{item.stock}</TableCell>
+                                                    <TableCell className="text-xs">{item.distributor || "N/A"}</TableCell>
+                                                    <TableCell className="text-xs">
+                                                        {item.expiry ? format(new Date(item.expiry), 'MM/yyyy') : '-'}
+                                                    </TableCell>
+                                                    <TableCell className="text-right">
+                                                        <Button 
+                                                            size="sm" 
+                                                            variant="outline"
+                                                            onClick={() => handleSelectBatch(item)}
+                                                        >
+                                                            Select
+                                                        </Button>
+                                                    </TableCell>
+                                                </TableRow>
                                             ))}
-                                            {filteredMedicines.length === 0 && (
+                                            {!searching && medicines.length === 0 && (
                                                 <TableRow>
                                                     <TableCell colSpan={6} className="text-center py-4 text-muted-foreground">
                                                         No stock found for "{searchQuery}"

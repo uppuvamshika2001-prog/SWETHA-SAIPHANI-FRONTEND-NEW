@@ -10,6 +10,7 @@ import { pharmacyService } from "@/services/pharmacyService";
 import { useToast } from "@/components/ui/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import axios from "axios";
 
 const RETURN_REASONS = [
     "Wrong Medicine",
@@ -41,9 +42,15 @@ export default function MedicineReturns() {
 
         setSearching(true);
         try {
-            // Reusing getBills for now, in a real app we'd have a specific return search
-            const response = await pharmacyService.getBills({ search: searchQuery });
-            if (response.items.length === 0) {
+            const url = `${import.meta.env.VITE_API_URL?.replace(/\/+$/, '') || 'http://localhost:5000'}/api/pharmacy/bills?search=${encodeURIComponent(searchQuery)}&format=returns`;
+            const response = await axios.get(url, {
+                headers: { Authorization: `Bearer ${localStorage.getItem('accessToken')}` }
+            });
+
+            // CRITICAL REQUIREMENT LOGIC
+            const items = response.data.items || [];
+            
+            if (items.length === 0) {
                 toast({
                     title: "No bill found",
                     description: "Could not find any bill matching your query.",
@@ -51,7 +58,7 @@ export default function MedicineReturns() {
                 });
                 setSelectedBill(null);
             } else {
-                setSelectedBill(response.items[0]);
+                setSelectedBill(items[0]);
                 setReturnItems([]); // Reset return items
             }
         } catch (error) {
