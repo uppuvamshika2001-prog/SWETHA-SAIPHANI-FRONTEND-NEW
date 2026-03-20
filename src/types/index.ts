@@ -185,7 +185,8 @@ export interface Medicine {
   id: string;
   name: string;
   generic_name: string;
-  category: string;
+  categoryId?: number;
+  category?: string | { id: number; name: string };
   manufacturer: string;
   unit_price: number;
   stock_quantity: number;
