@@ -28,31 +28,39 @@ const PharmacyDispensing = () => {
     const loadDispensedHistory = async () => {
         try {
             const data = await pharmacyService.getDispensedHistory();
+            console.log("Dispensed History API Response:", data);
+            
             setDispensedItems(data.map(item => {
-                // Ensure total_amount is a valid number
-                let totalAmount = Number(item.totalAmount || item.total_amount || 0);
+                console.log("History Item:", item);
+                
+                // Ensure total_amount is a valid number with robust fallbacks
+                const rawAmount = item.total || item.totalAmount || item.total_amount || 0;
+                let totalAmount = Number(rawAmount);
                 if (isNaN(totalAmount)) totalAmount = 0;
                 
-                // Safe date handling: try dispensedAt (backend populated), then updatedAt, then createdAt
+                // Safe date handling: try dispensedAt, then updatedAt, then createdAt
                 let safeDateString = "—";
                 const dateSource = item.dispensedAt || item.updatedAt || item.createdAt;
+                
                 if (dateSource) {
                     const date = new Date(dateSource);
                     if (!isNaN(date.getTime())) {
-                        safeDateString = date.toLocaleString();
+                        // User specifically requested toLocaleDateString for a cleaner view
+                        safeDateString = date.toLocaleDateString();
                     }
                 }
 
                 return {
                     ...item,
-                    order_id: item.id.slice(0, 8), // Show short ID for better UI
-                    patient_name: `${item.patient?.firstName || ''} ${item.patient?.lastName || ''}`,
+                    order_id: (item.id || "").slice(0, 8), // Safe slice for ID
+                    patient_name: `${item.patient?.firstName || 'Patient'} ${item.patient?.lastName || ''}`,
                     total_amount: totalAmount,
                     dispensedAt: safeDateString
                 };
             }));
         } catch (e) {
             console.error("Failed to load dispensed history", e);
+            toast.error("Failed to load history");
         }
     };
 
@@ -382,8 +390,14 @@ const PharmacyDispensing = () => {
                                             <span className="text-muted-foreground text-sm ml-2">{item.patient_name}</span>
                                         </div>
                                         <div className="text-right">
-                                            <div className="font-medium">{formatCurrency(item.total_amount)}</div>
-                                            <div className="text-xs text-muted-foreground">{item.dispensedAt}</div>
+                                            <div className="font-medium text-purple-700">
+                                                {/* Never trust raw values, ensure fallback */}
+                                                {formatCurrency(item.total_amount || 0)}
+                                            </div>
+                                            <div className="text-xs text-muted-foreground">
+                                                {/* Final UI safety check */}
+                                                {item.dispensedAt || "—"}
+                                            </div>
                                         </div>
                                     </div>
                                 ))}
