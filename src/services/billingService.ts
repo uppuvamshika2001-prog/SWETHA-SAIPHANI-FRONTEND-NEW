@@ -82,6 +82,6 @@ export const billingService = {
     },
 
     async getPatientSummary(patientId: string) {
-        return api.get<any>(`/billing/patient-summary/${patientId}`);
+        return api.get<any>('/billing/patient-summary', { params: { patientId } });
     }
 };

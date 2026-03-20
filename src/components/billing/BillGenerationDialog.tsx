@@ -59,6 +59,7 @@ export function BillGenerationDialog({
 
     // Item State
     const [items, setItems] = useState<{ description: string, quantity: number, unitPrice: number, total: number, type?: 'consultation' | 'lab', lab_order_id?: string }[]>([]);
+    const [services, setServices] = useState<any[]>([]);
     const [selectedServiceId, setSelectedServiceId] = useState("");
     const [unitPrice, setUnitPrice] = useState("");
     const [quantity, setQuantity] = useState("1");
@@ -92,45 +93,60 @@ export function BillGenerationDialog({
             fetchPatientSummary();
         } else {
             setPatientSummary(null);
+            setServices([{
+                id: 'consultation',
+                label: "Consultation Fee",
+                value: "consultation",
+                price: 300,
+                type: "consultation",
+                description: "Consultation Fee"
+            }]);
         }
     }, [patientId]);
 
     const fetchPatientSummary = async () => {
         try {
-            const summary = await billingService.getPatientSummary(patientId);
-            setPatientSummary(summary);
+            const response = await billingService.getPatientSummary(patientId);
+            const lab_orders = response.lab_orders || [];
+            console.log("Lab Orders:", lab_orders);
+
+            const options = [
+                {
+                    id: 'consultation',
+                    label: "Consultation Fee",
+                    value: "consultation",
+                    price: response.consultation?.fee || 300,
+                    type: "consultation",
+                    description: "Consultation Fee"
+                },
+                ...lab_orders.map((order: any) => ({
+                    id: `lab_${order.id}`,
+                    label: order.testName,
+                    value: order.id,
+                    price: order.price || 0,
+                    type: "lab",
+                    description: `Lab: ${order.testName}`,
+                    lab_order_id: order.id
+                }))
+            ];
+
+            setServices(options);
+            setPatientSummary(response);
         } catch (error) {
             console.error("Failed to fetch patient summary", error);
             setPatientSummary(null);
+            setServices([{
+                id: 'consultation',
+                label: "Consultation Fee",
+                value: "consultation",
+                price: 300,
+                type: "consultation",
+                description: "Consultation Fee"
+            }]);
         }
     };
 
-    const summaryOptions = (() => {
-        const opts: { id: string; label: string; description: string; type: string; price: number; lab_order_id?: string }[] = [];
-        if (patientSummary?.consultation) {
-            opts.push({ 
-                id: 'consultation', 
-                label: 'Consultation Fee', 
-                description: 'Consultation Fee', 
-                type: 'consultation',
-                price: patientSummary.consultation.fee 
-            });
-        }
-        if (patientSummary?.lab_orders?.length > 0) {
-            patientSummary.lab_orders.forEach((order: any) => {
-               const testName = order.testName || order.test_name || 'Lab Test';
-               opts.push({
-                    id: `lab_${order.id}`,
-                    label: testName,
-                    description: `Lab: ${testName}`,
-                    type: 'lab',
-                    lab_order_id: order.id,
-                    price: order.price
-               });
-            });
-        }
-        return opts;
-    })();
+    const summaryOptions = services;
 
 
 
@@ -144,9 +160,8 @@ export function BillGenerationDialog({
             return;
         }
 
-        const opt = summaryOptions.find(o => o.id === selectedServiceId);
+        const opt = services.find(o => o.id === selectedServiceId);
         if (!opt) {
-            // For older generic logic if we expand back
             toast.error("Invalid service selection");
             return;
         }

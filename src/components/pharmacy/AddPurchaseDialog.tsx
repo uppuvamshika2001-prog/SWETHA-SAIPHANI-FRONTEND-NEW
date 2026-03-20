@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { SearchableSelect } from "@/components/ui/SearchableSelect";
 import { Plus, Trash2, Loader2, IndianRupee } from "lucide-react";
 import { pharmacyService } from "@/services/pharmacyService";
 import { toast } from "sonner";
@@ -25,6 +25,7 @@ interface AddPurchaseDialogProps {
 interface PurchaseItem {
     id: string; // temporary UI id
     medicineId: string;
+    medicineName?: string;
     batchNumber: string;
     manufacturingDate: string;
     expiryDate: string;
@@ -59,7 +60,7 @@ export function AddPurchaseDialog({ open, onOpenChange, onSuccess }: AddPurchase
 
     const fetchMedicines = async () => {
         try {
-            const res: any = await pharmacyService.getMedicines({ limit: 1000 });
+            const res: any = await pharmacyService.getMedicines({ limit: 50 });
             if (res?.items) {
                 setMedicines(res.items);
             } else if (Array.isArray(res)) {
@@ -67,7 +68,19 @@ export function AddPurchaseDialog({ open, onOpenChange, onSuccess }: AddPurchase
             }
         } catch (error) {
             console.error("Failed to fetch medicines", error);
-            toast.error("Failed to load medicines for selection");
+            toast.error("Failed to load medicines. Please try searching.");
+        }
+    };
+
+    const searchMedicines = async (query: string) => {
+        // If query is empty, just return the initial 50 medicines loaded on mount
+        if (!query) return medicines;
+        try {
+            const res: any = await pharmacyService.getMedicines({ search: query, limit: 50 });
+            return res?.items || res || [];
+        } catch (error) {
+            console.error("Search failed", error);
+            return [];
         }
     };
 
@@ -77,6 +90,7 @@ export function AddPurchaseDialog({ open, onOpenChange, onSuccess }: AddPurchase
             {
                 id: Math.random().toString(36).substring(7),
                 medicineId: "",
+                medicineName: "",
                 batchNumber: "",
                 manufacturingDate: "",
                 expiryDate: "",
@@ -232,19 +246,20 @@ export function AddPurchaseDialog({ open, onOpenChange, onSuccess }: AddPurchase
                                         const total = (parseFloat(item.stockQuantity) || 0) * (parseFloat(item.purchasePrice) || 0);
                                         return (
                                             <TableRow key={item.id}>
-                                                <TableCell className="p-2">
-                                                    <Select value={item.medicineId} onValueChange={(val) => updateItem(item.id, "medicineId", val)}>
-                                                        <SelectTrigger className="w-full">
-                                                            <SelectValue placeholder="Select..." />
-                                                        </SelectTrigger>
-                                                        <SelectContent>
-                                                            {medicines.map(m => (
-                                                                <SelectItem key={m.id} value={m.id}>
-                                                                    {m.name} {m.genericName ? `(${m.genericName})` : ''}
-                                                                </SelectItem>
-                                                            ))}
-                                                        </SelectContent>
-                                                    </Select>
+                                                <TableCell className="p-2 min-w-[200px]">
+                                                    <SearchableSelect
+                                                        placeholder="Search medicine..."
+                                                        value={item.medicineId ? { id: item.medicineId, name: item.medicineName || "Unknown", genericName: "" } : null}
+                                                        onSearch={searchMedicines}
+                                                        onSelect={(medicine: any) => {
+                                                            const newItems = items.map((i) => i.id === item.id ? { ...i, medicineId: medicine.id, medicineName: medicine.name } : i);
+                                                            setItems(newItems);
+                                                        }}
+                                                        getDisplayValue={(medicine: any) => medicine ? `${medicine.name} ${medicine.genericName ? `(${medicine.genericName})` : ''}` : "Search medicine..."}
+                                                        renderItem={(medicine: any) => (
+                                                            <span>{medicine.name} {medicine.genericName ? <span className="text-xs text-muted-foreground ml-1">({medicine.genericName})</span> : ''}</span>
+                                                        )}
+                                                    />
                                                 </TableCell>
                                                 <TableCell className="p-2">
                                                     <Input value={item.batchNumber} onChange={(e) => updateItem(item.id, "batchNumber", e.target.value)} required />

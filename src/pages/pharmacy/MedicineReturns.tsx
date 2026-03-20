@@ -58,7 +58,12 @@ export default function MedicineReturns() {
                 });
                 setSelectedBill(null);
             } else {
-                setSelectedBill(items[0]);
+                const bill = items[0];
+                // FRONTEND SAFETY: strictly isolate medicine items, never process returns on non-medicine services
+                if (bill.items) {
+                    bill.items = bill.items.filter((item: any) => item.medicineId !== null);
+                }
+                setSelectedBill(bill);
                 setReturnItems([]); // Reset return items
             }
         } catch (error) {
