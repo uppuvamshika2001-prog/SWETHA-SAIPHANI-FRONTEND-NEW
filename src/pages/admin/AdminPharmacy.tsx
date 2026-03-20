@@ -67,12 +67,12 @@ const AdminPharmacy = () => {
     const filteredMedicines = medicineList.filter(med => {
         const name = med.name || '';
         const generic = med.generic_name || '';
-        const category = med.category || '';
+        const medCategory = typeof med.category === 'object' ? med.category.name : (med.category || '');
 
         const matchesSearch =
             name.toLowerCase().includes(searchTerm.toLowerCase()) ||
             generic.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            category.toLowerCase().includes(searchTerm.toLowerCase());
+            medCategory.toLowerCase().includes(searchTerm.toLowerCase());
 
         const matchesFilter = filterStatus ? med.status === filterStatus : true;
 
@@ -189,7 +189,7 @@ const AdminPharmacy = () => {
                                                     <span className="text-xs text-muted-foreground">{med.generic_name || '-'}</span>
                                                 </div>
                                             </TableCell>
-                                            <TableCell>{med.category || '-'}</TableCell>
+                                            <TableCell>{typeof med.category === 'object' ? med.category.name : (med.category || '-')}</TableCell>
                                             <TableCell>
                                                 <div className="flex flex-col gap-1">
                                                     <span className="font-medium">{med.stock_quantity} units</span>

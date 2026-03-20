@@ -909,12 +909,12 @@ export function PatientRegistrationDialog({ children, onRegister, patientToEdit 
                                     </div>
                                     <div className="space-y-2">
                                         <Label htmlFor="registrationDate">Registration Date *</Label>
-                                        <Input 
-                                            id="registrationDate" 
-                                            type="date" 
-                                            value={formData.registrationDate} 
-                                            max={new Date().toISOString().slice(0, 10)} 
-                                            onChange={(e) => handleChange('registrationDate', e.target.value)} 
+                                        <Input
+                                            id="registrationDate"
+                                            type="date"
+                                            value={formData.registrationDate}
+                                            max={new Date().toISOString().slice(0, 10)}
+                                            onChange={(e) => handleChange('registrationDate', e.target.value)}
                                         />
                                     </div>
                                     <div className="space-y-2">
@@ -1238,7 +1238,7 @@ export function PatientRegistrationDialog({ children, onRegister, patientToEdit 
                                                     <SelectItem value="cash">Cash</SelectItem>
                                                     <SelectItem value="card">Card</SelectItem>
                                                     <SelectItem value="upi">UPI</SelectItem>
-                                                    <SelectItem value="foc">Free Of Cost (FOC)</SelectItem>
+                                                    <SelectItem value="foc">FOC</SelectItem>
                                                     <SelectItem value="pay_at_clinic">Pay at Clinic</SelectItem>
                                                 </SelectContent>
                                             </Select>

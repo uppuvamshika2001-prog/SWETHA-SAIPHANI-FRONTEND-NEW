@@ -40,7 +40,7 @@ export function EditMedicineDialog({
             setFormData({
                 name: medicine.name || "",
                 genericName: medicine.generic_name || medicine.genericName || "",
-                category: medicine.category || "",
+                category: typeof medicine.category === 'object' ? medicine.category.name : (medicine.category || ""),
                 manufacturer: medicine.manufacturer || "",
                 unit: medicine.unit || "tablet",
                 reorderLevel: medicine.min_stock_level || medicine.reorderLevel || 10,

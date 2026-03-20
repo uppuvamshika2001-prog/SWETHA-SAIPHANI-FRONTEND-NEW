@@ -57,8 +57,11 @@ export default function StockReturns() {
     const fetchHistory = async () => {
         setHistoryLoading(true);
         try {
-            const data = await pharmacyService.getStockReturns(historyFilters);
-            setHistory(data.items || []);
+            const response = await pharmacyService.getStockReturns(historyFilters);
+            console.log("API response:", response);
+            // Safely extract items handling both new and possible old API formats
+            const items = Array.isArray(response) ? response : (response?.items || response?.data?.items || []);
+            setHistory(items);
         } catch (error) {
             console.error("Failed to fetch stock return history", error);
         } finally {

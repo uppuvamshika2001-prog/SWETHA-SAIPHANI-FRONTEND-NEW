@@ -40,7 +40,7 @@ const PharmacyInventory = () => {
     const filteredMedicines = medicineList.filter(med => {
         // Handle both snake_case (frontend) and camelCase (backend) field names
         const genericName = med.generic_name || (med as any).genericName || '';
-        const category = med.category || '';
+        const category = typeof med.category === 'object' ? med.category.name : (med.category || '');
         const name = med.name || '';
 
         const matchesSearch = name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -209,7 +209,7 @@ const PharmacyInventory = () => {
                                                         <span className="text-xs text-muted-foreground">{genericName}</span>
                                                     </div>
                                                 </TableCell>
-                                                <TableCell>{med.category || '-'}</TableCell>
+                                                <TableCell>{(typeof med.category === 'object' ? med.category.name : med.category) || '-'}</TableCell>
                                                 <TableCell className="font-mono text-xs">{batchNumber}</TableCell>
                                                 <TableCell className="text-xs">{distributor}</TableCell>
                                                 <TableCell>
