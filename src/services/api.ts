@@ -1,5 +1,6 @@
 import { AppRole } from '@/types';
 import { toast } from 'sonner';
+import axios, { AxiosInstance, AxiosError, InternalAxiosRequestConfig } from 'axios';
 
 const API_URL = import.meta.env.VITE_API_URL?.replace(/\/+$/, '') + '/api';
 
@@ -25,293 +26,191 @@ interface AuthResponse {
 }
 
 class ApiService {
+    private instance: AxiosInstance;
     private isRefreshing = false;
-    private failedQueue: { resolve: () => void, reject: (error: any) => void }[] = [];
+    private failedQueue: any[] = [];
 
-    private processQueue(error: any | null) {
+    constructor() {
+        this.instance = axios.create({
+            baseURL: API_URL,
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        });
+
+        this.setupInterceptors();
+    }
+
+    private processQueue(error: any | null, token: string | null = null) {
         this.failedQueue.forEach(prom => {
             if (error) {
                 prom.reject(error);
             } else {
-                prom.resolve();
+                prom.resolve(token);
             }
         });
         this.failedQueue = [];
     }
 
-    private getHeaders() {
-        const headers: Record<string, string> = {
-            'Content-Type': 'application/json',
-            'Cache-Control': 'no-cache, no-store, must-revalidate',
-            'Pragma': 'no-cache',
-            'Expires': '0',
-            'X-Correlation-ID': `fe-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
-        };
-        const token = localStorage.getItem('accessToken');
-        if (token) {
-            headers['Authorization'] = `Bearer ${token}`;
-        }
-        return headers;
-    }
+    private setupInterceptors() {
+        // Request Interceptor
+        this.instance.interceptors.request.use(
+            (config: InternalAxiosRequestConfig) => {
+                const token = localStorage.getItem('accessToken');
+                if (token) {
+                    config.headers.Authorization = `Bearer ${token}`;
+                }
+                
+                // Add tracking headers
+                config.headers['X-Correlation-ID'] = `fe-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+                
+                return config;
+            },
+            (error) => Promise.reject(error)
+        );
 
-    private async refreshAccessToken(refreshToken: string): Promise<void> {
-        if (this.isRefreshing) {
-            return new Promise((resolve, reject) => {
-                this.failedQueue.push({ resolve, reject });
-            });
-        }
+        // Response Interceptor
+        this.instance.interceptors.response.use(
+            (response) => {
+                // Backend standard response: { status: 'success', data: ... }
+                const res = response.data;
+                if (res && res.status === 'success' && res.data !== undefined) {
+                    return res.data;
+                }
+                return res;
+            },
+            async (error: AxiosError) => {
+                const originalRequest: any = error.config;
+                const isAuthEndpoint = originalRequest?.url?.includes('/auth/login') ||
+                    originalRequest?.url?.includes('/auth/register') ||
+                    originalRequest?.url?.includes('/auth/refresh');
 
-        this.isRefreshing = true;
+                if (error.response?.status === 401 && !isAuthEndpoint && !originalRequest._retry) {
+                    if (this.isRefreshing) {
+                        return new Promise((resolve, reject) => {
+                            this.failedQueue.push({
+                                resolve: (token: string) => {
+                                    originalRequest.headers.Authorization = `Bearer ${token}`;
+                                    resolve(this.instance(originalRequest));
+                                },
+                                reject: (err: any) => reject(err)
+                            });
+                        });
+                    }
 
-        try {
-            console.log('[API] Attempting to refresh access token...');
-            const response = await fetch(`${API_URL}/auth/refresh`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ refreshToken }),
-            });
+                    originalRequest._retry = true;
+                    this.isRefreshing = true;
 
-            if (!response.ok) {
-                throw new Error('Refresh failed');
-            }
-
-            const res = await response.json();
-            const tokens = (res && res.status === 'success' && res.data !== undefined) ? res.data : res;
-
-            localStorage.setItem('accessToken', tokens.accessToken);
-            localStorage.setItem('refreshToken', tokens.refreshToken);
-            console.log('[API] Token refreshed successfully');
-            this.processQueue(null);
-        } catch (error) {
-            console.error('[API] Token refresh failed', error);
-            localStorage.removeItem('accessToken');
-            localStorage.removeItem('refreshToken');
-            this.processQueue(error);
-            throw error;
-        } finally {
-            this.isRefreshing = false;
-        }
-    }
-
-    private async handleResponse<T>(response: Response, retryRequest?: () => Promise<T>): Promise<T> {
-        console.log(`[API] ${response.url} returned ${response.status}`);
-
-        const isAuthEndpoint = response.url.includes('/auth/login') ||
-            response.url.includes('/auth/register') ||
-            response.url.includes('/auth/refresh');
-
-
-        if (response.status === 401) {
-            if (!isAuthEndpoint) {
-                const refreshToken = localStorage.getItem('refreshToken');
-                if (refreshToken && retryRequest) {
                     try {
-                        await this.refreshAccessToken(refreshToken);
-                        return await retryRequest();
-                    } catch (error) {
-                        console.error('[API] Silent refresh failed, redirecting to login');
-                    }
-                }
+                        console.log('[API] Attempting to refresh access token...');
+                        const refreshToken = localStorage.getItem('refreshToken');
+                        if (!refreshToken) throw new Error('No refresh token');
 
-                // Redirect to appropriate login page if refresh not possible or failed
-                const currentPath = window.location.pathname;
-                const isOnLoginPage = currentPath.includes('/login') || currentPath === '/';
+                        const response = await axios.post(`${API_URL}/auth/refresh`, { refreshToken });
+                        // Handle standard project response structure
+                        const resData = response.data;
+                        const tokens = (resData && resData.status === 'success' && resData.data !== undefined) ? resData.data : resData;
 
-                console.log(`[API] 401 Check - Path: ${currentPath}, isAuthEndpoint: ${isAuthEndpoint}, isOnLoginPage: ${isOnLoginPage}`);
-
-                if (!isOnLoginPage) {
-                    localStorage.removeItem('accessToken');
-                    localStorage.removeItem('refreshToken');
-
-                    let loginPath = '/';
-                    if (currentPath.startsWith('/admin')) loginPath = '/admin/login';
-                    else if (currentPath.startsWith('/doctor')) loginPath = '/doctor/login';
-                    else if (currentPath.startsWith('/reception')) loginPath = '/reception/login';
-                    else if (currentPath.startsWith('/pharmacy')) loginPath = '/pharmacy/login';
-                    else if (currentPath.startsWith('/lab')) loginPath = '/lab/login';
-                    else if (currentPath.startsWith('/patient')) loginPath = '/patient/login';
-
-                    console.log(`[API 401] Session expired, redirecting to ${loginPath}`);
-                    toast.error("Session expired. Please login again.");
-
-                    setTimeout(() => {
-                        window.location.href = loginPath;
-                    }, 100);
-                } else {
-                    console.log('[API] 401 intercepted, but user is on login page. Initializing generic error.');
-                }
-            } else {
-                console.log('[API] 401 on Auth Endpoint - skipping auto-redirect logic');
-            }
-        }
-
-        if (!response.ok) {
-            let errorData: any = {};
-            try {
-                errorData = await response.json();
-                console.error('[API Error Response]', JSON.stringify(errorData, null, 2));
-            } catch (e) {
-                console.error('[API] Could not parse error response as JSON');
-            }
-
-            const extractErrorMessage = (data: any): string | null => {
-                if (!data) return null;
-                if (typeof data.message === 'string') return data.message;
-                if (typeof data.error === 'string') return data.error;
-                if (data.error?.message) return data.error.message;
-                if (data.errors && Array.isArray(data.errors) && data.errors[0]?.message) {
-                    return data.errors.map((e: any) => e.message).join(', ');
-                }
-                if (data.detail) return data.detail;
-                if (data.msg) return data.msg;
-                return null;
-            };
-
-            const errorMessage = extractErrorMessage(errorData);
-
-            switch (response.status) {
-                case 400: throw new Error(errorMessage || 'Bad request. Please check your input.');
-                case 401:
-                    if (isAuthEndpoint) {
-                        // User requested specific "Incorrect password" message.
-                        // If backend returns generic "Invalid email or password", override it.
-                        if (!errorMessage || errorMessage.toLowerCase().includes('invalid email or password')) {
-                            throw new Error('Incorrect password');
+                        const { accessToken, refreshToken: newRefreshToken } = tokens;
+                        
+                        localStorage.setItem('accessToken', accessToken);
+                        if (newRefreshToken) {
+                            localStorage.setItem('refreshToken', newRefreshToken);
                         }
-                        throw new Error(errorMessage);
-                    }
-                    throw new Error(errorMessage || 'Session expired. Please login again.');
-                case 403: throw new Error(errorMessage || 'Access denied. You do not have permission.');
-                case 404:
-                    if (isAuthEndpoint) {
-                        // Map 404 on login to "Invalid email"
-                        if (!errorMessage || errorMessage.toLowerCase().includes('not found') || errorMessage.toLowerCase().includes('invalid')) {
-                            throw new Error('Invalid email');
-                        }
-                        throw new Error(errorMessage);
-                    }
-                    throw new Error(errorMessage || 'Resource not found.');
-                case 409: throw new Error(errorMessage || 'User already exists. Please login instead.');
-                case 422: throw new Error(errorMessage || 'Validation error. Please check your input.');
-                case 429:
-                    toast.error("Too many attempts. Please wait a moment and try again.");
-                    throw new Error(errorMessage || 'Too many requests. Please wait a moment and try again.');
-                case 500:
-                    console.error('[API] Server Error 500 - Backend issue detected');
-                    throw new Error(errorMessage || 'Server error. Please try again later or contact support.');
-                case 502:
-                case 503:
-                case 504:
-                    throw new Error(errorMessage || 'Server is temporarily unavailable. Please try again.');
-                default:
-                    throw new Error(errorMessage || `Request failed with status ${response.status}`);
-            }
-        }
 
-        if (response.status === 204) return {} as T;
-        const res = await response.json();
-        if (res && res.status === 'success' && res.data !== undefined) {
-            return res.data as T;
-        }
-        return res as T;
-    }
-
-    async get<T>(endpoint: string, options?: { params?: Record<string, string | number | boolean>, signal?: AbortSignal }): Promise<T> {
-        const execute = async () => {
-            let url = `${API_URL}${endpoint}`;
-            if (options?.params) {
-                const searchParams = new URLSearchParams();
-                Object.entries(options.params).forEach(([key, value]) => {
-                    if (value !== undefined && value !== null) {
-                        searchParams.append(key, String(value));
+                        console.log('[API] Token refreshed successfully');
+                        this.instance.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`;
+                        this.processQueue(null, accessToken);
+                        
+                        return this.instance(originalRequest);
+                    } catch (refreshError) {
+                        console.error('[API] Token refresh failed', refreshError);
+                        this.processQueue(refreshError, null);
+                        this.handleLogout();
+                        return Promise.reject(refreshError);
+                    } finally {
+                        this.isRefreshing = false;
                     }
-                });
-                const queryString = searchParams.toString();
-                if (queryString) {
-                    url += (url.includes('?') ? '&' : '?') + queryString;
                 }
-            }
-            const response = await fetch(url, {
-                method: 'GET',
-                headers: this.getHeaders(),
-                signal: options?.signal,
-            });
-            return this.handleResponse<T>(response, execute);
-        };
-        return execute();
-    }
 
-    async post<T>(endpoint: string, body: any, options?: { signal?: AbortSignal }): Promise<T> {
-        const execute = async () => {
-            const headers = this.getHeaders();
-            let requestBody;
-            if (body instanceof FormData) {
-                delete headers['Content-Type'];
-                requestBody = body;
-            } else {
-                requestBody = JSON.stringify(body);
-            }
-
-            const response = await fetch(`${API_URL}${endpoint}`, {
-                method: 'POST',
-                headers,
-                body: requestBody,
-                signal: options?.signal,
-            });
-            return this.handleResponse<T>(response, execute);
-        };
-        return execute();
-    }
-
-    async patch<T>(endpoint: string, body: any, options?: { signal?: AbortSignal }): Promise<T> {
-        const execute = async () => {
-            const response = await fetch(`${API_URL}${endpoint}`, {
-                method: 'PATCH',
-                headers: this.getHeaders(),
-                body: JSON.stringify(body),
-                signal: options?.signal,
-            });
-            return this.handleResponse<T>(response, execute);
-        };
-        return execute();
-    }
-
-    async put<T>(endpoint: string, body: any, options?: { signal?: AbortSignal }): Promise<T> {
-        const execute = async () => {
-            const response = await fetch(`${API_URL}${endpoint}`, {
-                method: 'PUT',
-                headers: this.getHeaders(),
-                body: JSON.stringify(body),
-                signal: options?.signal,
-            });
-            return this.handleResponse<T>(response, execute);
-        };
-        return execute();
-    }
-
-    async delete<T>(endpoint: string, options?: { params?: Record<string, string | number | boolean>, signal?: AbortSignal }): Promise<T> {
-        const execute = async () => {
-            let url = `${API_URL}${endpoint}`;
-            if (options?.params) {
-                const searchParams = new URLSearchParams();
-                Object.entries(options.params).forEach(([key, value]) => {
-                    if (value !== undefined && value !== null) {
-                        searchParams.append(key, String(value));
+                // Enhanced Error Extracting (inherited from original fetch implementation)
+                let errorMessage = 'An error occurred';
+                const errorData: any = error.response?.data;
+                
+                if (errorData) {
+                    if (typeof errorData.message === 'string') errorMessage = errorData.message;
+                    else if (typeof errorData.error === 'string') errorMessage = errorData.error;
+                    else if (errorData.error?.message) errorMessage = errorData.error.message;
+                    else if (errorData.errors && Array.isArray(errorData.errors)) {
+                        errorMessage = errorData.errors.map((e: any) => e.message).join(', ');
                     }
-                });
-                const queryString = searchParams.toString();
-                if (queryString) {
-                    url += (url.includes('?') ? '&' : '?') + queryString;
                 }
+
+                // Map specific error statuses (similar to old fetch handler)
+                if (error.response?.status === 401 && isAuthEndpoint) {
+                    if (errorMessage.toLowerCase().includes('password')) errorMessage = 'Incorrect password';
+                } else if (error.response?.status === 404 && isAuthEndpoint) {
+                    errorMessage = 'Invalid email';
+                }
+
+                return Promise.reject(new Error(errorMessage));
             }
-            const response = await fetch(url, {
-                method: 'DELETE',
-                headers: this.getHeaders(),
-                signal: options?.signal,
-            });
-            return this.handleResponse<T>(response, execute);
-        };
-        return execute();
+        );
+    }
+
+    private handleLogout() {
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
+        
+        const currentPath = window.location.pathname;
+        const isOnLoginPage = currentPath.includes('/login') || currentPath === '/';
+
+        if (!isOnLoginPage) {
+            let loginPath = '/';
+            if (currentPath.startsWith('/admin')) loginPath = '/admin/login';
+            else if (currentPath.startsWith('/doctor')) loginPath = '/doctor/login';
+            else if (currentPath.startsWith('/reception')) loginPath = '/reception/login';
+            else if (currentPath.startsWith('/pharmacy')) loginPath = '/pharmacy/login';
+            else if (currentPath.startsWith('/lab')) loginPath = '/lab/login';
+            else if (currentPath.startsWith('/patient')) loginPath = '/patient/login';
+
+            toast.error("Session expired. Please login again.");
+            setTimeout(() => {
+                window.location.href = loginPath;
+            }, 100);
+        }
+    }
+
+    async get<T>(endpoint: string, options?: { params?: any, signal?: any }): Promise<T> {
+        return this.instance.get(endpoint, { 
+            params: options?.params,
+            signal: options?.signal
+        });
+    }
+
+    async post<T>(endpoint: string, body: any, options?: { signal?: any }): Promise<T> {
+        return this.instance.post(endpoint, body, {
+            signal: options?.signal
+        });
+    }
+
+    async patch<T>(endpoint: string, body: any, options?: { signal?: any }): Promise<T> {
+        return this.instance.patch(endpoint, body, {
+            signal: options?.signal
+        });
+    }
+
+    async put<T>(endpoint: string, body: any, options?: { signal?: any }): Promise<T> {
+        return this.instance.put(endpoint, body, {
+            signal: options?.signal
+        });
+    }
+
+    async delete<T>(endpoint: string, options?: { params?: any, signal?: any }): Promise<T> {
+        return this.instance.delete(endpoint, {
+            params: options?.params,
+            signal: options?.signal
+        });
     }
 
     // Auth specific methods

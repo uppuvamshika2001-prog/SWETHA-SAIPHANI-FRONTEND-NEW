@@ -7,6 +7,7 @@ import { Trash2, Plus, Tag } from "lucide-react";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { pharmacyService } from "@/services/pharmacyService";
+import { normalizeResponse } from "@/utils/api-helpers";
 
 const PharmacyCategories = () => {
     const [categories, setCategories] = useState<any[]>([]);
@@ -22,7 +23,8 @@ const PharmacyCategories = () => {
         try {
             setLoading(true);
             const data = await pharmacyService.getCategories();
-            setCategories(data || []);
+            console.log("API Response (Categories):", data);
+            setCategories(normalizeResponse(data));
         } catch (error) {
             console.error("Failed to fetch categories", error);
             toast.error("Failed to load categories");

@@ -69,15 +69,19 @@ export function BillGenerationDialog({
     const [customDescription, setCustomDescription] = useState("");
 
     useEffect(() => {
-        if (showOpen) {
-            fetchPatients();
-        }
-    }, [showOpen]);
+        const timer = setTimeout(() => {
+            if (showOpen) {
+                fetchPatients(patientSearch);
+            }
+        }, 300);
+        return () => clearTimeout(timer);
+    }, [patientSearch, showOpen]);
 
-    const fetchPatients = async () => {
+    const fetchPatients = async (searchTerm: string = "") => {
         setLoadingPatients(true);
         try {
-            const data = await patientService.getPatients();
+            const data = await patientService.getPatients({ search: searchTerm, limit: 50 });
+            console.log("Search results:", data);
             setPatientList(Array.isArray(data) ? data : (data.items || []));
         } catch (error) {
             console.error(error);
@@ -382,11 +386,7 @@ export function BillGenerationDialog({
                                 {showPatientResults && patientSearch.length > 0 && (
                                     <div className="absolute z-50 w-full mt-1 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg max-h-48 overflow-y-auto">
                                         {(() => {
-                                            const filtered = patientList.filter(p => {
-                                                const search = patientSearch.toLowerCase();
-                                                return p.full_name?.toLowerCase().includes(search) ||
-                                                    p.uhid?.toLowerCase().includes(search);
-                                            });
+                                            const filtered = patientList;
                                             if (filtered.length === 0) {
                                                 return (
                                                     <div className="px-4 py-3 text-sm text-center space-y-2">

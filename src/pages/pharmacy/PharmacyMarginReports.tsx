@@ -31,7 +31,7 @@ export default function MarginReports() {
     setLoading(true);
     try {
       const report = await pharmacyService.getMarginReport(dateRange);
-      setData(report);
+      setData(report.items || report.data || report || null);
     } catch (error) {
       console.error('Failed to fetch margin report:', error);
       toast.error('Failed to load margin report');

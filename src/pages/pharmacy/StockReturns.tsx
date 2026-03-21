@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { format, addDays, isBefore } from "date-fns";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { normalizeResponse } from "@/utils/api-helpers";
 import axios from "axios";
 
 const RETURN_REASONS = [
@@ -58,10 +59,8 @@ export default function StockReturns() {
         setHistoryLoading(true);
         try {
             const response = await pharmacyService.getStockReturns(historyFilters);
-            console.log("API response:", response);
-            // Safely extract items handling both new and possible old API formats
-            const items = Array.isArray(response) ? response : (response?.items || response?.data?.items || []);
-            setHistory(items);
+            console.log("API response (Stock Returns):", response);
+            setHistory(normalizeResponse(response));
         } catch (error) {
             console.error("Failed to fetch stock return history", error);
         } finally {
@@ -71,7 +70,8 @@ export default function StockReturns() {
 
     const fetchExpiringSoon = async () => {
         try {
-            const data = await pharmacyService.getMedicines({ limit: 100 });
+            const rawData = await pharmacyService.getMedicines({ limit: 100 });
+            const data = normalizeResponse(rawData);
             const soon = [];
             const sixtyDays = addDays(new Date(), 60);
             

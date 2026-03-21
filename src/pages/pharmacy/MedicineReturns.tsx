@@ -13,6 +13,7 @@ import { cn } from "@/lib/utils";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { format } from "date-fns";
 import axios from "axios";
+import { normalizeResponse } from "@/utils/api-helpers";
 
 const RETURN_REASONS = [
     "Wrong Medicine",
@@ -55,7 +56,7 @@ export default function MedicineReturns() {
         setHistoryLoading(true);
         try {
             const data = await pharmacyService.getReturns(historyFilters);
-            setHistory(data.items || []);
+            setHistory(normalizeResponse(data));
         } catch (error) {
             console.error("Failed to fetch return history", error);
         } finally {
@@ -74,7 +75,7 @@ export default function MedicineReturns() {
                 headers: { Authorization: `Bearer ${localStorage.getItem('accessToken')}` }
             });
 
-            const items = response.data.items || [];
+            const items = normalizeResponse(response.data);
             
             if (items.length === 0) {
                 toast({

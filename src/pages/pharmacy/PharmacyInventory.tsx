@@ -13,6 +13,7 @@ import { MedicineDetailsDialog } from "@/components/pharmacy/MedicineDetailsDial
 import { toast } from "sonner";
 import { pharmacyService } from "@/services/pharmacyService";
 import { Medicine } from "@/types";
+import { normalizeResponse } from "@/utils/api-helpers";
 
 const PharmacyInventory = () => {
     const [searchTerm, setSearchTerm] = useState("");
@@ -28,7 +29,9 @@ const PharmacyInventory = () => {
         try {
             setLoading(true);
             const data = await pharmacyService.getMedicines();
-            setMedicineList(data || []);
+            console.log("API Response (Medicines):", data);
+            const items = normalizeResponse(data);
+            setMedicineList(items);
         } catch (error) {
             console.error("Failed to fetch medicines", error);
             toast.error("Failed to load inventory");
