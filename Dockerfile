@@ -3,6 +3,10 @@ FROM node:20-alpine AS build
 WORKDIR /app
 # Build-stage heap needs enough room for Vite's transform + bundling phase
 ENV NODE_OPTIONS="--max-old-space-size=1024"
+# Accept the API URL build argument
+ARG VITE_API_URL
+ENV VITE_API_URL=$VITE_API_URL
+
 COPY package*.json ./
 RUN npm ci --prefer-offline --no-audit --progress=false
 COPY . .

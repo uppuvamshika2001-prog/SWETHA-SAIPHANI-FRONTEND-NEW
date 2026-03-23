@@ -13,6 +13,7 @@ import { cn } from "@/lib/utils";
 import { format, addDays, isBefore } from "date-fns";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { normalizeResponse } from "@/utils/api-helpers";
+import { API_BASE_URL } from "@/config/api";
 import axios from "axios";
 
 const RETURN_REASONS = [
@@ -101,7 +102,7 @@ export default function StockReturns() {
         setSearching(true);
         const delayDebounceOptions = setTimeout(async () => {
             try {
-                const url = `${import.meta.env.VITE_API_URL?.replace(/\/+$/, '') || 'http://localhost:5000'}/api/pharmacy/medicines?search=${encodeURIComponent(searchQuery)}&format=returns&limit=50`;
+                const url = `${API_BASE_URL.replace(/\/+$/, '')}/api/pharmacy/medicines?search=${encodeURIComponent(searchQuery)}&format=returns&limit=50`;
                 const response = await axios.get(url, {
                     headers: { Authorization: `Bearer ${localStorage.getItem('accessToken')}` }
                 });

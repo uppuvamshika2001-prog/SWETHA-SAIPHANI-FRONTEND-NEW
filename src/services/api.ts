@@ -2,7 +2,8 @@ import { AppRole } from '@/types';
 import { toast } from 'sonner';
 import axios, { AxiosInstance, AxiosError, InternalAxiosRequestConfig } from 'axios';
 
-const API_URL = import.meta.env.VITE_API_URL?.replace(/\/+$/, '') + '/api';
+import { API_BASE_URL } from '@/config/api';
+const API_URL = API_BASE_URL.replace(/\/+$/, '') + '/api';
 
 
 export interface User {

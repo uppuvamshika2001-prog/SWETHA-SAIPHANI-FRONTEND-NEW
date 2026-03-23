@@ -14,6 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { format } from "date-fns";
 import axios from "axios";
 import { normalizeResponse } from "@/utils/api-helpers";
+import { API_BASE_URL } from "@/config/api";
 
 const RETURN_REASONS = [
     "Wrong Medicine",
@@ -70,7 +71,7 @@ export default function MedicineReturns() {
 
         setSearching(true);
         try {
-            const url = `${import.meta.env.VITE_API_URL?.replace(/\/+$/, '') || 'http://localhost:5000'}/api/pharmacy/bills?search=${encodeURIComponent(searchQuery)}&format=returns`;
+            const url = `${API_BASE_URL.replace(/\/+$/, '')}/api/pharmacy/bills?search=${encodeURIComponent(searchQuery)}&format=returns`;
             const response = await axios.get(url, {
                 headers: { Authorization: `Bearer ${localStorage.getItem('accessToken')}` }
             });
