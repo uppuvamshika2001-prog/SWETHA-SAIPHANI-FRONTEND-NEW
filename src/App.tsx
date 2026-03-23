@@ -5,6 +5,21 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { lazy, Suspense } from "react";
 
+// Retry wrapper for lazy imports: auto-reloads once on chunk-load 404 errors
+// (happens when a new deployment changes chunk hashes but the browser has a stale index.html)
+function lazyRetry(importFn: () => Promise<any>) {
+    return lazy(() =>
+        importFn().catch(() => {
+            const key = 'chunk_reload';
+            if (!sessionStorage.getItem(key)) {
+                sessionStorage.setItem(key, '1');
+                window.location.reload();
+            }
+            return importFn(); // final attempt after reload
+        })
+    );
+}
+
 // Auth (always loaded)
 import { AuthProvider } from "./contexts/AuthContext";
 import { PatientProvider } from "./contexts/PatientContext";
@@ -62,13 +77,13 @@ const DoctorLabResults = lazy(() => import("./pages/doctor/LabResults"));
 const DoctorSettings = lazy(() => import("./pages/doctor/DoctorSettings"));
 
 // Reception
-const ReceptionLogin = lazy(() => import("./pages/reception/ReceptionLogin"));
-const ReceptionDashboard = lazy(() => import("./pages/reception/ReceptionDashboard"));
-const ReceptionPatients = lazy(() => import("./pages/reception/ReceptionPatients"));
-const ReceptionAppointments = lazy(() => import("./pages/reception/ReceptionAppointments"));
-const ReceptionBilling = lazy(() => import("./pages/reception/ReceptionBilling"));
-const ReceptionSettings = lazy(() => import("./pages/reception/ReceptionSettings"));
-const ReceptionLabResults = lazy(() => import("./pages/reception/ReceptionLabResults"));
+const ReceptionLogin = lazyRetry(() => import("./pages/reception/ReceptionLogin"));
+const ReceptionDashboard = lazyRetry(() => import("./pages/reception/ReceptionDashboard"));
+const ReceptionPatients = lazyRetry(() => import("./pages/reception/ReceptionPatients"));
+const ReceptionAppointments = lazyRetry(() => import("./pages/reception/ReceptionAppointments"));
+const ReceptionBilling = lazyRetry(() => import("./pages/reception/ReceptionBilling"));
+const ReceptionSettings = lazyRetry(() => import("./pages/reception/ReceptionSettings"));
+const ReceptionLabResults = lazyRetry(() => import("./pages/reception/ReceptionLabResults"));
 
 // Pharmacy
 const PharmacyLogin = lazy(() => import("./pages/pharmacy/PharmacyLogin"));
