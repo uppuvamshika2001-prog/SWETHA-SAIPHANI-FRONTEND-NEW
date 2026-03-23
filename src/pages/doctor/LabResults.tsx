@@ -188,7 +188,7 @@ export default function DoctorLabResults() {
                                                             {param.value} {param.unit && <span className="text-muted-foreground">{param.unit}</span>}
                                                             {param.normalRange && (
                                                                 <span className="text-xs text-muted-foreground ml-2">
-                                                                    (Normal: {param.normalRange})
+                                                                    (Ref: {param.normalRange})
                                                                 </span>
                                                             )}
                                                         </span>

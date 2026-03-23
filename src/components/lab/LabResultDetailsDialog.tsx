@@ -127,7 +127,7 @@ export function LabResultDetailsDialog({
                                     <div className="grid grid-cols-3 gap-4 text-sm font-medium">
                                         <div className="text-muted-foreground">Parameter</div>
                                         <div className="text-muted-foreground">Result</div>
-                                        <div className="text-muted-foreground">Normal Range</div>
+                                        <div className="text-muted-foreground">Reference Range</div>
 
                                         {order.result.result.parameters.map((p, i) => (
                                             <React.Fragment key={i}>

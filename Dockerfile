@@ -1,12 +1,12 @@
 # Step 1: Build
 FROM node:20-alpine AS build
 WORKDIR /app
-# Reduce memory limit to fit in smaller containers (e.g. 2GB)
-ENV NODE_OPTIONS="--max-old-space-size=2048"
+# Reduce memory limit to fit in smaller containers (e.g. 1GB)
+ENV NODE_OPTIONS="--max-old-space-size=512"
 COPY package*.json ./
-RUN npm install
+RUN npm ci --prefer-offline --no-audit --progress=false
 COPY . .
-RUN NODE_OPTIONS="--max-old-space-size=2048" npm run build
+RUN npm run build
 
 # Step 2: Serve
 FROM nginx:alpine AS runtime

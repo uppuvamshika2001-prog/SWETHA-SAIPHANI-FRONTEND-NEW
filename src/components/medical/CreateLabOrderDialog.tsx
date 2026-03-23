@@ -148,6 +148,7 @@ export function CreateLabOrderDialog() {
                     priority,
                     notes: notes || undefined,
                     isWalkInLab: isWalkInLab,
+                    visitType: isWalkInLab ? 'WALK_IN' : 'OP',
                 });
             }
             

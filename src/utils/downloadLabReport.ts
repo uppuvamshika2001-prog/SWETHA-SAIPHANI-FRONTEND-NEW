@@ -61,31 +61,102 @@ export const downloadLabReportPDF = async (order: LabOrder, forceMasked: boolean
             doc.text("LAB REPORT (MASKED)", pageWidth / 2, 20, { align: 'center' });
         }
 
-        // Patient Details Section
+        // --- Data Extraction ---
+        const calcAge = (dob: any) => {
+            if (!dob) return '';
+            const diff = new Date().getTime() - new Date(dob).getTime();
+            return Math.floor(diff / (1000 * 60 * 60 * 24 * 365.25));
+        };
+        const patientData = (order as any).patient || {};
+        const ageVal = patientData.age || calcAge(patientData.dateOfBirth) || 'N/A';
+        const ageStr = ageVal !== 'N/A' ? `${ageVal}Y` : 'N/A';
+        const gender = patientData.gender ? String(patientData.gender).charAt(0).toUpperCase() : 'U';
+        const phone = patientData.phone || 'N/A';
+        const uhid = (order as any).patient_id || patientData.uhid || 'N/A';
+
+        const rawDoctorName = order.doctor_name || ((order as any).doctor ? `${(order as any).doctor.firstName || ''} ${(order as any).doctor.lastName || ''}`.trim() : null);
+        const doctorName = rawDoctorName ? `Dr. ${rawDoctorName.replace(/^Dr\.\s*/i, '')}` : '-';
+        
+        const processedBy = ((order as any).orderedBy ? `${(order as any).orderedBy.firstName || ''} ${(order as any).orderedBy.lastName || ''}`.trim() : null) || '-';
+
+        const sampleDateStr = (order as any).ordered_at || (order as any).createdAt;
+        const sampleDate = sampleDateStr ? new Date(sampleDateStr).toLocaleString() : 'N/A';
+        const reportDateStr = (order as any).result?.completedAt;
+        const reportDate = reportDateStr ? new Date(reportDateStr).toLocaleString() : 'Pending';
+
+        const leftCol1 = 14;
+        const leftCol2 = 45;
+        const rightCol1 = 115;
+        const rightCol2 = 145;
+
+        // --- Left Column ---
         doc.setFont('helvetica', 'bold');
-        doc.text("Patient Name:", 14, startY);
+        doc.text("Patient Name", leftCol1, startY);
+        doc.text(":", leftCol2 - 2, startY);
         doc.setFont('helvetica', 'normal');
-        doc.text(isMasked ? maskData(patientName, 'name') : patientName, 45, startY);
+        doc.text(isMasked ? maskData(patientName, 'name') : patientName, leftCol2, startY);
 
         doc.setFont('helvetica', 'bold');
-        doc.text("Patient ID:", 14, startY + 5);
+        doc.text("Patient ID", leftCol1, startY + 5);
+        doc.text(":", leftCol2 - 2, startY + 5);
         doc.setFont('helvetica', 'normal');
-        doc.text((order as any).patient_id || (order as any).patientId || ((order as any).patient as any)?.uhid || 'N/A', 45, startY + 5);
-
-        // Order Details Section
-        const rightColX = 120;
-        doc.setFont('helvetica', 'bold');
-        doc.text("Order ID:", rightColX, startY);
-        doc.setFont('helvetica', 'normal');
-        doc.text(String(orderId), rightColX + 30, startY);
+        doc.text(uhid, leftCol2, startY + 5);
 
         doc.setFont('helvetica', 'bold');
-        doc.text("Status:", rightColX, startY + 5);
+        doc.text("Age / Gender", leftCol1, startY + 10);
+        doc.text(":", leftCol2 - 2, startY + 10);
         doc.setFont('helvetica', 'normal');
-        doc.text((order.status || 'Ordered').toUpperCase(), rightColX + 30, startY + 5);
+        doc.text(`${ageStr} / ${gender}`, leftCol2, startY + 10);
+
+        doc.setFont('helvetica', 'bold');
+        doc.text("Phone", leftCol1, startY + 15);
+        doc.text(":", leftCol2 - 2, startY + 15);
+        doc.setFont('helvetica', 'normal');
+        doc.text(isMasked ? maskData(phone, 'phone') : phone, leftCol2, startY + 15);
+
+        doc.setFont('helvetica', 'bold');
+        doc.text("Consulting Dr.", leftCol1, startY + 20);
+        doc.text(":", leftCol2 - 2, startY + 20);
+        doc.setFont('helvetica', 'normal');
+        doc.text(doctorName, leftCol2, startY + 20);
+
+        doc.setFont('helvetica', 'bold');
+        doc.text("Processed By", leftCol1, startY + 25);
+        doc.text(":", leftCol2 - 2, startY + 25);
+        doc.setFont('helvetica', 'normal');
+        doc.text(processedBy, leftCol2, startY + 25);
+
+        // --- Right Column ---
+        doc.setFont('helvetica', 'bold');
+        doc.text("Order ID", rightCol1, startY);
+        doc.text(":", rightCol2 - 2, startY);
+        doc.setFont('helvetica', 'normal');
+        doc.text(String(orderId), rightCol2, startY);
+
+        doc.setFont('helvetica', 'bold');
+        doc.text("Sample Date", rightCol1, startY + 5);
+        doc.text(":", rightCol2 - 2, startY + 5);
+        doc.setFont('helvetica', 'normal');
+        doc.text(sampleDate, rightCol2, startY + 5);
+
+        doc.setFont('helvetica', 'bold');
+        doc.text("Report Date", rightCol1, startY + 10);
+        doc.text(":", rightCol2 - 2, startY + 10);
+        doc.setFont('helvetica', 'normal');
+        doc.text(reportDate, rightCol2, startY + 10);
+
+        doc.setFont('helvetica', 'bold');
+        doc.text("Status", rightCol1, startY + 15);
+        doc.text(":", rightCol2 - 2, startY + 15);
+        doc.setFont('helvetica', 'normal');
+        doc.text((order.status || 'Ordered').toUpperCase(), rightCol2, startY + 15);
+
+        // Draw a line separator
+        doc.setDrawColor(200, 200, 200);
+        doc.line(14, startY + 28, pageWidth - 14, startY + 28);
 
         // 3. Test Results
-        let currentY = startY + 25;
+        let currentY = startY + 35;
 
         // Add LAB RESULTS Title
         doc.setFontSize(14);
@@ -106,13 +177,13 @@ export const downloadLabReportPDF = async (order: LabOrder, forceMasked: boolean
             const tableData = params.map((p: any) => [
                 p.name || '-',
                 `${p.value || ''} ${p.unit && p.unit.trim() !== '' ? p.unit : ''}`.trim(),
-                p.normalRange || '-'
+                p.referenceRange || p.normalRange || '-'
             ]);
 
             autoTable(doc, {
                 ...getTransparentTableStyles(),
                 startY: currentY,
-                head: [['Parameter', 'Result', 'Normal Range']],
+                head: [['Parameter', 'Result', 'Reference Range']],
                 body: tableData,
                 columnStyles: {
                     0: { cellWidth: 80 },

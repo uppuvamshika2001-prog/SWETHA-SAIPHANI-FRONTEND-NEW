@@ -186,7 +186,7 @@ const PatientReports = () => {
             autoTable(doc, {
                 ...getTransparentTableStyles(),
                 startY: contentStart + 12,
-                head: [['Test Name', 'Result', 'Normal Range', 'Status']],
+                head: [['Test Name', 'Result', 'Reference Range', 'Status']],
                 body: data.tests.map((t: any) => [
                     t.test_name,
                     t.result || 'Pending',

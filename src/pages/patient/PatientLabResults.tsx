@@ -140,7 +140,7 @@ const PatientLabResults = () => {
         autoTable(doc, {
             ...getTransparentTableStyles(),
             startY: yPosStart + 25,
-            head: [['Test Name', 'Result', 'Normal Range', 'Status']],
+            head: [['Test Name', 'Result', 'Reference Range', 'Status']],
             body: order.tests.map((test: any) => [
                 test.test_name,
                 test.result || 'Pending',
@@ -236,7 +236,7 @@ const PatientLabResults = () => {
                                         <TableHead>Test Name</TableHead>
                                         <TableHead>Status</TableHead>
                                         <TableHead>Result</TableHead>
-                                        <TableHead>Normal Range</TableHead>
+                                        <TableHead>Reference Range</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>

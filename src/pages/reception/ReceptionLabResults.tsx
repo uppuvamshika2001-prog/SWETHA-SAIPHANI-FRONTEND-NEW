@@ -199,8 +199,8 @@ export default function ReceptionLabResults() {
                                                     <span>
                                                         {param.value} {param.unit && <span className="text-muted-foreground">{param.unit}</span>}
                                                         {param.normalRange && (
-                                                            <span className="text-xs text-muted-foreground ml-2">
-                                                                (Normal: {param.normalRange})
+                                                            <span className="text-sm text-slate-500 block">
+                                                                (Ref: {param.normalRange})
                                                             </span>
                                                         )}
                                                     </span>

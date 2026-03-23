@@ -23,7 +23,8 @@ export interface LabOrder {
     } | null;
     result?: LabResult | null;
     isWalkInLab: boolean;
-    visitId: string | null;
+    visitType: 'OP' | 'WALK_IN';
+    opId: string | null;
     createdAt: string;
 }
 
@@ -53,7 +54,8 @@ export interface CreateLabOrderInput {
     priority?: 'normal' | 'urgent' | 'stat';
     notes?: string;
     isWalkInLab?: boolean;
-    visitId?: string;
+    visitType?: 'OP' | 'WALK_IN';
+    opId?: string;
 }
 
 export interface CreateLabResultInput {
