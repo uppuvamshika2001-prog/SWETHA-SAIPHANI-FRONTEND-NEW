@@ -1,8 +1,8 @@
 # Step 1: Build
 FROM node:20-alpine AS build
 WORKDIR /app
-# Reduce memory limit to fit in smaller containers (e.g. 1GB)
-ENV NODE_OPTIONS="--max-old-space-size=512"
+# Build-stage heap needs enough room for Vite's transform + bundling phase
+ENV NODE_OPTIONS="--max-old-space-size=1024"
 COPY package*.json ./
 RUN npm ci --prefer-offline --no-audit --progress=false
 COPY . .
