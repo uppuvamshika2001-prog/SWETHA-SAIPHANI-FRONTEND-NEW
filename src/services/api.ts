@@ -182,35 +182,40 @@ class ApiService {
         }
     }
 
-    async get<T>(endpoint: string, options?: { params?: any, signal?: any }): Promise<T> {
+    async get<T>(endpoint: string, options?: { params?: any; signal?: any; headers?: any }): Promise<T> {
         return this.instance.get(endpoint, { 
             params: options?.params,
-            signal: options?.signal
+            signal: options?.signal,
+            headers: options?.headers
         });
     }
 
-    async post<T>(endpoint: string, body: any, options?: { signal?: any }): Promise<T> {
+    async post<T>(endpoint: string, body: any, options?: { signal?: any; headers?: any }): Promise<T> {
         return this.instance.post(endpoint, body, {
-            signal: options?.signal
+            signal: options?.signal,
+            headers: options?.headers
         });
     }
 
-    async patch<T>(endpoint: string, body: any, options?: { signal?: any }): Promise<T> {
+    async patch<T>(endpoint: string, body: any, options?: { signal?: any; headers?: any }): Promise<T> {
         return this.instance.patch(endpoint, body, {
-            signal: options?.signal
+            signal: options?.signal,
+            headers: options?.headers
         });
     }
 
-    async put<T>(endpoint: string, body: any, options?: { signal?: any }): Promise<T> {
+    async put<T>(endpoint: string, body: any, options?: { signal?: any; headers?: any }): Promise<T> {
         return this.instance.put(endpoint, body, {
-            signal: options?.signal
+            signal: options?.signal,
+            headers: options?.headers
         });
     }
 
-    async delete<T>(endpoint: string, options?: { params?: any, signal?: any }): Promise<T> {
+    async delete<T>(endpoint: string, options?: { params?: any; signal?: any; headers?: any }): Promise<T> {
         return this.instance.delete(endpoint, {
             params: options?.params,
-            signal: options?.signal
+            signal: options?.signal,
+            headers: options?.headers
         });
     }
 

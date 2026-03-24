@@ -16,7 +16,9 @@ export const downloadPharmacyBillPDF = async (bill: Bill) => {
         const pageHeight = doc.internal.pageSize.getHeight();
 
         // 1. Generate filename & Check Masking Status
-        const patientName = bill.patient ? `${bill.patient.firstName} ${bill.patient.lastName}`.trim() : "Patient";
+        const patientName = bill.isWalkIn 
+            ? (bill.customerName || "Walk-in Customer") 
+            : (bill.patient ? `${bill.patient.firstName} ${bill.patient.lastName}`.trim() : "Patient");
         const { filename, isMasked } = generatePdfFilename(patientName, bill.billNumber, bill.id, true);
 
         // 2. Layout Logic (Original vs Masked)
@@ -50,8 +52,8 @@ export const downloadPharmacyBillPDF = async (bill: Bill) => {
 
         // Patient Details (Masked if needed)
         const displayPatientName = isMasked ? maskData(patientName, 'name') : patientName;
-        const phone = bill.patient?.phone || "";
-        const displayPhone = isMasked ? '******' + phone.slice(-4) : phone;
+        const phone = bill.isWalkIn ? (bill.phone || "") : (bill.patient?.phone || "");
+        const displayPhone = isMasked ? (phone ? '******' + phone.slice(-4) : "") : phone;
 
         doc.setFontSize(10);
         doc.setFont('helvetica', 'normal');

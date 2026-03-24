@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -7,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, Filter, IndianRupee, AlertCircle, Calendar, ArrowUpRight, ArrowDownRight, Loader2, Plus } from "lucide-react";
+import { Search, Filter, IndianRupee, AlertCircle, Calendar, ArrowUpRight, ArrowDownRight, Loader2, Plus, FileText, MoreVertical, Edit, Trash2, Eye } from "lucide-react";
 import { pharmacyService } from "@/services/pharmacyService";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -20,13 +19,21 @@ import {
     DialogTitle,
     DialogFooter,
 } from "@/components/ui/dialog";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Label } from "@/components/ui/label";
 import { Receipt } from "lucide-react";
 import { AddPurchaseDialog } from "@/components/pharmacy/AddPurchaseDialog";
+import { API_BASE_URL } from "@/config/api";
 
 export default function DistributorPayments() {
     const [purchases, setPurchases] = useState<any[]>([]);
     const [isAddPurchaseOpen, setIsAddPurchaseOpen] = useState(false);
+    const [selectedPurchase, setSelectedPurchase] = useState<any>(null);
     const [report, setReport] = useState<any>({
         stats: {
             totalAmount: 0,
@@ -58,8 +65,6 @@ export default function DistributorPayments() {
                 pharmacyService.getDistributorReport()
             ]);
             
-            console.log("Distributor Payments API:", { purchases: purchasesRes, report: reportRes });
-
             if (purchasesRes && purchasesRes.items) {
                 setPurchases(purchasesRes.items);
             } else {
@@ -78,12 +83,21 @@ export default function DistributorPayments() {
             console.error("Failed to fetch data:", error);
             toast.error("Failed to load payment data");
             setPurchases([]);
-            setReport({
-                stats: { totalAmount: 0, totalPaid: 0, totalBalance: 0, pendingCount: 0 },
-                pendingByDistributor: {}
-            });
         } finally {
             setIsLoading(false);
+        }
+    };
+
+    const handleDeletePurchase = async (id: string) => {
+        if (!window.confirm("Are you sure you want to delete this purchase? This will soft-delete the record but won't undo stock changes if they were already processed. Only purchases with NO payments can be deleted.")) return;
+        
+        try {
+            await pharmacyService.deletePurchase(id);
+            toast.success("Purchase deleted successfully");
+            fetchData();
+        } catch (error: any) {
+            console.error("Delete failed:", error);
+            toast.error(error.response?.data?.message || "Failed to delete purchase. Ensure there are no payments linked.");
         }
     };
 
@@ -113,7 +127,7 @@ export default function DistributorPayments() {
                         <h1 className="text-2xl font-bold text-slate-800">Distributor Payments</h1>
                         <p className="text-slate-500">Track and manage distributor invoices and payments</p>
                     </div>
-                    <Button onClick={() => setIsAddPurchaseOpen(true)} className="bg-purple-600 hover:bg-purple-700">
+                    <Button onClick={() => { setSelectedPurchase(null); setIsAddPurchaseOpen(true); }} className="bg-purple-600 hover:bg-purple-700">
                         <Plus className="mr-2 h-4 w-4" />
                         New Purchase
                     </Button>
@@ -221,18 +235,18 @@ export default function DistributorPayments() {
                                 </div>
                             </CardHeader>
                             <CardContent>
-                                <div className="rounded-md border">
+                                <div className="rounded-md border overflow-hidden">
                                     <Table>
                                         <TableHeader>
                                             <TableRow className="bg-slate-50/50">
                                                 <TableHead>Invoice #</TableHead>
                                                 <TableHead>Distributor</TableHead>
-                                                <TableHead>Purchase Date</TableHead>
-                                                <TableHead className="text-right">Total Amount</TableHead>
-                                                <TableHead className="text-right">Paid</TableHead>
+                                                <TableHead>Date</TableHead>
+                                                <TableHead className="text-right">Total</TableHead>
                                                 <TableHead className="text-right">Balance</TableHead>
                                                 <TableHead className="text-center">Status</TableHead>
-                                                <TableHead className="text-center">Action</TableHead>
+                                                <TableHead className="text-center">Invoice</TableHead>
+                                                <TableHead className="text-right w-[100px]">Actions</TableHead>
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
@@ -253,20 +267,50 @@ export default function DistributorPayments() {
                                                     <TableRow key={purchase.id}>
                                                         <TableCell className="font-medium text-purple-700">{purchase.invoiceNumber}</TableCell>
                                                         <TableCell>{purchase.distributorName}</TableCell>
-                                                        <TableCell>{format(new Date(purchase.purchaseDate), "dd MMM yyyy")}</TableCell>
+                                                        <TableCell className="text-xs">{format(new Date(purchase.purchaseDate), "dd MMM yy")}</TableCell>
                                                         <TableCell className="text-right">₹{(purchase.totalAmount || 0).toFixed(2)}</TableCell>
-                                                        <TableCell className="text-right text-green-600">₹{(purchase.amountPaid || 0).toFixed(2)}</TableCell>
                                                         <TableCell className="text-right text-red-600 font-semibold">₹{(purchase.balanceAmount || 0).toFixed(2)}</TableCell>
                                                         <TableCell className="text-center">{getStatusBadge(purchase.paymentStatus)}</TableCell>
-                                                                                                                 <TableCell className="text-center">
-                                                             {purchase.paymentStatus !== "PAID" && (
-                                                                 <RecordPaymentDialog 
-                                                                     purchase={purchase} 
-                                                                     onSuccess={fetchData} 
-                                                                 />
-                                                             )}
-                                                         </TableCell>
-
+                                                        <TableCell className="text-center">
+                                                            {purchase.fileUrl ? (
+                                                                <a 
+                                                                    href={`${API_BASE_URL.replace(/\/+$/, '')}/${purchase.fileUrl}`} 
+                                                                    target="_blank" 
+                                                                    rel="noopener noreferrer"
+                                                                    className="inline-flex items-center justify-center h-8 w-8 rounded-full bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors"
+                                                                    title="View Invoice"
+                                                                >
+                                                                    <Eye className="h-4 w-4" />
+                                                                </a>
+                                                            ) : (
+                                                                <span className="text-slate-300 text-xs">-</span>
+                                                            )}
+                                                        </TableCell>
+                                                        <TableCell className="text-right">
+                                                            <DropdownMenu>
+                                                                <DropdownMenuTrigger asChild>
+                                                                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                                                                        <MoreVertical className="h-4 w-4" />
+                                                                    </Button>
+                                                                </DropdownMenuTrigger>
+                                                                <DropdownMenuContent align="end">
+                                                                    {purchase.paymentStatus !== "PAID" && (
+                                                                        <RecordPaymentMenuItem 
+                                                                            purchase={purchase} 
+                                                                            onSuccess={fetchData} 
+                                                                        />
+                                                                    )}
+                                                                    <DropdownMenuItem onClick={() => { setSelectedPurchase(purchase); setIsAddPurchaseOpen(true); }}>
+                                                                        <Edit className="h-4 w-4 mr-2" />
+                                                                        Edit Basic Info
+                                                                    </DropdownMenuItem>
+                                                                    <DropdownMenuItem className="text-red-600 focus:text-red-600" onClick={() => handleDeletePurchase(purchase.id)}>
+                                                                        <Trash2 className="h-4 w-4 mr-2" />
+                                                                        Delete Record
+                                                                    </DropdownMenuItem>
+                                                                </DropdownMenuContent>
+                                                            </DropdownMenu>
+                                                        </TableCell>
                                                     </TableRow>
                                                 ))
                                             )}
@@ -337,14 +381,18 @@ export default function DistributorPayments() {
 
             <AddPurchaseDialog
                 open={isAddPurchaseOpen}
-                onOpenChange={setIsAddPurchaseOpen}
+                onOpenChange={(open) => {
+                    setIsAddPurchaseOpen(open);
+                    if (!open) setSelectedPurchase(null);
+                }}
                 onSuccess={fetchData}
+                purchase={selectedPurchase}
             />
         </DashboardLayout>
     );
 }
 
-function RecordPaymentDialog({ purchase, onSuccess }: { purchase: any, onSuccess: () => void }) {
+function RecordPaymentMenuItem({ purchase, onSuccess }: { purchase: any, onSuccess: () => void }) {
     const [open, setOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [formData, setFormData] = useState({
@@ -354,7 +402,8 @@ function RecordPaymentDialog({ purchase, onSuccess }: { purchase: any, onSuccess
         notes: ""
     });
 
-    const handleSubmit = async () => {
+    const handleSubmit = async (e: React.MouseEvent) => {
+        e.stopPropagation();
         const amount = parseFloat(formData.amount);
         if (isNaN(amount) || amount <= 0) {
             toast.error("Please enter a valid amount");
@@ -388,10 +437,10 @@ function RecordPaymentDialog({ purchase, onSuccess }: { purchase: any, onSuccess
 
     return (
         <Dialog open={open} onOpenChange={setOpen}>
-            <Button variant="ghost" size="sm" className="text-purple-600 hover:text-purple-700 hover:bg-purple-50" onClick={() => setOpen(true)}>
-                <Receipt className="h-4 w-4 mr-1" />
-                Pay
-            </Button>
+            <DropdownMenuItem onSelect={(e) => { e.preventDefault(); setOpen(true); }}>
+                <Receipt className="h-4 w-4 mr-2" />
+                Record Payment
+            </DropdownMenuItem>
             <DialogContent className="sm:max-w-[425px]">
                 <DialogHeader>
                     <DialogTitle>Record Payment</DialogTitle>

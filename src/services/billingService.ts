@@ -13,12 +13,15 @@ export interface BillItem {
 export interface Bill {
     id: string;
     billNumber: string;
-    patientId: string;
-    patient: {
+    patientId?: string | null;
+    isWalkIn?: boolean;
+    customerName?: string | null;
+    phone?: string | null;
+    patient?: {
         firstName: string;
         lastName: string;
         phone?: string;
-    };
+    } | null;
     items: BillItem[];
     subtotal: number;
     discount: number;

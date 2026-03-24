@@ -23,6 +23,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
 
 interface BillItem {
     id: string;
@@ -42,6 +43,9 @@ export default function PharmacyBilling() {
 
     // Form State
     const [selectedPatient, setSelectedPatient] = useState<any>(null);
+    const [isWalkIn, setIsWalkIn] = useState(false);
+    const [customerName, setCustomerName] = useState('');
+    const [phone, setPhone] = useState('');
     const [billItems, setBillItems] = useState<BillItem[]>([]);
     const [isSaving, setIsSaving] = useState(false);
 
@@ -185,8 +189,8 @@ export default function PharmacyBilling() {
     };
 
     const handleSaveBill = async () => {
-        if (!selectedPatient) {
-            toast({ title: "Select Patient", description: "Please search and select a patient first.", variant: "destructive" });
+        if (!isWalkIn && !selectedPatient) {
+            toast({ title: "Select Patient", description: "Please search and select a patient, or use Walk-in mode.", variant: "destructive" });
             return;
         }
         if (billItems.length === 0) {
@@ -197,7 +201,10 @@ export default function PharmacyBilling() {
         setIsSaving(true);
         try {
             const payload = {
-                patientId: selectedPatient.uhid,
+                patientId: isWalkIn ? undefined : selectedPatient?.uhid,
+                customerName: isWalkIn && customerName ? customerName : undefined,
+                phone: isWalkIn && phone ? phone : undefined,
+                isWalkIn: isWalkIn,
                 items: billItems.map(item => ({
                     medicineId: item.medicineId,
                     description: item.name,
@@ -217,6 +224,8 @@ export default function PharmacyBilling() {
             // Reset
             setBillItems([]);
             setSelectedPatient(null);
+            setCustomerName('');
+            setPhone('');
             fetchBillHistory();
         } catch (error: any) {
             toast({ 
@@ -261,24 +270,63 @@ export default function PharmacyBilling() {
                                 <Card className="glass">
                                     <CardContent className="pt-6">
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                            <div className="space-y-2">
-                                                <Label className="flex items-center gap-2">
-                                                    <User className="h-4 w-4 text-primary" />
-                                                    Patient Search (Name/UHID/Phone)
-                                                </Label>
-                                                <SearchableSelect
-                                                    onSearch={searchPatients}
-                                                    onSelect={setSelectedPatient}
-                                                    getDisplayValue={(p) => p ? `${p.full_name} (${p.uhid})` : "Search Patient..."}
-                                                    renderItem={(p) => (
-                                                        <div className="flex flex-col">
-                                                            <span>{p.full_name}</span>
-                                                            <span className="text-xs text-muted-foreground">{p.uhid} | {p.phone}</span>
+                                            <div className="space-y-4">
+                                                <div className="flex items-center justify-between">
+                                                    <Label className="flex items-center gap-2">
+                                                        <User className="h-4 w-4 text-primary" />
+                                                        Patient Details
+                                                    </Label>
+                                                    <div className="flex items-center space-x-2">
+                                                        <Switch
+                                                            id="walk-in-mode"
+                                                            checked={isWalkIn}
+                                                            onCheckedChange={(checked) => {
+                                                                setIsWalkIn(checked);
+                                                                if (checked) setSelectedPatient(null);
+                                                            }}
+                                                        />
+                                                        <Label htmlFor="walk-in-mode" className="text-sm font-normal cursor-pointer text-muted-foreground hover:text-foreground">
+                                                            Walk-in Customer
+                                                        </Label>
+                                                    </div>
+                                                </div>
+
+                                                {!isWalkIn ? (
+                                                    <div className="space-y-2">
+                                                        <SearchableSelect
+                                                            onSearch={searchPatients}
+                                                            onSelect={setSelectedPatient}
+                                                            getDisplayValue={(p) => p ? `${p.full_name} (${p.uhid})` : "Search Patient..."}
+                                                            renderItem={(p) => (
+                                                                <div className="flex flex-col">
+                                                                    <span>{p.full_name}</span>
+                                                                    <span className="text-xs text-muted-foreground">{p.uhid} | {p.phone}</span>
+                                                                </div>
+                                                            )}
+                                                            value={selectedPatient}
+                                                            placeholder="Search Patient..."
+                                                        />
+                                                    </div>
+                                                ) : (
+                                                    <div className="grid grid-cols-2 gap-4">
+                                                        <div className="space-y-2">
+                                                            <Input 
+                                                                placeholder="Customer Name (Optional)" 
+                                                                value={customerName} 
+                                                                onChange={e => setCustomerName(e.target.value)} 
+                                                                className="bg-background"
+                                                            />
                                                         </div>
-                                                    )}
-                                                    value={selectedPatient}
-                                                    placeholder="Search Patient..."
-                                                />
+                                                        <div className="space-y-2">
+                                                            <Input 
+                                                                placeholder="Phone Number (Optional)" 
+                                                                value={phone} 
+                                                                onChange={e => setPhone(e.target.value)} 
+                                                                className="bg-background"
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                )}
                                             </div>
                                             <div className="space-y-2">
                                                 <Label className="flex items-center gap-2">

@@ -139,8 +139,31 @@ export const pharmacyService = {
         return api.get('/pharmacy/margin-reports', { params });
     },
 
-    async createPurchase(data: any): Promise<any> {
-        return api.post('/pharmacy/purchases', data);
+    async createPurchase(data: any, file?: File): Promise<any> {
+        const formData = new FormData();
+        formData.append('distributorName', data.distributorName);
+        formData.append('invoiceNumber', data.invoiceNumber);
+        if (data.purchaseDate) formData.append('purchaseDate', data.purchaseDate);
+        formData.append('items', JSON.stringify(data.items));
+        if (file) formData.append('invoice', file);
+        return api.post('/pharmacy/purchases', formData, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+        });
+    },
+
+    async updatePurchase(id: string, data: any, file?: File): Promise<any> {
+        const formData = new FormData();
+        if (data.distributorName) formData.append('distributorName', data.distributorName);
+        if (data.invoiceNumber) formData.append('invoiceNumber', data.invoiceNumber);
+        if (data.purchaseDate) formData.append('purchaseDate', data.purchaseDate);
+        if (file) formData.append('invoice', file);
+        return api.put(`/pharmacy/purchases/${id}`, formData, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+        });
+    },
+
+    async deletePurchase(id: string): Promise<any> {
+        return api.delete(`/pharmacy/purchases/${id}`);
     },
 
     async recordPayment(purchaseId: string, data: any): Promise<any> {
