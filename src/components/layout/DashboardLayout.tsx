@@ -45,7 +45,7 @@ import {
     CollapsibleContent,
     CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { notificationService } from '@/services/notificationService';
+import { NotificationBell } from '@/components/common/notifications/NotificationBell';
 
 interface NavItem {
     title: string;
@@ -176,69 +176,8 @@ export function DashboardLayout({ children, role }: DashboardLayoutProps) {
     const [sidebarOpen, setSidebarOpen] = useState(true);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-    // Notification States
-    const [notifications, setNotifications] = useState<Notification[]>([]);
-    const [unreadCount, setUnreadCount] = useState(0);
-
     const basePath = roleBasePaths[role];
     const navItems = getNavItems(role, basePath);
-
-    const fetchNotifications = async () => {
-        // Guard: Don't call the API if no auth token exists
-        const token = localStorage.getItem('accessToken');
-        if (!token) return;
-
-        try {
-            const data = await notificationService.getNotifications();
-            setNotifications(data);
-            // Ensure we count unread
-            setUnreadCount(data.filter(n => !n.read).length);
-        } catch (error) {
-            console.error('Failed to fetch notifications', error);
-            // Silently fail — don't break the UI for notification failures
-        }
-    };
-
-    useEffect(() => {
-        // Only start fetching notifications once the user is authenticated
-        const token = localStorage.getItem('accessToken');
-        if (!token || !profile) return;
-
-        fetchNotifications();
-        // Poll every 30s
-        const interval = setInterval(fetchNotifications, 30000);
-        return () => clearInterval(interval);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [profile]);
-
-    const handleMarkAllRead = async (e: React.MouseEvent) => {
-        e.preventDefault();
-        e.stopPropagation();
-        try {
-            await notificationService.markAllAsRead();
-            setNotifications([]); // Clear the list from view
-            setUnreadCount(0);
-        } catch (error) {
-            console.error('Failed to clear notifications', error);
-        }
-    };
-
-    const handleNotificationClick = async (notification: Notification) => {
-        if (!notification.read) {
-            try {
-                await notificationService.markAsRead(notification.id);
-                setNotifications(prev => prev.map(n => n.id === notification.id ? { ...n, read: true } : n));
-                // Decrease unread count safely
-                setUnreadCount(prev => Math.max(0, prev - 1));
-            } catch (error) {
-                console.error('Failed to mark read', error);
-            }
-        }
-
-        if (notification.actionUrl) {
-            navigate(notification.actionUrl);
-        }
-    };
 
     const handleSignOut = async () => {
         await signOut();
@@ -263,15 +202,6 @@ export function DashboardLayout({ children, role }: DashboardLayoutProps) {
         if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
         if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
         return `${Math.floor(diffInSeconds / 86400)}d ago`;
-    };
-
-    const getNotificationColor = (type: string) => {
-        switch (type) {
-            case 'success': return 'bg-green-500';
-            case 'warning': return 'bg-orange-500';
-            case 'error': return 'bg-red-500';
-            default: return 'bg-blue-500';
-        }
     };
 
     return (
@@ -503,68 +433,7 @@ export function DashboardLayout({ children, role }: DashboardLayoutProps) {
                             <span>Karimnagar, Telangana</span>
                         </div>
 
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon" className="relative">
-                                    <Bell className="h-5 w-5" />
-                                    {unreadCount > 0 && (
-                                        <span className="absolute top-1.5 right-1.5 flex h-4 w-4 p-0.5 items-center justify-center rounded-full bg-destructive text-[10px] text-white">
-                                            {unreadCount > 9 ? '9+' : unreadCount}
-                                        </span>
-                                    )}
-                                </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="w-80">
-                                <DropdownMenuLabel className="flex items-center justify-between">
-                                    <span>Notifications</span>
-                                    {notifications.length > 0 && (
-                                        <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            className="h-auto p-0 text-xs text-muted-foreground hover:text-foreground"
-                                            onClick={handleMarkAllRead}
-                                        >
-                                            Clear All
-                                        </Button>
-                                    )}
-                                </DropdownMenuLabel>
-                                <DropdownMenuSeparator />
-                                <ScrollArea className="h-[300px]">
-                                    {notifications.length > 0 ? (
-                                        notifications.map((notification) => (
-                                            <DropdownMenuItem
-                                                key={notification.id}
-                                                className={cn(
-                                                    "flex flex-col items-start gap-1 p-3 cursor-pointer",
-                                                    !notification.read && "bg-muted/50"
-                                                )}
-                                                onClick={() => handleNotificationClick(notification)}
-                                            >
-                                                <div className="flex items-center gap-2 w-full">
-                                                    <div className={cn("h-2 w-2 rounded-full flex-shrink-0", getNotificationColor(notification.type))} />
-                                                    <span className={cn("font-medium text-sm", !notification.read && "font-semibold")}>
-                                                        {notification.title}
-                                                    </span>
-                                                    {notification.read && <span className="ml-auto text-[10px] text-muted-foreground">Read</span>}
-                                                </div>
-                                                <p className="text-xs text-muted-foreground ml-4">{notification.message}</p>
-                                                <span className="text-[10px] text-muted-foreground ml-4 mt-1">
-                                                    {getTimeAgo(notification.createdAt)}
-                                                </span>
-                                            </DropdownMenuItem>
-                                        ))
-                                    ) : (
-                                        <div className="p-4 text-center text-sm text-muted-foreground">
-                                            No notifications
-                                        </div>
-                                    )}
-                                </ScrollArea>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem className="justify-center text-primary cursor-pointer p-2">
-                                    View All Notifications
-                                </DropdownMenuItem>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
+                        <NotificationBell />
 
                         <div className="hidden sm:block">
                             <DropdownMenu>

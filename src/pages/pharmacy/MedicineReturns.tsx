@@ -12,7 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { format } from "date-fns";
-import axios from "axios";
+import { api } from "@/services/api";
 import { normalizeResponse } from "@/utils/api-helpers";
 import { API_BASE_URL } from "@/config/api";
 
@@ -72,9 +72,7 @@ export default function MedicineReturns() {
         setSearching(true);
         try {
             const url = `${API_BASE_URL.replace(/\/+$/, '')}/api/pharmacy/bills?search=${encodeURIComponent(searchQuery)}&format=returns`;
-            const response = await axios.get(url, {
-                headers: { Authorization: `Bearer ${localStorage.getItem('accessToken')}` }
-            });
+            const response = await api.getAxiosInstance().get(url);
 
             const items = normalizeResponse(response.data);
             

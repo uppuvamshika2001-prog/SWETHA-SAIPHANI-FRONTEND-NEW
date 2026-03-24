@@ -36,6 +36,7 @@ class ApiService {
             baseURL: API_URL,
             headers: {
                 'Content-Type': 'application/json',
+                'Cache-Control': 'no-cache',
             }
         });
 
@@ -121,8 +122,14 @@ class ApiService {
 
                         console.log('[API] Token refreshed successfully');
                         this.instance.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`;
+                        
+                        // CRITICAL: Update the original request's Authorization header with the new token
+                        originalRequest.headers = originalRequest.headers || {};
+                        originalRequest.headers['Authorization'] = `Bearer ${accessToken}`;
+                        
                         this.processQueue(null, accessToken);
                         
+                        // Retry the original request with the new token
                         return this.instance(originalRequest);
                     } catch (refreshError) {
                         console.error('[API] Token refresh failed', refreshError);
@@ -252,6 +259,10 @@ class ApiService {
 
     async confirmLabPayment(id: string) {
         return this.patch<any>(`/lab/orders/${id}/confirm-payment`, {});
+    }
+    // Expose raw axios instance (with interceptors) for edge cases
+    getAxiosInstance(): AxiosInstance {
+        return this.instance;
     }
 }
 

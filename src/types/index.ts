@@ -202,6 +202,12 @@ export interface Medicine {
   storage_conditions?: string;
   status: 'in_stock' | 'low_stock' | 'out_of_stock' | 'expired';
   discount?: number;
+  batch?: {
+    batch_number: string;
+    expiry_date: string;
+    distributor?: string;
+    manufacturer?: string;
+  };
   batches?: Array<{
     id: string;
     batchNumber: string;
