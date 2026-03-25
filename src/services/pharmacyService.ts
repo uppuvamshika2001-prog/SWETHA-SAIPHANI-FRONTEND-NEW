@@ -101,8 +101,8 @@ export const pharmacyService = {
         return Array.isArray(response) ? response : (response.items || response.data || []);
     },
 
-    async getDispensedHistory(): Promise<any[]> {
-        const response: any = await api.get('/pharmacy/dispensed-history');
+    async getDispensedHistory(params?: { startDate?: string; endDate?: string }): Promise<any[]> {
+        const response: any = await api.get('/pharmacy/dispensed-history', { params });
         return Array.isArray(response) ? response : (response.items || response.data || []);
     },
 

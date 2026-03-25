@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Search, CheckCircle2, AlertCircle, Package, ScanLine, ClipboardList, UserCheck, CheckCircle } from "lucide-react";
+import { Search, CheckCircle2, AlertCircle, Package, ScanLine, ClipboardList, UserCheck, CheckCircle, ChevronDown, ChevronUp, Filter } from "lucide-react";
 import { useState, useEffect } from "react";
 import { pharmacyService } from "@/services/pharmacyService";
 import { toast } from "sonner";
@@ -17,17 +17,51 @@ const PharmacyDispensing = () => {
     const [verified, setVerified] = useState(false);
     const [dispensedItems, setDispensedItems] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
-    // Pending Queue
     const [pendingQueue, setPendingQueue] = useState<any[]>([]);
+    const [expandedHistory, setExpandedHistory] = useState<Record<string, boolean>>({});
+
+    const [dateRange, setDateRange] = useState({
+        startDate: new Date(new Date().getTime() - (new Date().getTimezoneOffset() * 60000)).toISOString().split('T')[0],
+        endDate: new Date(new Date().getTime() - (new Date().getTimezoneOffset() * 60000)).toISOString().split('T')[0]
+    });
+    const [activeFilter, setActiveFilter] = useState<'today' | '7days' | 'month' | 'custom'>('today');
+
+    const toggleHistory = (id: string) => {
+        setExpandedHistory(prev => ({ ...prev, [id]: !prev[id] }));
+    };
 
     useEffect(() => {
         loadPendingOrders();
-        loadDispensedHistory();
     }, []);
+
+    useEffect(() => {
+        loadDispensedHistory();
+    }, [dateRange]);
+
+    const handleFilterChange = (filter: 'today' | '7days' | 'month') => {
+        setActiveFilter(filter);
+        const today = new Date();
+        const endStr = new Date(today.getTime() - (today.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+        let startStr = endStr;
+
+        if (filter === '7days') {
+            const lastWeek = new Date(today);
+            lastWeek.setDate(lastWeek.getDate() - 7);
+            startStr = new Date(lastWeek.getTime() - (lastWeek.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+        } else if (filter === 'month') {
+            const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+            startStr = new Date(firstDay.getTime() - (firstDay.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+        }
+
+        setDateRange({ startDate: startStr, endDate: endStr });
+    };
 
     const loadDispensedHistory = async () => {
         try {
-            const data = await pharmacyService.getDispensedHistory();
+            const data = await pharmacyService.getDispensedHistory({
+                startDate: dateRange.startDate,
+                endDate: dateRange.endDate
+            });
             console.log("Dispensed History API Response:", data);
             
             setDispensedItems(data.map(item => {
@@ -374,37 +408,139 @@ const PharmacyDispensing = () => {
                 </div>
 
                 <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                            <ClipboardList className="h-5 w-5 text-gray-600" />
-                            Recent Dispensing History
-                        </CardTitle>
+                    <CardHeader className="flex flex-col md:flex-row items-start md:items-center justify-between pb-4 gap-4">
+                        <div className="space-y-1">
+                            <CardTitle className="flex items-center gap-2">
+                                <ClipboardList className="h-5 w-5 text-gray-600" />
+                                Dispensing History
+                            </CardTitle>
+                            <CardDescription>Records for selected period</CardDescription>
+                        </div>
+                        
+                        <div className="flex flex-col sm:flex-row items-end sm:items-center gap-3">
+                            <div className="flex bg-muted p-1 rounded-lg">
+                                <Button 
+                                    variant={activeFilter === 'today' ? 'default' : 'ghost'} 
+                                    size="sm"
+                                    className="h-8 text-xs"
+                                    onClick={() => handleFilterChange('today')}
+                                >Today</Button>
+                                <Button 
+                                    variant={activeFilter === '7days' ? 'default' : 'ghost'} 
+                                    size="sm"
+                                    className="h-8 text-xs"
+                                    onClick={() => handleFilterChange('7days')}
+                                >Last 7 Days</Button>
+                                <Button 
+                                    variant={activeFilter === 'month' ? 'default' : 'ghost'} 
+                                    size="sm"
+                                    className="h-8 text-xs"
+                                    onClick={() => handleFilterChange('month')}
+                                >This Month</Button>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <Input 
+                                    type="date" 
+                                    className="h-8 text-xs w-[130px]" 
+                                    value={dateRange.startDate}
+                                    onChange={(e) => {
+                                        setActiveFilter('custom');
+                                        setDateRange(prev => ({ ...prev, startDate: e.target.value }));
+                                    }}
+                                />
+                                <span className="text-muted-foreground text-xs">to</span>
+                                <Input 
+                                    type="date" 
+                                    className="h-8 text-xs w-[130px]" 
+                                    value={dateRange.endDate}
+                                    onChange={(e) => {
+                                        setActiveFilter('custom');
+                                        setDateRange(prev => ({ ...prev, endDate: e.target.value }));
+                                    }}
+                                />
+                            </div>
+                        </div>
                     </CardHeader>
-                    <CardContent>
+                    
+                    <div className="px-6 py-4 border-y bg-muted/20 flex gap-8">
+                        <div>
+                            <p className="text-sm text-muted-foreground font-medium mb-1">Total Orders</p>
+                            <p className="text-2xl font-bold">{dispensedItems.length}</p>
+                        </div>
+                        <div>
+                            <p className="text-sm text-muted-foreground font-medium mb-1">Total Revenue</p>
+                            <p className="text-2xl font-bold text-green-600">
+                                {formatCurrency(dispensedItems.reduce((acc, item) => acc + (item.total_amount || 0), 0))}
+                            </p>
+                        </div>
+                    </div>
+
+                    <CardContent className="pt-6">
                         {dispensedItems.length > 0 ? (
                             <div className="space-y-2">
-                                {dispensedItems.map((item, idx) => (
-                                    <div key={idx} className="flex justify-between items-center p-3 bg-muted/30 rounded-lg">
-                                        <div>
-                                            <span className="font-medium">Order #{item.order_id}</span>
-                                            <span className="text-muted-foreground text-sm ml-2">{item.patient_name}</span>
-                                        </div>
-                                        <div className="text-right">
-                                            <div className="font-medium text-purple-700">
-                                                {/* Never trust raw values, ensure fallback */}
-                                                {formatCurrency(item.total_amount || 0)}
+                                {dispensedItems.map((item, idx) => {
+                                    const isExpanded = !!expandedHistory[item.id];
+                                    return (
+                                    <div key={idx} className="flex flex-col border rounded-lg bg-card text-card-foreground shadow-sm">
+                                        <div 
+                                            className="flex justify-between items-center p-4 cursor-pointer hover:bg-muted/50 transition-colors"
+                                            onClick={() => toggleHistory(item.id)}
+                                        >
+                                            <div className="flex flex-col gap-1">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="font-medium">Order #{item.order_id}</span>
+                                                    <span className="bg-purple-100 text-purple-800 text-xs px-2 py-0.5 rounded-full font-medium">
+                                                        {item.items?.length || 0} Items
+                                                    </span>
+                                                </div>
+                                                <span className="text-muted-foreground text-sm">{item.patient_name}</span>
                                             </div>
-                                            <div className="text-xs text-muted-foreground">
-                                                {/* Final UI safety check */}
-                                                {item.dispensedAt || "—"}
+                                            <div className="flex flex-col items-end gap-1">
+                                                <div className="font-medium text-purple-700">
+                                                    {formatCurrency(item.total_amount || 0)}
+                                                </div>
+                                                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                                    {item.dispensedAt || "—"}
+                                                    {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                                                </div>
                                             </div>
                                         </div>
+                                        
+                                        {/* Expanded Details */}
+                                        {isExpanded && item.items && item.items.length > 0 && (
+                                            <div className="px-4 pb-4 pt-2 border-t bg-muted/10">
+                                                <Table>
+                                                    <TableHeader>
+                                                        <TableRow className="hover:bg-transparent">
+                                                            <TableHead className="py-2 h-8 text-xs font-semibold">Medicine Name</TableHead>
+                                                            <TableHead className="py-2 h-8 text-xs font-semibold">Batch No.</TableHead>
+                                                            <TableHead className="py-2 h-8 text-xs font-semibold text-right">Qty</TableHead>
+                                                            <TableHead className="py-2 h-8 text-xs font-semibold text-right">Unit Price</TableHead>
+                                                            <TableHead className="py-2 h-8 text-xs font-semibold text-right">Total</TableHead>
+                                                        </TableRow>
+                                                    </TableHeader>
+                                                    <TableBody>
+                                                        {item.items.map((sub: any, i: number) => (
+                                                            <TableRow key={i} className="hover:bg-transparent border-b-0">
+                                                                <TableCell className="py-2 font-medium text-sm">{sub.medicineName}</TableCell>
+                                                                <TableCell className="py-2 font-mono text-xs text-muted-foreground">{sub.batchNumber}</TableCell>
+                                                                <TableCell className="py-2 text-right text-sm">{sub.quantity}</TableCell>
+                                                                <TableCell className="py-2 text-right text-sm">{formatCurrency(sub.unitPrice)}</TableCell>
+                                                                <TableCell className="py-2 text-right text-sm font-medium">{formatCurrency(sub.total)}</TableCell>
+                                                            </TableRow>
+                                                        ))}
+                                                    </TableBody>
+                                                </Table>
+                                            </div>
+                                        )}
                                     </div>
-                                ))}
+                                )})}
                             </div>
                         ) : (
-                            <div className="text-center py-8 text-muted-foreground">
-                                <p>No recent items dispensed in this session.</p>
+                            <div className="text-center py-12 text-muted-foreground bg-muted/10 rounded-lg border border-dashed">
+                                <Filter className="h-8 w-8 mx-auto mb-3 text-muted-foreground/50" />
+                                <p className="font-medium text-foreground">No dispensing records found</p>
+                                <p className="text-sm mt-1">Try adjusting your date filters.</p>
                             </div>
                         )}
                     </CardContent>

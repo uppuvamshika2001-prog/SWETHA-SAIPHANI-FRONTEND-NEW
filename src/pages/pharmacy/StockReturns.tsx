@@ -104,7 +104,7 @@ export default function StockReturns() {
             try {
                 const url = `${API_BASE_URL.replace(/\/+$/, '')}/api/pharmacy/medicines?search=${encodeURIComponent(searchQuery)}&format=returns&limit=50`;
                 const response = await api.getAxiosInstance().get(url);
-                setMedicines(response.data.items || []);
+                setMedicines((response as any)?.items || response.data?.items || []);
             } catch (err) {
                 console.error("Search API failed:", err);
             } finally {

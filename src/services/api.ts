@@ -92,7 +92,13 @@ class ApiService {
                         return new Promise((resolve, reject) => {
                             this.failedQueue.push({
                                 resolve: (token: string) => {
-                                    originalRequest.headers.Authorization = `Bearer ${token}`;
+                                    if (originalRequest.headers && typeof originalRequest.headers.set === 'function') {
+                                        originalRequest.headers.set('Authorization', `Bearer ${token}`);
+                                    } else {
+                                        originalRequest.headers = originalRequest.headers || {};
+                                        originalRequest.headers['Authorization'] = `Bearer ${token}`;
+                                        delete originalRequest.headers['authorization'];
+                                    }
                                     resolve(this.instance(originalRequest));
                                 },
                                 reject: (err: any) => reject(err)
@@ -106,10 +112,9 @@ class ApiService {
                     try {
                         console.log('[API] Attempting to refresh access token...');
                         const refreshToken = localStorage.getItem('refreshToken');
-                        if (!refreshToken) throw new Error('No refresh token');
+                        if (!refreshToken) throw new Error('No refresh token available');
 
                         const response = await axios.post(`${API_URL}/auth/refresh`, { refreshToken });
-                        // Handle standard project response structure
                         const resData = response.data;
                         const tokens = (resData && resData.status === 'success' && resData.data !== undefined) ? resData.data : resData;
 
@@ -123,16 +128,22 @@ class ApiService {
                         console.log('[API] Token refreshed successfully');
                         this.instance.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`;
                         
-                        // CRITICAL: Update the original request's Authorization header with the new token
-                        originalRequest.headers = originalRequest.headers || {};
-                        originalRequest.headers['Authorization'] = `Bearer ${accessToken}`;
+                        // CRITICAL: Update the original request's Authorization header safely
+                        if (originalRequest.headers && typeof originalRequest.headers.set === 'function') {
+                            originalRequest.headers.set('Authorization', `Bearer ${accessToken}`);
+                        } else {
+                            originalRequest.headers = originalRequest.headers || {};
+                            originalRequest.headers['Authorization'] = `Bearer ${accessToken}`;
+                            delete originalRequest.headers['authorization'];
+                        }
                         
+                        // Resolve all pending requests in the queue with the new token
                         this.processQueue(null, accessToken);
                         
-                        // Retry the original request with the new token
+                        // Retry the original request
                         return this.instance(originalRequest);
                     } catch (refreshError) {
-                        console.error('[API] Token refresh failed', refreshError);
+                        console.error('[API] Token refresh failed:', refreshError);
                         this.processQueue(refreshError, null);
                         this.handleLogout();
                         return Promise.reject(refreshError);

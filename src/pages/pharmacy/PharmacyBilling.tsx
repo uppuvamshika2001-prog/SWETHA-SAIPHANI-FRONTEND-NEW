@@ -34,6 +34,8 @@ interface BillItem {
     gst: number;
     discount: number;
     batchNumber: string;
+    expiryDate?: string;
+    hsnCode?: string;
     availableStock: number;
     total: number;
 }
@@ -143,6 +145,8 @@ export default function PharmacyBilling() {
             gst: medicine.gst || 0, // Fallback to 0 if not provided
             discount: 0,
             batchNumber: medicine.batch_number || '-',
+            expiryDate: medicine.expiry_date || undefined,
+            hsnCode: medicine.hsn_code || medicine.hsnCode || undefined,
             availableStock: medicine.stock_quantity,
             total: medicine.unit_price || 0
         };
@@ -209,7 +213,12 @@ export default function PharmacyBilling() {
                     medicineId: item.medicineId,
                     description: item.name,
                     quantity: item.quantity,
-                    unitPrice: item.salePrice
+                    unitPrice: item.salePrice,
+                    batchNumber: item.batchNumber,
+                    expiryDate: item.expiryDate,
+                    hsnCode: item.hsnCode,
+                    gst: item.gst,
+                    discount: item.discount
                 })),
                 gstPercent: 0, // Individual GST already included in item prices on backend if needed, or we send 0
                 discount: 0,
