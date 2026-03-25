@@ -15,7 +15,7 @@ const LabSampleCollection = () => {
 
     const labOrders = rawOrders.map(order => ({
         id: order.id,
-        order_id: `LAB-${order.id.slice(0, 4).toUpperCase()}`,
+        order_id: order.orderNumber || `LAB-${order.id.slice(0, 4).toUpperCase()}`,
         patient_name: `${order.patient.firstName} ${order.patient.lastName}`,
         doctor_name: `${order.orderedBy.firstName} ${order.orderedBy.lastName}`,
         tests: [{

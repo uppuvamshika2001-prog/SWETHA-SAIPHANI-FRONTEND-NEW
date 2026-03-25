@@ -116,23 +116,19 @@ export const pharmacyService = {
     },
 
     async processReturn(data: any) {
-        const response: any = await api.post('/pharmacy/returns', data);
-        return response.data;
+        return api.post('/pharmacy/returns', data);
     },
 
     async getReturns(params: any) {
-        const response: any = await api.get('/pharmacy/returns', { params });
-        return response.data;
+        return api.get('/pharmacy/returns', { params });
     },
 
     async processStockReturn(data: any) {
-        const response: any = await api.post('/pharmacy/stock-returns', data);
-        return response.data;
+        return api.post('/pharmacy/stock-returns', data);
     },
 
     async getStockReturns(params: any) {
-        const response: any = await api.get('/pharmacy/stock-returns', { params });
-        return response.data;
+        return api.get('/pharmacy/stock-returns', { params });
     },
     
     async getMarginReport(params: { startDate?: string; endDate?: string }): Promise<any> {

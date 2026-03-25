@@ -93,22 +93,10 @@ export const downloadPharmacyBillPDF = async (bill: Bill) => {
         doc.text(`Mode: ${(bill as any).paymentMode || 'CASH'}`, rightColX, startY + 13);
         doc.text(`Billed By: ${(bill as any).createdBy || "Pharmacist"}`, rightColX, startY + 18);
 
-        // 7. Items Table
-        let computedTotalCGST = 0;
-        let computedTotalSGST = 0;
+        const computedTotalCGST = Number(bill.gstAmount || 0) / 2;
+        const computedTotalSGST = Number(bill.gstAmount || 0) / 2;
 
         const tableData = bill.items.map((item: any) => {
-            const baseAmount = item.quantity * item.unitPrice;
-            const discountAmount = item.discount ? (baseAmount * (Number(item.discount) / 100)) : 0;
-            const taxableAmount = baseAmount - discountAmount;
-            const gstAmount = item.gst ? (taxableAmount * (Number(item.gst) / 100)) : 0;
-            
-            const cgst = gstAmount / 2;
-            const sgst = gstAmount / 2;
-            
-            computedTotalCGST += cgst;
-            computedTotalSGST += sgst;
-
             const expiryStr = item.expiryDate 
                 ? new Date(item.expiryDate).toLocaleDateString('en-GB', { month: '2-digit', year: '2-digit' }) 
                 : '-';
@@ -164,7 +152,7 @@ export const downloadPharmacyBillPDF = async (bill: Bill) => {
 
         // --- BILL TOTALS (Right Side) ---
         const totalDiscountAmt = Number(bill.discount || 0);
-        const subtotalBase = Number(bill.subtotal || 0) + totalDiscountAmt;
+        const subtotalBase = Number(bill.subtotal || 0);
         
         doc.text("Sub Total:", labelX, finalY, { align: "left" });
         doc.text(`Rs. ${subtotalBase.toFixed(2)}`, valueX, finalY, { align: "right" });

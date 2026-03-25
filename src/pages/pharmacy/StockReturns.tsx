@@ -59,11 +59,30 @@ export default function StockReturns() {
     const fetchHistory = async () => {
         setHistoryLoading(true);
         try {
-            const response = await pharmacyService.getStockReturns(historyFilters);
+            // Convert dd-mm-yyyy or other local formats to ISO strings for the backend
+            const params = { ...historyFilters };
+            if (params.startDate) {
+                const sDate = new Date(params.startDate);
+                if (!isNaN(sDate.getTime())) params.startDate = sDate.toISOString();
+            }
+            if (params.endDate) {
+                const eDate = new Date(params.endDate);
+                if (!isNaN(eDate.getTime())) params.endDate = eDate.toISOString();
+            }
+
+            const response = await pharmacyService.getStockReturns(params) as any;
             console.log("API response (Stock Returns):", response);
-            setHistory(normalizeResponse(response));
+            
+            // Standardize response extraction: response?.items (wrapped) or response (unwrapped)
+            const items = response?.items || normalizeResponse(response);
+            setHistory(items);
         } catch (error) {
             console.error("Failed to fetch stock return history", error);
+            toast({
+                title: "Error",
+                description: "Failed to load stock return history.",
+                variant: "destructive"
+            });
         } finally {
             setHistoryLoading(false);
         }

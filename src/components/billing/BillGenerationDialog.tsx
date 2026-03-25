@@ -24,12 +24,14 @@ import { toast } from "sonner";
 import { FileText, Plus, Trash2, Loader2, Check, User } from "lucide-react";
 import { patientService } from "@/services/patientService";
 import { billingService } from "@/services/billingService";
-import { Patient } from "@/types";
+import { Patient, LabTest } from "@/types";
 import { Separator } from "@/components/ui/separator";
 import { WalkInLabPatientDialog } from "@/components/patients/WalkInLabPatientDialog";
+import { labService } from '@/services/labService';
 
 const DEFAULT_LAB_PRICE = 500;
 const CUSTOM_SERVICE_ID = "custom";
+const LAB_CATALOG_ID = "LAB_CATALOG";
 
 interface BillGenerationDialogProps {
     children?: React.ReactNode;
@@ -67,15 +69,30 @@ export function BillGenerationDialog({
     const [discount, setDiscount] = useState("0");
     const [isCustomMode, setIsCustomMode] = useState(false);
     const [customDescription, setCustomDescription] = useState("");
+    
+    // Lab Catalog State
+    const [labCatalog, setLabCatalog] = useState<LabTest[]>([]);
+    const [selectedLabTestId, setSelectedLabTestId] = useState("");
+    const [isLabCatalogMode, setIsLabCatalogMode] = useState(false);
 
     useEffect(() => {
         const timer = setTimeout(() => {
             if (showOpen) {
                 fetchPatients(patientSearch);
+                fetchLabCatalog();
             }
         }, 300);
         return () => clearTimeout(timer);
     }, [patientSearch, showOpen]);
+
+    const fetchLabCatalog = async () => {
+        try {
+            const tests = await labService.getLabTests();
+            setLabCatalog(tests || []);
+        } catch (error) {
+            console.error("Failed to fetch lab catalog", error);
+        }
+    };
 
     const fetchPatients = async (searchTerm: string = "") => {
         setLoadingPatients(true);
@@ -108,6 +125,14 @@ export function BillGenerationDialog({
                     price: 300,
                     type: "consultation",
                     description: "Consultation Fee"
+                },
+                {
+                    id: LAB_CATALOG_ID,
+                    label: "Lab Test",
+                    value: LAB_CATALOG_ID,
+                    price: 0,
+                    type: "lab",
+                    description: "Lab Test"
                 },
                 {
                     id: CUSTOM_SERVICE_ID,
@@ -149,6 +174,14 @@ export function BillGenerationDialog({
                     lab_order_id: order.id
                 })),
                 {
+                    id: LAB_CATALOG_ID,
+                    label: "Lab Test",
+                    value: LAB_CATALOG_ID,
+                    price: 0,
+                    type: "lab",
+                    description: "Lab Test"
+                },
+                {
                     id: CUSTOM_SERVICE_ID,
                     label: "Other / Custom Service",
                     value: CUSTOM_SERVICE_ID,
@@ -174,6 +207,14 @@ export function BillGenerationDialog({
                     description: "Consultation Fee"
                 },
                 {
+                    id: LAB_CATALOG_ID,
+                    label: "Lab Test",
+                    value: LAB_CATALOG_ID,
+                    price: 0,
+                    type: "lab",
+                    description: "Lab Test"
+                },
+                {
                     id: CUSTOM_SERVICE_ID,
                     label: "Other / Custom Service",
                     value: CUSTOM_SERVICE_ID,
@@ -194,6 +235,11 @@ export function BillGenerationDialog({
         
         if (selectedServiceId === CUSTOM_SERVICE_ID && !customDescription.trim()) {
             toast.error("Please enter service description");
+            return;
+        }
+
+        if (selectedServiceId === LAB_CATALOG_ID && !selectedLabTestId) {
+            toast.error("Please select a lab test");
             return;
         }
 
@@ -218,7 +264,8 @@ export function BillGenerationDialog({
         }
 
         const total = qty * price;
-        const description = selectedServiceId === CUSTOM_SERVICE_ID ? customDescription : opt.description;
+        const isSpecialMode = selectedServiceId === CUSTOM_SERVICE_ID || selectedServiceId === LAB_CATALOG_ID;
+        const description = isSpecialMode ? customDescription : opt.description;
 
         setItems([...items, { 
             description, 
@@ -235,6 +282,8 @@ export function BillGenerationDialog({
         setQuantity("1");
         setIsCustomMode(false);
         setCustomDescription("");
+        setIsLabCatalogMode(false);
+        setSelectedLabTestId("");
     };
 
     const handleRemoveItem = (index: number) => {
@@ -462,12 +511,23 @@ export function BillGenerationDialog({
                                         setSelectedServiceId(val);
                                         if (val === CUSTOM_SERVICE_ID) {
                                             setIsCustomMode(true);
+                                            setIsLabCatalogMode(false);
                                             setUnitPrice("");
                                             setQuantity("1");
                                             return;
                                         }
+                                        if (val === LAB_CATALOG_ID) {
+                                            setIsLabCatalogMode(true);
+                                            setIsCustomMode(false);
+                                            setUnitPrice("");
+                                            setQuantity("1");
+                                            setSelectedLabTestId("");
+                                            return;
+                                        }
                                         const opt = summaryOptions.find(o => o.id === val);
                                         if (opt) {
+                                            setIsLabCatalogMode(false);
+                                            setIsCustomMode(false);
                                             setUnitPrice(opt.price.toString());
                                             setQuantity("1");
                                         }
@@ -485,6 +545,31 @@ export function BillGenerationDialog({
                                     </Select>
                                 )}
                             </div>
+
+                            {isLabCatalogMode && (
+                                <div className="w-full md:w-1/3 space-y-1.5">
+                                    <Label htmlFor="lab-test" className="text-xs text-slate-500">Select Lab Test</Label>
+                                    <Select value={selectedLabTestId} onValueChange={(val) => {
+                                        setSelectedLabTestId(val);
+                                        const test = labCatalog.find(t => t.id === val);
+                                        if (test) {
+                                            setUnitPrice(test.price.toString());
+                                            setCustomDescription(`Lab Test: ${test.name}`);
+                                        }
+                                    }}>
+                                        <SelectTrigger id="lab-test" className="bg-white dark:bg-slate-950 h-9 w-full">
+                                            <SelectValue placeholder="Chose test..." />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {labCatalog.map(test => (
+                                                <SelectItem key={test.id} value={test.id}>
+                                                    {test.name} {test.department ? `(${test.department})` : ''}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            )}
                             <div className="w-full md:w-24 space-y-1.5">
                                 <Label htmlFor="qty" className="text-xs text-slate-500">Qty</Label>
                                 <Input

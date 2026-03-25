@@ -69,7 +69,7 @@ export default function LabDashboard() {
 
   const labOrders = rawOrders.map(order => ({
     id: order.id,
-    order_id: `LAB-${order.id.slice(0, 4).toUpperCase()}`,
+    order_id: order.orderNumber || `LAB-${order.id.slice(0, 4).toUpperCase()}`,
     patient_id: order.patientId,
     patient_name: `${order.patient.firstName} ${order.patient.lastName}`,
     doctor_id: order.orderedById,

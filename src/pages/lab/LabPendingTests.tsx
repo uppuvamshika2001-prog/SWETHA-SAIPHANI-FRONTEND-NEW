@@ -11,19 +11,23 @@ import { useLab, LabOrder } from "@/contexts/LabContext";
 import { useNavigate } from "react-router-dom";
 import { LabResultDetailsDialog } from "@/components/lab/LabResultDetailsDialog";
 import { useAuth } from "@/contexts/AuthContext";
+import { DatePicker } from "@/components/ui/date-picker";
+import { format, subDays } from "date-fns";
 
 const LabPendingTests = () => {
     const { user } = useAuth();
     const [searchTerm, setSearchTerm] = useState("");
     const [updatingId, setUpdatingId] = useState<string | null>(null);
+    const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
     const navigate = useNavigate();
 
     const { labOrders, loading, fetchLabOrders, updateOrderStatus, deleteLabOrder } = useLab();
 
     // Auto-refresh removed to prevent flickering. Manual refresh via the RotateCcw button is preferred.
+    // Fetch whenever the selected date changes
     useEffect(() => {
-        fetchLabOrders(); // Fetch immediately on mount
-    }, [fetchLabOrders]);
+        fetchLabOrders(undefined, selectedDate);
+    }, [fetchLabOrders, selectedDate]);
 
     // Filter for pending orders (excluding payment pending orders as per requirement)
     const pendingOrders = labOrders.filter(order =>
@@ -125,16 +129,42 @@ const LabPendingTests = () => {
                         <p className="text-muted-foreground mt-1">Manage and track pending laboratory test orders</p>
                     </div>
 
-                    <div className="flex items-center gap-2">
-                        <Button variant="outline" size="icon" onClick={() => fetchLabOrders()}>
+                    <div className="flex flex-wrap items-center gap-2">
+                        <div className="flex bg-slate-100 p-1 rounded-md">
+                            <Button 
+                                variant={selectedDate && format(selectedDate, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd') ? "secondary" : "ghost"}
+                                size="sm" 
+                                className="text-xs h-8 px-3"
+                                onClick={() => setSelectedDate(new Date())}
+                            >
+                                Today
+                            </Button>
+                            <Button 
+                                variant={selectedDate && format(selectedDate, 'yyyy-MM-dd') === format(subDays(new Date(), 1), 'yyyy-MM-dd') ? "secondary" : "ghost"}
+                                size="sm" 
+                                className="text-xs h-8 px-3"
+                                onClick={() => setSelectedDate(subDays(new Date(), 1))}
+                            >
+                                Yesterday
+                            </Button>
+                        </div>
+                        
+                        <DatePicker 
+                            date={selectedDate} 
+                            setDate={setSelectedDate} 
+                            className="h-9 w-[180px]"
+                        />
+
+                        <Button variant="outline" size="icon" className="h-9 w-9" onClick={() => fetchLabOrders(undefined, selectedDate)}>
                             <RotateCcw className="h-4 w-4" />
                         </Button>
+                        
                         <div className="relative">
                             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                             <Input
                                 type="search"
-                                placeholder="Search by Patient or Test..."
-                                className="pl-8 w-[250px] bg-white dark:bg-slate-950"
+                                placeholder="Search..."
+                                className="pl-8 w-[180px] h-9 bg-white dark:bg-slate-950"
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                             />
@@ -171,7 +201,7 @@ const LabPendingTests = () => {
                                 <TableBody>
                                     {pendingOrders.map((order) => (
                                         <TableRow key={order.id}>
-                                            <TableCell className="font-medium">{order.id.slice(0, 8).toUpperCase()}</TableCell>
+                                            <TableCell className="font-medium">{order.orderNumber || order.id.slice(0, 8).toUpperCase()}</TableCell>
                                             <TableCell>{order.patient.firstName} {order.patient.lastName}</TableCell>
                                             <TableCell>{order.testName}</TableCell>
                                             <TableCell>
@@ -248,7 +278,7 @@ const LabPendingTests = () => {
                             <TableBody>
                                 {completedOrders.map((order) => (
                                     <TableRow key={order.id}>
-                                        <TableCell className="font-medium">{order.id.slice(0, 8).toUpperCase()}</TableCell>
+                                        <TableCell className="font-medium">{order.orderNumber || order.id.slice(0, 8).toUpperCase()}</TableCell>
                                         <TableCell>{order.patient.firstName} {order.patient.lastName}</TableCell>
                                         <TableCell>{order.testName}</TableCell>
                                         <TableCell>

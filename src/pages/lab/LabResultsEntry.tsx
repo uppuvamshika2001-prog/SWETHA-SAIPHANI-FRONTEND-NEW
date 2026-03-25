@@ -385,7 +385,7 @@ const LabResultsEntry = () => {
                                                 <div className="text-xs text-muted-foreground font-medium">{order.testName}</div>
                                                 <div className="flex justify-between mt-2 text-[10px] text-slate-400">
                                                     <span>{new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                                                    <span>#{order.id.slice(-4).toUpperCase()}</span>
+                                                    <span>{order.orderNumber || `#${order.id.slice(-4).toUpperCase()}`}</span>
                                                 </div>
                                             </div>
                                         ))}

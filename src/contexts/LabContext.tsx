@@ -5,6 +5,7 @@ import { useAuth } from './AuthContext';
 // Types
 export interface LabOrder {
     id: string;
+    orderNumber?: string | null;
     patientId: string;
     orderedById: string;
     orderedByRole?: string | null;

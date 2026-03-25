@@ -27,8 +27,8 @@ export const downloadLabReportPDF = async (order: LabOrder, forceMasked: boolean
             }
         }
 
-        const orderId = order.id || (order as any).order_id || 'LAB-N/A';
-        const { filename, isMasked: generatedIsMasked } = generatePdfFilename(patientName, orderId, order.id || '', false);
+        const orderIdDisplay = (order as any).orderNumber || order.id || (order as any).order_id || 'LAB-N/A';
+        const { filename, isMasked: generatedIsMasked } = generatePdfFilename(patientName, orderIdDisplay, order.id || '', false);
         const isMasked = forceMasked || generatedIsMasked;
         const finalFilename = isMasked ? filename.replace('.pdf', '_Masked.pdf') : `Lab_Report_${filename}`;
 
@@ -131,7 +131,7 @@ export const downloadLabReportPDF = async (order: LabOrder, forceMasked: boolean
         doc.text("Order ID", rightCol1, startY);
         doc.text(":", rightCol2 - 2, startY);
         doc.setFont('helvetica', 'normal');
-        doc.text(String(orderId), rightCol2, startY);
+        doc.text(String(orderIdDisplay), rightCol2, startY);
 
         doc.setFont('helvetica', 'bold');
         doc.text("Sample Date", rightCol1, startY + 5);

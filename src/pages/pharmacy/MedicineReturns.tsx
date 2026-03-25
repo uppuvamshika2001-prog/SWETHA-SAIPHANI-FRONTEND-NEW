@@ -72,9 +72,11 @@ export default function MedicineReturns() {
         setSearching(true);
         try {
             const url = `${API_BASE_URL.replace(/\/+$/, '')}/api/pharmacy/bills?search=${encodeURIComponent(searchQuery)}&format=returns`;
-            const response = await api.getAxiosInstance().get(url);
+            const response = await api.getAxiosInstance().get(url) as any;
 
-            const items = normalizeResponse(response.data);
+            // The interceptor already unwraps `{ status: 'success', data: ... }` OR returns the raw json if not wrapped.
+            // Since getBills format=returns sends raw JSON `{ items: [...] }`, `response` IS that object.
+            const items = response?.items || normalizeResponse(response);
             
             if (items.length === 0) {
                 toast({
