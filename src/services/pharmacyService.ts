@@ -181,5 +181,10 @@ export const pharmacyService = {
 
     async deleteCategory(id: string): Promise<any> {
         return api.delete(`/pharmacy/categories/${id}`);
+    },
+
+    async updateBatch(id: string, data: any): Promise<any> {
+        apiCache.invalidate('/pharmacy/medicines');
+        return api.patch(`/pharmacy/batches/${id}`, data);
     }
 };

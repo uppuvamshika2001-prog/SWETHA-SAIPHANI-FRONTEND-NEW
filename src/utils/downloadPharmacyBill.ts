@@ -110,7 +110,7 @@ export const downloadPharmacyBillPDF = async (bill: Bill) => {
                 Number(item.unitPrice).toFixed(2),
                 item.discount ? `${item.discount}%` : '-',
                 item.gst ? `${item.gst}%` : '-',
-                Number(item.total).toFixed(2)
+                Number(item.totalAmount || item.total).toFixed(2)
             ];
         });
 

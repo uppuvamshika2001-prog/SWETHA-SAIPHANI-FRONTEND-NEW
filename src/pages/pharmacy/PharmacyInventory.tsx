@@ -9,6 +9,7 @@ import { useState, useEffect } from "react";
 import { formatCurrency } from "@/utils/format";
 import { AddMedicineDialog } from "@/components/pharmacy/AddMedicineDialog";
 import { EditMedicineDialog } from "@/components/pharmacy/EditMedicineDialog";
+import { EditStockDialog } from "@/components/pharmacy/EditStockDialog";
 import { MedicineDetailsDialog } from "@/components/pharmacy/MedicineDetailsDialog";
 import { toast } from "sonner";
 import { pharmacyService } from "@/services/pharmacyService";
@@ -28,7 +29,7 @@ const PharmacyInventory = () => {
     const fetchMedicines = async () => {
         try {
             setLoading(true);
-            const data = await pharmacyService.getMedicines();
+            const data = await pharmacyService.getMedicines({ allBatches: true });
             console.log("API Response (Medicines):", data);
             const items = normalizeResponse(data);
             setMedicineList(items);
@@ -73,7 +74,10 @@ const PharmacyInventory = () => {
     const handleDeleteMedicine = async (id: string) => {
         try {
             await pharmacyService.deleteMedicine(id);
-            setMedicineList(prev => prev.filter(med => med.id !== id));
+            // Remove all rows that belong to this medicine
+            setMedicineList(prev => prev.filter(med => 
+                med.id !== id && (med as any).medicineId !== id
+            ));
             toast.success("Medicine deleted successfully");
         } catch (error) {
             console.error("Failed to delete medicine", error);
@@ -82,9 +86,16 @@ const PharmacyInventory = () => {
     };
 
     const [editingMedicine, setEditingMedicine] = useState<Medicine | null>(null);
+    const [editingBatch, setEditingBatch] = useState<any | null>(null);
 
     const handleEditMedicine = (medicine: Medicine) => {
-        setEditingMedicine(medicine);
+        // Find the medicine ID if it's a batch-wise row
+        const medId = (medicine as any).medicineId || medicine.id;
+        setEditingMedicine({ ...medicine, id: medId });
+    };
+
+    const handleEditBatch = (batch: any) => {
+        setEditingBatch(batch);
     };
 
     const handleEditSuccess = () => {
@@ -165,7 +176,7 @@ const PharmacyInventory = () => {
                                         <TableHead>Stock Status</TableHead>
                                         <TableHead>Expiry Status</TableHead>
                                         <TableHead className="text-right">Sale Price</TableHead>
-                                        <TableHead className="text-right">Action</TableHead>
+                                        <TableHead className="text-right">Actions</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -252,11 +263,32 @@ const PharmacyInventory = () => {
                                                 </TableCell>
                                                 <TableCell className="text-right font-medium">{formatCurrency(salePrice)}</TableCell>
                                                 <TableCell className="text-right">
-                                                    <MedicineDetailsDialog
-                                                        medicine={med}
-                                                        onEdit={handleEditMedicine}
-                                                        onDelete={handleDeleteMedicine}
-                                                    />
+                                                    <div className="flex justify-end gap-2">
+                                                        <Button 
+                                                            variant="outline" 
+                                                            size="sm" 
+                                                            onClick={() => handleEditMedicine(med)}
+                                                            className="h-8 px-2 text-xs border-slate-200 hover:bg-slate-50"
+                                                        >
+                                                            Edit Info
+                                                        </Button>
+                                                        <Button 
+                                                            variant="outline" 
+                                                            size="sm" 
+                                                            onClick={() => handleEditBatch(med)}
+                                                            className="h-8 px-2 text-xs border-indigo-200 text-indigo-700 hover:bg-indigo-50"
+                                                        >
+                                                            Edit Stock
+                                                        </Button>
+                                                        <Button 
+                                                            variant="ghost" 
+                                                            size="sm" 
+                                                            onClick={() => handleDeleteMedicine((med as any).medicineId || med.id)}
+                                                            className="h-8 px-2 text-xs text-red-600 hover:text-red-700 hover:bg-red-50"
+                                                        >
+                                                            Delete
+                                                        </Button>
+                                                    </div>
                                                 </TableCell>
                                             </TableRow>
                                         );
@@ -271,6 +303,13 @@ const PharmacyInventory = () => {
                     open={!!editingMedicine} 
                     onOpenChange={(open) => !open && setEditingMedicine(null)}
                     medicine={editingMedicine}
+                    onSuccess={handleEditSuccess}
+                />
+
+                <EditStockDialog 
+                    open={!!editingBatch} 
+                    onOpenChange={(open) => !open && setEditingBatch(null)} 
+                    batch={editingBatch}
                     onSuccess={handleEditSuccess}
                 />
             </div>
