@@ -35,6 +35,7 @@ export const pharmacyService = {
         name: string;
         genericName?: string;
         manufacturer?: string;
+        hsnCode?: string;
         categoryId?: number;
         unit?: string;
         distributorName: string;
@@ -46,6 +47,12 @@ export const pharmacyService = {
         mrp?: number;
         gst?: number;
         stockQuantity: number;
+        freeQuantity?: number;
+        ptr?: number;
+        rate?: number;
+        taxableAmount?: number;
+        gstAmount?: number;
+        totalAmount?: number;
         reorderLevel: number;
         invoiceNumber?: string;
         amountPaid?: number;

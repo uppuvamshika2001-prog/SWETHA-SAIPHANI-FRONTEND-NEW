@@ -29,15 +29,18 @@ export function AddMedicineDialog({ children, onAdd }: AddMedicineDialogProps) {
         generic_name: "",
         category: "",
         manufacturer: "",
+        hsn_code: "",
         distributor_name: "",
         batch_number: "",
         manufacturing_date: "",
         expiry_date: "",
-        purchase_price: "",
-        sale_price: "",
-        gst: "0",
-        mrp: "",
         stock_quantity: "",
+        free_quantity: "0",
+        ptr: "",
+        purchase_price: "",
+        mrp: "",
+        sale_price: "", // This will be the "Rate" field
+        gst: "0",
         min_stock_level: "10",
         invoice_number: "",
     });
@@ -55,12 +58,22 @@ export function AddMedicineDialog({ children, onAdd }: AddMedicineDialogProps) {
         fetchCategories();
     }, []);
 
+    // Derived calculations
+    const quantity = parseFloat(formData.stock_quantity) || 0;
+    const rate_val = parseFloat(formData.sale_price) || 0;
+    const gstPercent = parseFloat(formData.gst) || 0;
+    const discount = 0;
+
+    const taxableAmount = (rate_val * quantity) - discount;
+    const gstAmount = taxableAmount * (gstPercent / 100);
+    const totalAmount = taxableAmount + gstAmount;
+
     const profit = formData.sale_price && formData.purchase_price 
         ? parseFloat(formData.sale_price) - parseFloat(formData.purchase_price)
         : 0;
 
     const handleSubmit = async () => {
-        if (!formData.name || !formData.generic_name || !formData.category || !formData.distributor_name || !formData.expiry_date || !formData.purchase_price || !formData.sale_price || !formData.stock_quantity) {
+        if (!formData.name || !formData.generic_name || !formData.category || !formData.distributor_name || !formData.expiry_date || !formData.purchase_price || !formData.sale_price || !formData.stock_quantity || !formData.hsn_code) {
             toast.error("Please fill in all required fields marked with *");
             return;
         }
@@ -90,6 +103,7 @@ export function AddMedicineDialog({ children, onAdd }: AddMedicineDialogProps) {
                 genericName: formData.generic_name,
                 categoryId: formData.category ? parseInt(formData.category) : undefined,
                 manufacturer: formData.manufacturer || undefined,
+                hsnCode: formData.hsn_code,
                 distributorName: formData.distributor_name,
                 batchNumber: formData.batch_number,
                 manufacturingDate: formData.manufacturing_date || undefined,
@@ -99,6 +113,12 @@ export function AddMedicineDialog({ children, onAdd }: AddMedicineDialogProps) {
                 gst: parseFloat(formData.gst) || 0,
                 mrp: parseFloat(formData.mrp) || undefined,
                 stockQuantity: parseInt(formData.stock_quantity),
+                freeQuantity: parseInt(formData.free_quantity) || 0,
+                ptr: parseFloat(formData.ptr) || 0,
+                rate: salePrice,
+                taxableAmount: taxableAmount,
+                gstAmount: gstAmount,
+                totalAmount: totalAmount,
                 reorderLevel: parseInt(formData.min_stock_level) || 10,
                 invoiceNumber: formData.invoice_number,
             };
@@ -118,15 +138,18 @@ export function AddMedicineDialog({ children, onAdd }: AddMedicineDialogProps) {
                 generic_name: "",
                 category: "",
                 manufacturer: "",
+                hsn_code: "",
                 distributor_name: "",
                 batch_number: "",
                 manufacturing_date: "",
                 expiry_date: "",
+                stock_quantity: "",
+                free_quantity: "0",
+                ptr: "",
                 purchase_price: "",
+                mrp: "",
                 sale_price: "",
                 gst: "0",
-                mrp: "",
-                stock_quantity: "",
                 min_stock_level: "10",
                 invoice_number: "",
             });
@@ -159,191 +182,255 @@ export function AddMedicineDialog({ children, onAdd }: AddMedicineDialogProps) {
                     </DialogDescription>
                 </DialogHeader>
 
-                <div className="grid gap-4 py-4">
-                    {/* Row 1: Medicine Name | Generic Name */}
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="name">Medicine Name *</Label>
-                            <Input
-                                id="name"
-                                placeholder="e.g. Paracetamol 500mg"
-                                value={formData.name}
-                                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="generic_name">Generic Name *</Label>
-                            <Input
-                                id="generic_name"
-                                placeholder="e.g. Acetaminophen"
-                                value={formData.generic_name}
-                                onChange={(e) => setFormData({ ...formData, generic_name: e.target.value })}
-                            />
-                        </div>
-                    </div>
-
-                    {/* Row 2: Category | Manufacturer */}
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="category">Category *</Label>
-                            <Select
-                                value={formData.category}
-                                onValueChange={(value) => setFormData({ ...formData, category: value })}
-                            >
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Select category" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {categories.length > 0 ? (
-                                        categories.map(cat => (
-                                            <SelectItem key={cat.id} value={cat.id.toString()}>{cat.name}</SelectItem>
-                                        ))
-                                    ) : (
-                                        <>
-                                            <SelectItem value="Analgesics">Analgesics</SelectItem>
-                                            <SelectItem value="Antibiotics">Antibiotics</SelectItem>
-                                            <SelectItem value="Vitamins">Vitamins</SelectItem>
-                                            <SelectItem value="Other">Other</SelectItem>
-                                        </>
-                                    )}
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="manufacturer">Manufacturer</Label>
-                            <Input
-                                id="manufacturer"
-                                placeholder="e.g. Sun Pharma"
-                                value={formData.manufacturer}
-                                onChange={(e) => setFormData({ ...formData, manufacturer: e.target.value })}
-                            />
-                        </div>
-                    </div>
-
-                    {/* Row 3: Distributor Name | Batch Number */}
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="distributor_name">Distributor Name *</Label>
-                            <Input
-                                id="distributor_name"
-                                placeholder="e.g. Apollo Distributor"
-                                value={formData.distributor_name}
-                                onChange={(e) => setFormData({ ...formData, distributor_name: e.target.value })}
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="batch_number">Batch Number *</Label>
-                            <Input
-                                id="batch_number"
-                                placeholder="e.g. BN-2024-001"
-                                value={formData.batch_number}
-                                onChange={(e) => setFormData({ ...formData, batch_number: e.target.value })}
-                            />
-                        </div>
-                    </div>
-
-                    {/* Row 4: Manufacturing Date | Expiry Date */}
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="manufacturing_date">Manufacturing Date</Label>
-                            <Input
-                                id="manufacturing_date"
-                                type="date"
-                                value={formData.manufacturing_date}
-                                onChange={(e) => setFormData({ ...formData, manufacturing_date: e.target.value })}
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="expiry_date">Expiry Date *</Label>
-                            <Input
-                                id="expiry_date"
-                                type="date"
-                                value={formData.expiry_date}
-                                onChange={(e) => setFormData({ ...formData, expiry_date: e.target.value })}
-                            />
-                        </div>
-                    </div>
-
-                    {/* Row 5: Purchase Price | Sale Price */}
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="purchase_price">Purchase Price (₹) *</Label>
-                            <Input
-                                id="purchase_price"
-                                type="number"
-                                step="0.01"
-                                placeholder="0.00"
-                                value={formData.purchase_price}
-                                onChange={(e) => setFormData({ ...formData, purchase_price: e.target.value })}
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <div className="flex justify-between items-center">
-                                <Label htmlFor="sale_price">Sale Price (₹) *</Label>
-                                {profit !== 0 && (
-                                    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${profit > 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                                        Profit: ₹{profit.toFixed(2)}
-                                    </span>
-                                )}
+                <div className="grid gap-6 py-4">
+                    {/* Section 1: Product Details */}
+                    <div className="space-y-4">
+                        <h3 className="text-sm font-semibold text-purple-700 border-b pb-1 flex items-center gap-2">
+                            <Plus className="h-3 w-3" />
+                            📦 Product Details
+                        </h3>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="name">Medicine Name *</Label>
+                                <Input
+                                    id="name"
+                                    placeholder="e.g. Paracetamol 500mg"
+                                    value={formData.name}
+                                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                />
                             </div>
-                            <Input
-                                id="sale_price"
-                                type="number"
-                                step="0.01"
-                                placeholder="0.00"
-                                value={formData.sale_price}
-                                onChange={(e) => setFormData({ ...formData, sale_price: e.target.value })}
-                            />
+                            <div className="space-y-2">
+                                <Label htmlFor="generic_name">Generic Name *</Label>
+                                <Input
+                                    id="generic_name"
+                                    placeholder="e.g. Acetaminophen"
+                                    value={formData.generic_name}
+                                    onChange={(e) => setFormData({ ...formData, generic_name: e.target.value })}
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="category">Category *</Label>
+                                <Select
+                                    value={formData.category}
+                                    onValueChange={(value) => setFormData({ ...formData, category: value })}
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select category" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {categories.length > 0 ? (
+                                            categories.map(cat => (
+                                                <SelectItem key={cat.id} value={cat.id.toString()}>{cat.name}</SelectItem>
+                                            ))
+                                        ) : (
+                                            <>
+                                                <SelectItem value="Analgesics">Analgesics</SelectItem>
+                                                <SelectItem value="Antibiotics">Antibiotics</SelectItem>
+                                                <SelectItem value="Vitamins">Vitamins</SelectItem>
+                                                <SelectItem value="Other">Other</SelectItem>
+                                            </>
+                                        )}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="manufacturer">Manufacturer</Label>
+                                <Input
+                                    id="manufacturer"
+                                    placeholder="e.g. Sun Pharma"
+                                    value={formData.manufacturer}
+                                    onChange={(e) => setFormData({ ...formData, manufacturer: e.target.value })}
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="hsn_code">HSN Code *</Label>
+                                <Input
+                                    id="hsn_code"
+                                    placeholder="e.g. 30049099"
+                                    value={formData.hsn_code}
+                                    onChange={(e) => setFormData({ ...formData, hsn_code: e.target.value })}
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="distributor_name">Distributor Name *</Label>
+                                <Input
+                                    id="distributor_name"
+                                    placeholder="e.g. Apollo Distributor"
+                                    value={formData.distributor_name}
+                                    onChange={(e) => setFormData({ ...formData, distributor_name: e.target.value })}
+                                />
+                            </div>
                         </div>
                     </div>
 
-                    {/* Row 6: GST | MRP */}
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="gst">GST (%)</Label>
-                            <Input
-                                id="gst"
-                                type="number"
-                                step="0.1"
-                                placeholder="0"
-                                value={formData.gst}
-                                onChange={(e) => setFormData({ ...formData, gst: e.target.value })}
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="mrp">MRP (Optional)</Label>
-                            <Input
-                                id="mrp"
-                                type="number"
-                                step="0.01"
-                                placeholder="0.00"
-                                value={formData.mrp}
-                                onChange={(e) => setFormData({ ...formData, mrp: e.target.value })}
-                            />
+                    {/* Section 2: Stock Details */}
+                    <div className="space-y-4">
+                        <h3 className="text-sm font-semibold text-purple-700 border-b pb-1 flex items-center gap-2">
+                            <Plus className="h-3 w-3" />
+                            📊 Stock Details
+                        </h3>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="batch_number">Batch Number *</Label>
+                                <Input
+                                    id="batch_number"
+                                    placeholder="e.g. BN-2024-001"
+                                    value={formData.batch_number}
+                                    onChange={(e) => setFormData({ ...formData, batch_number: e.target.value })}
+                                />
+                            </div>
+                            <div className="grid grid-cols-2 gap-2">
+                                <div className="space-y-2">
+                                    <Label htmlFor="manufacturing_date">Mfg. Date</Label>
+                                    <Input
+                                        id="manufacturing_date"
+                                        type="date"
+                                        value={formData.manufacturing_date}
+                                        onChange={(e) => setFormData({ ...formData, manufacturing_date: e.target.value })}
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="expiry_date">Expiry Date *</Label>
+                                    <Input
+                                        id="expiry_date"
+                                        type="date"
+                                        value={formData.expiry_date}
+                                        onChange={(e) => setFormData({ ...formData, expiry_date: e.target.value })}
+                                    />
+                                </div>
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="stock_quantity">Stock Quantity *</Label>
+                                <Input
+                                    id="stock_quantity"
+                                    type="number"
+                                    className="text-right"
+                                    placeholder="0"
+                                    value={formData.stock_quantity}
+                                    onChange={(e) => setFormData({ ...formData, stock_quantity: e.target.value })}
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="free_quantity">Free Quantity</Label>
+                                <Input
+                                    id="free_quantity"
+                                    type="number"
+                                    className="text-right"
+                                    placeholder="e.g. 10"
+                                    value={formData.free_quantity}
+                                    onChange={(e) => setFormData({ ...formData, free_quantity: e.target.value })}
+                                />
+                            </div>
                         </div>
                     </div>
 
-                    {/* Row 7: Stock Quantity | Min Stock Level */}
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="stock_quantity">Stock Quantity *</Label>
-                            <Input
-                                id="stock_quantity"
-                                type="number"
-                                placeholder="0"
-                                value={formData.stock_quantity}
-                                onChange={(e) => setFormData({ ...formData, stock_quantity: e.target.value })}
-                            />
+                    {/* Section 3: Pricing Details */}
+                    <div className="space-y-4">
+                        <h3 className="text-sm font-semibold text-purple-700 border-b pb-1 flex items-center gap-2">
+                            <Plus className="h-3 w-3" />
+                            💰 Pricing Details
+                        </h3>
+                        <div className="grid grid-cols-3 gap-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="ptr">PTR (₹) *</Label>
+                                <Input
+                                    id="ptr"
+                                    type="number"
+                                    step="0.01"
+                                    className="text-right"
+                                    placeholder="0.00"
+                                    value={formData.ptr}
+                                    onChange={(e) => setFormData({ ...formData, ptr: e.target.value })}
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="purchase_price">Purchase Price (₹) *</Label>
+                                <Input
+                                    id="purchase_price"
+                                    type="number"
+                                    step="0.01"
+                                    className="text-right"
+                                    placeholder="0.00"
+                                    value={formData.purchase_price}
+                                    onChange={(e) => setFormData({ ...formData, purchase_price: e.target.value })}
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="mrp">MRP (₹)</Label>
+                                <Input
+                                    id="mrp"
+                                    type="number"
+                                    step="0.01"
+                                    className="text-right"
+                                    placeholder="0.00"
+                                    value={formData.mrp}
+                                    onChange={(e) => setFormData({ ...formData, mrp: e.target.value })}
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <div className="flex justify-between items-center">
+                                    <Label htmlFor="sale_price">Rate (Selling Price) ₹*</Label>
+                                    {profit !== 0 && (
+                                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${profit > 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                                            ₹{profit.toFixed(2)}
+                                        </span>
+                                    )}
+                                </div>
+                                <Input
+                                    id="sale_price"
+                                    type="number"
+                                    step="0.01"
+                                    className="text-right border-purple-200"
+                                    placeholder="0.00"
+                                    value={formData.sale_price}
+                                    onChange={(e) => setFormData({ ...formData, sale_price: e.target.value })}
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="gst">GST (%)</Label>
+                                <Input
+                                    id="gst"
+                                    type="number"
+                                    step="0.1"
+                                    className="text-right"
+                                    placeholder="0"
+                                    value={formData.gst}
+                                    onChange={(e) => setFormData({ ...formData, gst: e.target.value })}
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="min_stock_level">Min. Stock Level</Label>
+                                <Input
+                                    id="min_stock_level"
+                                    type="number"
+                                    className="text-right"
+                                    placeholder="10"
+                                    value={formData.min_stock_level}
+                                    onChange={(e) => setFormData({ ...formData, min_stock_level: e.target.value })}
+                                />
+                            </div>
                         </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="min_stock_level">Min. Stock Level *</Label>
-                            <Input
-                                id="min_stock_level"
-                                type="number"
-                                placeholder="10"
-                                value={formData.min_stock_level}
-                                onChange={(e) => setFormData({ ...formData, min_stock_level: e.target.value })}
-                            />
+                    </div>
+
+                    {/* Section 4: Calculations (Read-only) */}
+                    <div className="bg-gray-50 p-4 rounded-lg space-y-4 border border-gray-100">
+                        <h3 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                            <Plus className="h-3 w-3" />
+                            🧾 Calculations (Read-only)
+                        </h3>
+                        <div className="grid grid-cols-3 gap-4">
+                            <div className="space-y-1">
+                                <Label className="text-[11px] text-gray-500">Taxable Amount</Label>
+                                <div className="text-sm font-medium">₹ {taxableAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
+                            </div>
+                            <div className="space-y-1">
+                                <Label className="text-[11px] text-gray-500">GST Amount ({gstPercent}%)</Label>
+                                <div className="text-sm font-medium text-blue-600">₹ {gstAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
+                            </div>
+                            <div className="space-y-1">
+                                <Label className="text-[11px] text-gray-500">Total Amount</Label>
+                                <div className="text-lg font-bold text-purple-700 italic">₹ {totalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
+                            </div>
                         </div>
                     </div>
                 </div>
