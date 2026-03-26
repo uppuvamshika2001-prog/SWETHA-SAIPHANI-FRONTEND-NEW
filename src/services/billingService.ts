@@ -74,19 +74,27 @@ export const billingService = {
         paidAmount?: number;
         isWalkInLab?: boolean;
     }) {
-        return api.post<Bill>('/billing', data);
+        const result = await api.post<Bill>('/billing', data);
+        apiCache.invalidate('/billing');
+        return result;
     },
 
     async updateStatus(id: string, status: string, paidAmount?: number) {
-        return api.patch<Bill>(`/billing/${id}/status`, { status, paidAmount });
+        const result = await api.patch<Bill>(`/billing/${id}/status`, { status, paidAmount });
+        apiCache.invalidate('/billing');
+        return result;
     },
 
     async confirmPayment(id: string, paidAmount: number) {
-        return api.patch<Bill>(`/billing/${id}/status`, { status: 'PAID', paidAmount });
+        const result = await api.patch<Bill>(`/billing/${id}/status`, { status: 'PAID', paidAmount });
+        apiCache.invalidate('/billing');
+        return result;
     },
 
     async deleteBill(id: string) {
-        return api.delete(`/billing/${id}`);
+        const result = await api.delete(`/billing/${id}`);
+        apiCache.invalidate('/billing');
+        return result;
     },
 
     async getUnbilledLabOrders(patientId: string) {

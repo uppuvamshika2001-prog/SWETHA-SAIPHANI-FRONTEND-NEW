@@ -52,6 +52,8 @@ export function UnifiedBilling({ portalRole, billType }: UnifiedBillingProps) {
                 params.billType = billType;
             }
             const response = await billingService.getBills(params);
+            console.log(`[UnifiedBilling] fetchBills params:`, params);
+            console.log(`[UnifiedBilling] fetchBills response (first 2 items):`, response.items?.slice(0, 2), 'Total count:', response.total);
             setBills(response.items || []);
         } catch (error) {
             console.error('Failed to fetch bills:', error);
