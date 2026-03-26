@@ -203,6 +203,9 @@ export default function PharmacyBilling() {
 
         setIsSaving(true);
         try {
+            const totalBillGstPercent = billItems.length > 0 ? (billItems.reduce((acc, item) => acc + item.gst, 0) / billItems.length) : 0;
+            const totalBillDiscount = billItems.reduce((acc, item) => acc + (item.quantity * item.salePrice * (item.discount / 100)), 0);
+
             const payload = {
                 patientId: isWalkIn ? undefined : selectedPatient?.uhid,
                 customerName: isWalkIn && customerName ? customerName : undefined,
@@ -216,16 +219,16 @@ export default function PharmacyBilling() {
                     batchNumber: item.batchNumber,
                     expiryDate: item.expiryDate,
                     hsnCode: item.hsnCode,
-                    gst: item.gst,
-                    discount: item.discount
+                    gst: item.gst || 0,
+                    discount: item.discount || 0
                 })),
-                gstPercent: 0, // Individual GST already included in item prices on backend if needed, or we send 0
-                discount: 0,
+                gstPercent: totalBillGstPercent, 
+                discount: totalBillDiscount,
                 status: 'PAID',
                 notes: 'Pharmacy Bill'
             };
 
-            const savedBill = await billingService.createBill(payload);
+            const savedBill = await pharmacyService.createBill(payload);
             await downloadPharmacyBillPDF(savedBill);
             toast({ title: "Success", description: "Bill generated and stock updated successfully." });
             

@@ -87,6 +87,13 @@ export const downloadPharmacyBillPDF = async (bill: Bill) => {
             doc.text(`Phone: ${displayPhone}`, 14, ageGenderYOffset);
         }
 
+        console.log("Pharmacy Bill PDF Data:", {
+            subtotal: bill.subtotal,
+            gstAmount: bill.gstAmount,
+            grandTotal: bill.grandTotal,
+            itemsCount: bill.items?.length
+        });
+
         // Right Column
         const rightColX = pageWidth - 60;
         doc.text(`Status: ${bill.status}`, rightColX, startY + 8);

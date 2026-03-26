@@ -7,7 +7,15 @@ export interface BillItem {
     quantity: number;
     unitPrice: number;
     total: number;
+    discount?: number;
+    gst?: number;
+    discountAmount?: number;
+    gstAmount?: number;
+    totalAmount?: number;
     medicineId?: string;
+    batchNumber?: string;
+    expiryDate?: string;
+    hsnCode?: string;
 }
 
 export interface Bill {
@@ -32,6 +40,7 @@ export interface Bill {
     grandTotal: number;
     status: 'PENDING' | 'PAID' | 'PARTIALLY_PAID' | 'CANCELLED';
     createdAt: string;
+    updatedAt?: string;
     medicalRecord?: {
         diagnosis: string;
         treatment?: string;

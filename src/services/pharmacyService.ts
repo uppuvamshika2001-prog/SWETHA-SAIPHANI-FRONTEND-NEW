@@ -96,6 +96,12 @@ export const pharmacyService = {
         return Array.isArray(response) ? response : (response.items || response.data || []);
     },
 
+    async createBill(data: any): Promise<any> {
+        // Invalidate cache after creation
+        apiCache.invalidate('/pharmacy/bills');
+        return api.post('/pharmacy/bills', data);
+    },
+
     async getMedicalRecordById(id: string): Promise<any> {
         return api.get<any>(`/medical-records/${id}`);
     },
