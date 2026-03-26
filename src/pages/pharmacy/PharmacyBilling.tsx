@@ -568,19 +568,19 @@ export default function PharmacyBilling() {
                                             ) : (
                                                 historyBills.map((bill) => (
                                                     <TableRow key={bill.id} className="hover:bg-primary/5 transition-colors">
-                                                        <TableCell>{new Date(bill.createdAt).toLocaleDateString()}</TableCell>
-                                                        <TableCell className="font-mono text-xs">{bill.billNumber}</TableCell>
+                                                        <TableCell>{new Date(bill.created_at || bill.createdAt).toLocaleDateString()}</TableCell>
+                                                        <TableCell className="font-mono text-xs">{bill.bill_number || bill.billNumber}</TableCell>
                                                         <TableCell>
                                                             <div className="font-medium">
-                                                                {bill.isWalkIn 
-                                                                    ? (bill.customerName || "Walk-in Customer") 
+                                                                {bill.is_walk_in || bill.isWalkIn 
+                                                                    ? (bill.customer_name || bill.customerName || "Walk-in Customer") 
                                                                     : `${bill.patient?.firstName || ''} ${bill.patient?.lastName || ''}`.trim() || 'N/A'}
                                                             </div>
                                                             <div className="text-xs text-muted-foreground">
-                                                                {bill.isWalkIn ? bill.phone : bill.patient?.phone}
+                                                                {(bill.is_walk_in || bill.isWalkIn) ? bill.phone : bill.patient?.phone}
                                                             </div>
                                                         </TableCell>
-                                                        <TableCell className="text-right font-bold">₹{Number(bill.grandTotal).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</TableCell>
+                                                        <TableCell className="text-right font-bold">₹{Number(bill.grand_total || bill.grandTotal || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</TableCell>
                                                         <TableCell className="text-center">
                                                             <Badge variant={bill.status === 'PAID' ? 'secondary' : 'destructive'}>
                                                                 {bill.status}
