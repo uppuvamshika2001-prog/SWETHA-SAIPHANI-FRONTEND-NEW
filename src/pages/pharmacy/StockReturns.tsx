@@ -579,15 +579,15 @@ export default function StockReturns() {
                                         history.map((record) => (
                                             <TableRow key={record.id} className="hover:bg-primary/5 transition-colors border-b last:border-0">
                                                 <TableCell className="font-medium">
-                                                    <div className="font-bold">{format(new Date(record.returnDate), 'dd MMM yyyy')}</div>
-                                                    <div className="text-[10px] text-muted-foreground">{format(new Date(record.returnDate), 'hh:mm a')}</div>
+                                                    <div className="font-bold">{format(new Date(record.return_date || record.returnDate), 'dd MMM yyyy')}</div>
+                                                    <div className="text-[10px] text-muted-foreground">{format(new Date(record.return_date || record.returnDate), 'hh:mm a')}</div>
                                                 </TableCell>
                                                 <TableCell>
                                                     <div className="font-black text-slate-800">{record.distributor}</div>
                                                 </TableCell>
                                                 <TableCell>
                                                     <Badge variant="outline" className="font-bold text-[10px] bg-slate-50">
-                                                        {record.returnType?.replace('_', ' ')}
+                                                        {(record.return_type || record.returnType)?.replace('_', ' ')}
                                                     </Badge>
                                                 </TableCell>
                                                 <TableCell>
@@ -595,7 +595,7 @@ export default function StockReturns() {
                                                         {record.items?.length || 0} Batches
                                                     </Badge>
                                                 </TableCell>
-                                                <TableCell className="text-primary font-black text-lg">₹{record.totalAmount.toFixed(2)}</TableCell>
+                                                <TableCell className="text-primary font-black text-lg">₹{Number(record.total_amount || record.totalAmount || 0).toFixed(2)}</TableCell>
                                                 <TableCell className="text-right">
                                                     <Button variant="ghost" size="sm" className="font-bold" onClick={() => {
                                                         toast({ title: "Details View", description: "Expanded bill details and item distribution history is being generated." });

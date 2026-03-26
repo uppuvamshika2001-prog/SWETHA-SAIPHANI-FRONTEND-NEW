@@ -466,23 +466,23 @@ export default function MedicineReturns() {
                                         history.map((record) => (
                                             <TableRow key={record.id} className="hover:bg-muted/30">
                                                 <TableCell className="font-medium">
-                                                    {format(new Date(record.returnDate), 'dd MMM yyyy')}
-                                                    <div className="text-[10px] text-muted-foreground">{format(new Date(record.returnDate), 'hh:mm a')}</div>
+                                                    {format(new Date(record.return_date || record.returnDate), 'dd MMM yyyy')}
+                                                    <div className="text-[10px] text-muted-foreground">{format(new Date(record.return_date || record.returnDate), 'hh:mm a')}</div>
                                                 </TableCell>
-                                                <TableCell className="font-mono text-xs">{record.bill?.billNumber || "N/A"}</TableCell>
+                                                <TableCell className="font-mono text-xs">{record.bill?.bill_number || record.bill?.billNumber || "N/A"}</TableCell>
                                                 <TableCell>
-                                                    <div className="font-medium">{record.patient?.firstName} {record.patient?.lastName}</div>
-                                                    <div className="text-[10px] text-muted-foreground">UHID: {record.patientId}</div>
+                                                    <div className="font-medium">{record.patient?.firstName || record.patient?.first_name} {record.patient?.lastName || record.patient?.last_name}</div>
+                                                    <div className="text-[10px] text-muted-foreground">UHID: {record.patient_id || record.patientId}</div>
                                                 </TableCell>
                                                 <TableCell>
                                                     <Badge variant="secondary" className="font-bold">
-                                                        {record.items?.reduce((sum: number, i: any) => sum + i.returnQty, 0)} Items
+                                                        {record.items?.reduce((sum: number, i: any) => sum + (i.return_qty || i.returnQty || 0), 0)} Items
                                                     </Badge>
                                                 </TableCell>
-                                                <TableCell className="text-primary font-black">₹{record.refundAmount.toFixed(2)}</TableCell>
+                                                <TableCell className="text-primary font-black">₹{Number(record.refund_amount || record.refundAmount || 0).toFixed(2)}</TableCell>
                                                 <TableCell>
                                                     <Badge variant="outline" className="text-[10px] font-bold">
-                                                        {record.refundMethod}
+                                                        {record.refund_method || record.refundMethod}
                                                     </Badge>
                                                 </TableCell>
                                                 <TableCell className="text-right">

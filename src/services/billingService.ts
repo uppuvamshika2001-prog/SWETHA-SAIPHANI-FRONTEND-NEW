@@ -6,41 +6,63 @@ export interface BillItem {
     description: string;
     quantity: number;
     unitPrice: number;
+    unit_price?: number;
     total: number;
     discount?: number;
     gst?: number;
     discountAmount?: number;
+    discount_amount?: number;
     gstAmount?: number;
+    gst_amount?: number;
+    gstPercent?: number;
+    gst_percent?: number;
     totalAmount?: number;
+    total_amount?: number;
     medicineId?: string;
+    medicine_id?: string;
     batchNumber?: string;
+    batch_number?: string;
     expiryDate?: string;
+    expiry_date?: string;
     hsnCode?: string;
+    hsn_code?: string;
 }
 
 export interface Bill {
     id: string;
     billNumber: string;
+    bill_number?: string;
     patientId?: string | null;
+    patient_id?: string | null;
     isWalkIn?: boolean;
+    is_walk_in?: boolean;
     customerName?: string | null;
+    customer_name?: string | null;
     phone?: string | null;
     patient?: {
         firstName: string;
+        first_name?: string;
         lastName: string;
+        last_name?: string;
         phone?: string;
     } | null;
     items: BillItem[];
     subtotal: number;
     discount: number;
     gstAmount: number;
+    gst_amount?: number;
     gstPercent?: number;
+    gst_percent?: number;
     paidAmount?: number;
+    paid_amount?: number;
     notes?: string;
     grandTotal: number;
+    grand_total?: number;
     status: 'PENDING' | 'PAID' | 'PARTIALLY_PAID' | 'CANCELLED';
     createdAt: string;
+    created_at?: string;
     updatedAt?: string;
+    updated_at?: string;
     medicalRecord?: {
         diagnosis: string;
         treatment?: string;
