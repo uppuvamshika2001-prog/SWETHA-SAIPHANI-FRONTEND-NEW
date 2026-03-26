@@ -49,7 +49,6 @@ export const pharmacyService = {
         stock_quantity: number;
         free_quantity?: number;
         ptr?: number;
-        rate?: number;
         taxable_amount?: number;
         gst_amount?: number;
         total_amount?: number;

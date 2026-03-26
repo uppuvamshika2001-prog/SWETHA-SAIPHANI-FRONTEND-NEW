@@ -115,7 +115,6 @@ export function AddMedicineDialog({ children, onAdd }: AddMedicineDialogProps) {
                 stock_quantity: parseInt(formData.stock_quantity),
                 free_quantity: parseInt(formData.free_quantity) || 0,
                 ptr: parseFloat(formData.ptr) || 0,
-                rate: salePrice,
                 taxable_amount: taxableAmount,
                 gst_amount: gstAmount,
                 total_amount: totalAmount,
