@@ -89,15 +89,14 @@ export default function PharmacyBilling() {
     const fetchBillHistory = async () => {
         setLoadingHistory(true);
         try {
-            const result = await billingService.getBills({ limit: 50 });
+            // Correctly use pharmacyService to fetch pharmacy-restricted bills
+            const result = await (pharmacyService as any).getBills({ limit: 50 });
             if (result && result.items) {
-                const pharmacyBills = result.items.filter(bill =>
-                    bill.notes?.toLowerCase().includes('pharmacy')
-                );
-                setHistoryBills(pharmacyBills.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
+                setHistoryBills(result.items.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
             }
         } catch (error) {
-            console.error("Failed to fetch bill history", error);
+            console.error("Failed to fetch pharmacy bill history", error);
+            toast({ title: "Error", description: "Could not load billing history", variant: "destructive" });
         } finally {
             setLoadingHistory(false);
         }
@@ -569,8 +568,14 @@ export default function PharmacyBilling() {
                                                         <TableCell>{new Date(bill.createdAt).toLocaleDateString()}</TableCell>
                                                         <TableCell className="font-mono text-xs">{bill.billNumber}</TableCell>
                                                         <TableCell>
-                                                            <div className="font-medium">{bill.patient?.firstName} {bill.patient?.lastName}</div>
-                                                            <div className="text-xs text-muted-foreground">{bill.patient?.phone}</div>
+                                                            <div className="font-medium">
+                                                                {bill.isWalkIn 
+                                                                    ? (bill.customerName || "Walk-in Customer") 
+                                                                    : `${bill.patient?.firstName || ''} ${bill.patient?.lastName || ''}`.trim() || 'N/A'}
+                                                            </div>
+                                                            <div className="text-xs text-muted-foreground">
+                                                                {bill.isWalkIn ? bill.phone : bill.patient?.phone}
+                                                            </div>
                                                         </TableCell>
                                                         <TableCell className="text-right font-bold">₹{Number(bill.grandTotal).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</TableCell>
                                                         <TableCell className="text-center">

@@ -71,15 +71,29 @@ export const pharmacyService = {
         return api.delete(`/pharmacy/medicines/${id}`);
     },
 
-    async getBills(): Promise<PharmacyOrder[]> {
-        const cacheKey = getCacheKey('/pharmacy/bills');
-        const cached = apiCache.get<PharmacyOrder[]>(cacheKey);
-        if (cached) return cached;
+    async getBills(params?: any): Promise<any> {
+        const queryParams = new URLSearchParams();
+        if (params) {
+            Object.entries(params).forEach(([key, value]) => {
+                if (value !== undefined && value !== null && value !== '') {
+                    queryParams.append(key, String(value));
+                }
+            });
+        }
+        const endpoint = `/pharmacy/bills${queryParams.toString() ? '?' + queryParams.toString() : ''}`;
 
-        const response: any = await api.get('/pharmacy/bills');
-        const result = Array.isArray(response) ? response : (response.items || response.data || []);
-        apiCache.set(cacheKey, result, CACHE_TTL.BILLS);
-        return result;
+        const response: any = await api.get(endpoint);
+        
+        // Legacy compatibility: If no params provided, return just the items array
+        // Use pagination object if it contains items
+        if (response && response.items && Array.isArray(response.items)) {
+            if (!params || Object.keys(params).length === 0) {
+                return response.items;
+            }
+            return response;
+        }
+        
+        return Array.isArray(response) ? response : (response.items || response.data || []);
     },
 
     async getMedicalRecordById(id: string): Promise<any> {
