@@ -48,6 +48,8 @@ export function EditStockDialog({
             
             const payload = {
                 ...formData,
+                expiry_date: formData.expiry_date ? new Date(formData.expiry_date).toISOString() : undefined,
+                manufacturing_date: formData.manufacturing_date ? new Date(formData.manufacturing_date).toISOString() : undefined,
                 purchase_price: parseFloat(formData.purchase_price),
                 selling_price: parseFloat(formData.selling_price),
                 mrp: parseFloat(formData.mrp),
