@@ -88,11 +88,14 @@ export function BillDetailsDialog({
                                 </div>
                             </div>
                             <div className="space-y-1">
-                                <span className="text-xs text-muted-foreground">Patient</span>
-                                <div className="font-medium">
-                                    {bill.patient.firstName} {bill.patient.lastName}
-                                </div>
-                            </div>
+    <span className="text-xs text-muted-foreground">Patient / Customer</span>
+    <div className="font-medium">
+        {/* Use optional chaining and fallback to customerName for walk-ins */}
+        {bill.patient?.firstName 
+            ? `${bill.patient.firstName} ${bill.patient.lastName}` 
+            : ("Walk-in Customer")}
+    </div>
+</div>
                         </div>
 
                         <div className="border rounded-lg overflow-hidden">
