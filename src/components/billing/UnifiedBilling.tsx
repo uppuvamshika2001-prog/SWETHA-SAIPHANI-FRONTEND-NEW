@@ -50,8 +50,6 @@ export function UnifiedBilling({ portalRole, billType }: UnifiedBillingProps) {
             }
             if (billType) {
                 params.billType = billType;
-            } else if (portalRole === 'receptionist') {
-                params.billType = 'CONSULTATION';
             }
             const response = await billingService.getBills(params);
             console.log(`[UnifiedBilling] fetchBills params:`, params);
