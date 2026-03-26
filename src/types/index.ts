@@ -195,9 +195,11 @@ export interface Medicine {
   expiry_date: string;
   distributor?: string;
   purchase_price?: number;
-  sale_price?: number;
+  selling_price?: number;
+  sale_price?: number; // Keep for compatibility but prioritize selling_price
   mrp?: number;
-  gst?: number;
+  gst_percent?: number;
+  gst?: number; // Keep for compatibility but prioritize gst_percent
   unit?: string;
   storage_conditions?: string;
   status: 'in_stock' | 'low_stock' | 'out_of_stock' | 'expired';
@@ -210,15 +212,17 @@ export interface Medicine {
   };
   batches?: Array<{
     id: string;
-    batchNumber: string;
-    distributorName: string;
-    manufacturingDate: string | null;
-    expiryDate: string;
-    purchasePrice: number;
-    salePrice: number;
+    batch_number: string;
+    distributor_name: string;
+    manufacturing_date: string | null;
+    expiry_date: string;
+    purchase_price: number;
+    selling_price: number;
+    sale_price?: number; // Keep for compatibility
     mrp: number | null;
-    gst: number;
-    stockQuantity: number;
+    gst_percent: number;
+    gst?: number; // Keep for compatibility
+    stock_quantity: number;
     isActive: boolean;
   }>;
 }

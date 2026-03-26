@@ -68,7 +68,7 @@ const PharmacyDispensing = () => {
                 console.log("History Item:", item);
                 
                 // Ensure total_amount is a valid number with robust fallbacks
-                const rawAmount = item.total || item.totalAmount || item.total_amount || 0;
+                const rawAmount = item.total_amount || item.total || 0;
                 let totalAmount = Number(rawAmount);
                 if (isNaN(totalAmount)) totalAmount = 0;
                 
@@ -116,7 +116,8 @@ const PharmacyDispensing = () => {
             items: record.prescriptions.map((p: any) => ({
                 medicine_name: p.medicineName,
                 quantity: `${p.frequency} (${p.duration})`,
-                total_price: 0
+                unit_price: p.unitPrice || 0,
+                total_amount: 0
             })),
             total_amount: 0,
             status: record.prescriptionStatus || 'pending',
@@ -178,7 +179,8 @@ const PharmacyDispensing = () => {
                     items: record.prescriptions.map((p: any) => ({
                         medicine_name: p.medicineName,
                         quantity: `${p.frequency} (${p.duration})`, // overload quantity for display
-                        total_price: 0 // Backend doesn't provide price yet
+                        unit_price: p.unitPrice || 0,
+                        total_amount: 0 
                     })),
                     total_amount: 0,
                     status: record.prescriptionStatus, // Add status
@@ -522,11 +524,11 @@ const PharmacyDispensing = () => {
                                                     <TableBody>
                                                         {item.items.map((sub: any, i: number) => (
                                                             <TableRow key={i} className="hover:bg-transparent border-b-0">
-                                                                <TableCell className="py-2 font-medium text-sm">{sub.medicineName}</TableCell>
-                                                                <TableCell className="py-2 font-mono text-xs text-muted-foreground">{sub.batchNumber}</TableCell>
+                                                                <TableCell className="py-2 font-medium text-sm">{sub.medicine_name || sub.medicineName}</TableCell>
+                                                                <TableCell className="py-2 font-mono text-xs text-muted-foreground">{sub.batch_number || sub.batchNumber}</TableCell>
                                                                 <TableCell className="py-2 text-right text-sm">{sub.quantity}</TableCell>
-                                                                <TableCell className="py-2 text-right text-sm">{formatCurrency(sub.unitPrice)}</TableCell>
-                                                                <TableCell className="py-2 text-right text-sm font-medium">{formatCurrency(sub.total)}</TableCell>
+                                                                <TableCell className="py-2 text-right text-sm">{formatCurrency(sub.unit_price || sub.unitPrice)}</TableCell>
+                                                                <TableCell className="py-2 text-right text-sm font-medium">{formatCurrency(sub.total_amount || sub.total)}</TableCell>
                                                             </TableRow>
                                                         ))}
                                                     </TableBody>

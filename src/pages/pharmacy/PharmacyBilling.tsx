@@ -27,16 +27,16 @@ import { Switch } from '@/components/ui/switch';
 
 interface BillItem {
     id: string;
-    medicineId: string;
+    medicine_id: string;
     name: string;
     quantity: number;
-    salePrice: number;
-    gst: number;
+    selling_price: number;
+    gst_percent: number;
     discount: number;
-    batchNumber: string;
-    expiryDate?: string;
-    hsnCode?: string;
-    availableStock: number;
+    batch_number: string;
+    expiry_date?: string;
+    hsn_code?: string;
+    available_stock: number;
     total: number;
 }
 
@@ -62,10 +62,10 @@ export default function PharmacyBilling() {
         let totalDiscount = 0;
 
         billItems.forEach(item => {
-            const baseAmount = item.quantity * item.salePrice;
+            const baseAmount = item.quantity * item.selling_price;
             const itemDiscount = baseAmount * (item.discount / 100);
             const taxableAmount = baseAmount - itemDiscount;
-            const itemGst = taxableAmount * (item.gst / 100);
+            const itemGst = taxableAmount * (item.gst_percent / 100);
             
             subtotal += baseAmount;
             totalDiscount += itemDiscount;
@@ -129,7 +129,7 @@ export default function PharmacyBilling() {
         }
 
         // Check if already in bill
-        const existing = billItems.find(item => item.medicineId === medicine.id);
+        const existing = billItems.find(item => item.medicine_id === medicine.id);
         if (existing) {
             updateItem(existing.id, 'quantity', existing.quantity + 1);
             return;
@@ -137,16 +137,16 @@ export default function PharmacyBilling() {
 
         const newItem: BillItem = {
             id: Math.random().toString(36).substr(2, 9),
-            medicineId: medicine.id,
+            medicine_id: medicine.id,
             name: medicine.name,
             quantity: 1,
-            salePrice: medicine.unit_price || 0,
-            gst: medicine.gst || 0, // Fallback to 0 if not provided
+            selling_price: medicine.unit_price || 0,
+            gst_percent: medicine.gst_percent || 0,
             discount: 0,
-            batchNumber: medicine.batch_number || '-',
-            expiryDate: medicine.expiry_date || undefined,
-            hsnCode: medicine.hsn_code || medicine.hsnCode || undefined,
-            availableStock: medicine.stock_quantity,
+            batch_number: medicine.batch_number || '-',
+            expiry_date: medicine.expiry_date || undefined,
+            hsn_code: medicine.hsn_code || undefined,
+            available_stock: medicine.stock_quantity,
             total: medicine.unit_price || 0
         };
 
@@ -162,13 +162,13 @@ export default function PharmacyBilling() {
             // Validation for stock
             if (field === 'quantity') {
                 const qty = parseInt(value) || 0;
-                if (qty > item.availableStock) {
+                if (qty > item.available_stock) {
                     toast({
                         title: "Insufficient Stock",
-                        description: `Only ${item.availableStock} available for ${item.name}`,
+                        description: `Only ${item.available_stock} available for ${item.name}`,
                         variant: "destructive"
                     });
-                    updated.quantity = item.availableStock;
+                    updated.quantity = item.available_stock;
                 } else if (qty < 1) {
                     updated.quantity = 1;
                 } else {
@@ -177,10 +177,10 @@ export default function PharmacyBilling() {
             }
 
             // Recalculate item total
-            const baseAmount = updated.quantity * updated.salePrice;
+            const baseAmount = updated.quantity * updated.selling_price;
             const discountAmount = baseAmount * (updated.discount / 100);
             const taxableAmount = baseAmount - discountAmount;
-            const gstAmount = taxableAmount * (updated.gst / 100);
+            const gstAmount = taxableAmount * (updated.gst_percent / 100);
             updated.total = taxableAmount + gstAmount;
 
             return updated;
@@ -203,26 +203,26 @@ export default function PharmacyBilling() {
 
         setIsSaving(true);
         try {
-            const totalBillGstPercent = billItems.length > 0 ? (billItems.reduce((acc, item) => acc + item.gst, 0) / billItems.length) : 0;
-            const totalBillDiscount = billItems.reduce((acc, item) => acc + (item.quantity * item.salePrice * (item.discount / 100)), 0);
+            const totalBillGstPercent = billItems.length > 0 ? (billItems.reduce((acc, item) => acc + item.gst_percent, 0) / billItems.length) : 0;
+            const totalBillDiscount = billItems.reduce((acc, item) => acc + (item.quantity * item.selling_price * (item.discount / 100)), 0);
 
             const payload = {
-                patientId: isWalkIn ? undefined : selectedPatient?.uhid,
-                customerName: isWalkIn && customerName ? customerName : undefined,
+                patient_id: isWalkIn ? undefined : selectedPatient?.uhid,
+                customer_name: isWalkIn && customerName ? customerName : undefined,
                 phone: isWalkIn && phone ? phone : undefined,
-                isWalkIn: isWalkIn,
+                is_walk_in: isWalkIn,
                 items: billItems.map(item => ({
-                    medicineId: item.medicineId,
+                    medicine_id: item.medicine_id,
                     description: item.name,
                     quantity: item.quantity,
-                    unitPrice: item.salePrice,
-                    batchNumber: item.batchNumber,
-                    expiryDate: item.expiryDate,
-                    hsnCode: item.hsnCode,
-                    gst: item.gst || 0,
+                    unit_price: item.selling_price,
+                    batch_number: item.batch_number,
+                    expiry_date: item.expiry_date,
+                    hsn_code: item.hsn_code,
+                    gst_percent: item.gst_percent || 0,
                     discount: item.discount || 0
                 })),
-                gstPercent: totalBillGstPercent, 
+                gst_percent: totalBillGstPercent, 
                 discount: totalBillDiscount,
                 status: 'PAID',
                 notes: 'Pharmacy Bill'
@@ -423,7 +423,7 @@ export default function PharmacyBilling() {
                                                     billItems.map(item => (
                                                         <TableRow key={item.id} className="hover:bg-primary/5 transition-colors">
                                                             <TableCell className="pl-6 font-medium">{item.name}</TableCell>
-                                                            <TableCell><span className="text-xs font-mono">{item.batchNumber}</span></TableCell>
+                                                            <TableCell><span className="text-xs font-mono">{item.batch_number}</span></TableCell>
                                                             <TableCell>
                                                                 <div className="space-y-1">
                                                                     <Input
@@ -433,11 +433,11 @@ export default function PharmacyBilling() {
                                                                         className="h-8 text-center"
                                                                     />
                                                                     <p className="text-[10px] text-center text-muted-foreground">
-                                                                        Max: {item.availableStock}
+                                                                        Max: {item.available_stock}
                                                                     </p>
                                                                 </div>
                                                             </TableCell>
-                                                            <TableCell className="text-right">₹{item.salePrice.toFixed(2)}</TableCell>
+                                                            <TableCell className="text-right">₹{item.selling_price.toFixed(2)}</TableCell>
                                                             <TableCell className="text-right">
                                                                 <Input
                                                                     type="number"
@@ -449,8 +449,8 @@ export default function PharmacyBilling() {
                                                             <TableCell className="text-right">
                                                                 <Input
                                                                     type="number"
-                                                                    value={item.gst}
-                                                                    onChange={(e) => updateItem(item.id, 'gst', e.target.value)}
+                                                                    value={item.gst_percent}
+                                                                    onChange={(e) => updateItem(item.id, 'gst_percent', e.target.value)}
                                                                     className="h-8 text-right"
                                                                 />
                                                             </TableCell>

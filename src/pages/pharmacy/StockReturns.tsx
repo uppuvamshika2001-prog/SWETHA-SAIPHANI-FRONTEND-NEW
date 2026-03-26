@@ -98,7 +98,7 @@ export default function StockReturns() {
             for (const med of data) {
                 if (med.batches) {
                     for (const batch of med.batches) {
-                        if (batch.isActive && batch.stockQuantity > 0 && isBefore(new Date(batch.expiryDate), sixtyDays)) {
+                        if (batch.isActive && batch.stock_quantity > 0 && isBefore(new Date(batch.expiry_date), sixtyDays)) {
                             soon.push({ ...batch, medicineName: med.name, medicineId: med.id });
                         }
                     }
@@ -138,11 +138,11 @@ export default function StockReturns() {
         const item = flatBatch ? {
             id: med.id,
             name: med.name,
-            batchNumber: flatBatch.batchNumber,
-            distributor: flatBatch.distributorName,
-            stock: flatBatch.stockQuantity,
-            expiry: flatBatch.expiryDate,
-            purchasePrice: flatBatch.purchasePrice || 0
+            batchNumber: flatBatch.batch_number,
+            distributor: flatBatch.distributor_name,
+            stock: flatBatch.stock_quantity,
+            expiry: flatBatch.expiry_date,
+            purchasePrice: flatBatch.purchase_price || 0
         } : {
             id: med.id,
             name: med.name,
@@ -209,13 +209,13 @@ export default function StockReturns() {
         try {
             const payload = {
                 distributor,
-                returnType,
+                return_type: returnType,
                 items: returnItems.map(item => ({
-                    medicineId: item.medicineId,
-                    batchNumber: item.batchNumber,
-                    returnQty: item.returnQty,
-                    returnReason: item.returnReason,
-                    unitPrice: item.unitPrice
+                    medicine_id: item.medicineId,
+                    batch_number: item.batchNumber,
+                    return_qty: item.returnQty,
+                    return_reason: item.returnReason,
+                    unit_price: item.unitPrice
                 }))
             };
 

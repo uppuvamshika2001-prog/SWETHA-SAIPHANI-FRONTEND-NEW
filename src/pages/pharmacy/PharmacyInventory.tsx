@@ -42,8 +42,7 @@ const PharmacyInventory = () => {
     };
 
     const filteredMedicines = medicineList.filter(med => {
-        // Handle both snake_case (frontend) and camelCase (backend) field names
-        const genericName = med.generic_name || (med as any).genericName || '';
+        const genericName = med.generic_name || '';
         const category = typeof med.category === 'object' ? med.category.name : (med.category || '');
         const name = med.name || '';
 
@@ -181,13 +180,12 @@ const PharmacyInventory = () => {
                                 </TableHeader>
                                 <TableBody>
                                     {filteredMedicines.map((med) => {
-                                        // Handle both snake_case (frontend type) and camelCase (backend response)
-                                        const genericName = med.generic_name || (med as any).genericName || '-';
-                                        const batchNumber = med.batch?.batch_number || med.batch_number || (med as any).batchNumber || '-';
-                                        const distributor = med.batch?.distributor || med.distributor || (med as any).distributorName || '-';
-                                        const stockQty = med.stock_quantity ?? (med as any).stockQuantity ?? 0;
-                                        const salePrice = med.unit_price ?? (med as any).salePrice ?? 0;
-                                        const expiryDate = med.batch?.expiry_date || med.expiry_date || (med as any).expiryDate;
+                                        const genericName = med.generic_name || '-';
+                                        const batchNumber = med.batch?.batch_number || med.batch_number || '-';
+                                        const distributor = med.batch?.distributor || med.distributor || '-';
+                                        const stockQty = med.stock_quantity ?? 0;
+                                        const sellingPrice = med.unit_price ?? med.selling_price ?? 0;
+                                        const expiryDate = med.batch?.expiry_date || med.expiry_date;
                                         const status = med.status || 'in_stock';
 
                                         const getStockBadge = (status: string) => {
@@ -261,7 +259,7 @@ const PharmacyInventory = () => {
                                                         </span>
                                                     </div>
                                                 </TableCell>
-                                                <TableCell className="text-right font-medium">{formatCurrency(salePrice)}</TableCell>
+                                                <TableCell className="text-right font-medium">{formatCurrency(sellingPrice)}</TableCell>
                                                 <TableCell className="text-right">
                                                     <div className="flex justify-end gap-2">
                                                         <Button 

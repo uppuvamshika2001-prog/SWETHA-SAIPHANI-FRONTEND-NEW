@@ -33,31 +33,31 @@ export const pharmacyService = {
 
     async createMedicine(medicine: {
         name: string;
-        genericName?: string;
+        generic_name?: string;
         manufacturer?: string;
-        hsnCode?: string;
-        categoryId?: number;
+        hsn_code?: string;
+        category_id?: number;
         unit?: string;
-        distributorName: string;
-        batchNumber: string;
-        manufacturingDate?: string;
-        expiryDate: string;
-        purchasePrice: number;
-        salePrice: number;
+        distributor_name: string;
+        batch_number: string;
+        manufacturing_date?: string;
+        expiry_date: string;
+        purchase_price: number;
+        selling_price: number;
         mrp?: number;
-        gst?: number;
-        stockQuantity: number;
-        freeQuantity?: number;
+        gst_percent?: number;
+        stock_quantity: number;
+        free_quantity?: number;
         ptr?: number;
         rate?: number;
-        taxableAmount?: number;
-        gstAmount?: number;
-        totalAmount?: number;
-        reorderLevel: number;
-        invoiceNumber?: string;
-        amountPaid?: number;
-        paymentDate?: string;
-        paymentMethod?: string;
+        taxable_amount?: number;
+        gst_amount?: number;
+        total_amount?: number;
+        reorder_level: number;
+        invoice_number?: string;
+        amount_paid?: number;
+        payment_date?: string;
+        payment_method?: string;
     }): Promise<Medicine> {
         // Invalidate cache after creation
         apiCache.invalidate('/pharmacy/medicines');
@@ -87,9 +87,9 @@ export const pharmacyService = {
                 }
             });
         }
-        // Ensure billType is PHARMACY if not specified
-        if (!params?.billType) {
-            queryParams.append('billType', 'PHARMACY');
+        // Ensure bill_type is PHARMACY if not specified
+        if (!params?.bill_type) {
+            queryParams.append('bill_type', 'PHARMACY');
         }
 
         const endpoint = `/pharmacy/bills${queryParams.toString() ? '?' + queryParams.toString() : ''}`;
@@ -168,9 +168,9 @@ export const pharmacyService = {
 
     async createPurchase(data: any, file?: File): Promise<any> {
         const formData = new FormData();
-        formData.append('distributorName', data.distributorName);
-        formData.append('invoiceNumber', data.invoiceNumber);
-        if (data.purchaseDate) formData.append('purchaseDate', data.purchaseDate);
+        formData.append('distributor_name', data.distributor_name);
+        formData.append('invoice_number', data.invoice_number);
+        if (data.purchase_date) formData.append('purchase_date', data.purchase_date);
         formData.append('items', JSON.stringify(data.items));
         if (file) formData.append('invoice', file);
         return api.post('/pharmacy/purchases', formData, {
@@ -180,9 +180,9 @@ export const pharmacyService = {
 
     async updatePurchase(id: string, data: any, file?: File): Promise<any> {
         const formData = new FormData();
-        if (data.distributorName) formData.append('distributorName', data.distributorName);
-        if (data.invoiceNumber) formData.append('invoiceNumber', data.invoiceNumber);
-        if (data.purchaseDate) formData.append('purchaseDate', data.purchaseDate);
+        if (data.distributor_name) formData.append('distributor_name', data.distributor_name);
+        if (data.invoice_number) formData.append('invoice_number', data.invoice_number);
+        if (data.purchase_date) formData.append('purchase_date', data.purchase_date);
         if (file) formData.append('invoice', file);
         return api.put(`/pharmacy/purchases/${id}`, formData, {
             headers: { 'Content-Type': 'multipart/form-data' }

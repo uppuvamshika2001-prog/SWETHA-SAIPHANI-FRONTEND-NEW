@@ -23,15 +23,15 @@ export function EditStockDialog({
     useEffect(() => {
         if (batch && open) {
             setFormData({
-                batchNumber: batch.batch_number || batch.batchNumber || "",
-                distributorName: batch.distributor || batch.distributorName || "",
-                expiryDate: batch.expiry_date || batch.expiryDate ? new Date(batch.expiry_date || batch.expiryDate).toISOString().split('T')[0] : "",
-                manufacturingDate: batch.manufacturingDate ? new Date(batch.manufacturingDate).toISOString().split('T')[0] : "",
-                purchasePrice: batch.purchase_price || batch.purchasePrice || 0,
-                salePrice: batch.unit_price || batch.salePrice || 0,
+                batch_number: batch.batch_number || batch.batchNumber || "",
+                distributor_name: batch.distributor || batch.distributorName || "",
+                expiry_date: batch.expiry_date || batch.expiryDate ? new Date(batch.expiry_date || batch.expiryDate).toISOString().split('T')[0] : "",
+                manufacturing_date: batch.manufacturing_date || batch.manufacturingDate ? new Date(batch.manufacturing_date || batch.manufacturingDate).toISOString().split('T')[0] : "",
+                purchase_price: batch.purchase_price || batch.purchasePrice || 0,
+                selling_price: batch.unit_price || batch.selling_price || batch.salePrice || 0,
                 mrp: batch.mrp || 0,
-                gst: batch.gst || 0,
-                stockQuantity: batch.stock_quantity || batch.stockQuantity || 0
+                gst_percent: batch.gst_percent || batch.gst || 0,
+                stock_quantity: batch.stock_quantity || batch.stockQuantity || 0
             });
         }
     }, [batch, open]);
@@ -48,11 +48,11 @@ export function EditStockDialog({
             
             const payload = {
                 ...formData,
-                purchasePrice: parseFloat(formData.purchasePrice),
-                salePrice: parseFloat(formData.salePrice),
+                purchase_price: parseFloat(formData.purchase_price),
+                selling_price: parseFloat(formData.selling_price),
                 mrp: parseFloat(formData.mrp),
-                gst: parseFloat(formData.gst),
-                stockQuantity: parseInt(formData.stockQuantity)
+                gst_percent: parseFloat(formData.gst_percent),
+                stock_quantity: parseInt(formData.stock_quantity)
             };
 
             // Use the batch ID (which is batch.id in the new allBatches mode)
@@ -81,38 +81,38 @@ export function EditStockDialog({
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
-                            <Label htmlFor="batchNumber">Batch Number *</Label>
-                            <Input id="batchNumber" name="batchNumber" value={formData.batchNumber} onChange={handleChange} required />
+                            <Label htmlFor="batch_number">Batch Number *</Label>
+                            <Input id="batch_number" name="batch_number" value={formData.batch_number} onChange={handleChange} required />
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="distributorName">Distributor</Label>
-                            <Input id="distributorName" name="distributorName" value={formData.distributorName} onChange={handleChange} />
+                            <Label htmlFor="distributor_name">Distributor</Label>
+                            <Input id="distributor_name" name="distributor_name" value={formData.distributor_name} onChange={handleChange} />
                         </div>
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
-                            <Label htmlFor="expiryDate">Expiry Date *</Label>
-                            <Input id="expiryDate" name="expiryDate" type="date" value={formData.expiryDate} onChange={handleChange} required />
+                            <Label htmlFor="expiry_date">Expiry Date *</Label>
+                            <Input id="expiry_date" name="expiry_date" type="date" value={formData.expiry_date} onChange={handleChange} required />
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="stockQuantity">Stock Quantity *</Label>
-                            <Input id="stockQuantity" name="stockQuantity" type="number" min="0" value={formData.stockQuantity} onChange={handleChange} required />
+                            <Label htmlFor="stock_quantity">Stock Quantity *</Label>
+                            <Input id="stock_quantity" name="stock_quantity" type="number" min="0" value={formData.stock_quantity} onChange={handleChange} required />
                         </div>
                     </div>
 
                     <div className="grid grid-cols-3 gap-4">
                         <div className="space-y-2">
-                            <Label htmlFor="purchasePrice">Purchase Price</Label>
-                            <Input id="purchasePrice" name="purchasePrice" type="number" step="0.01" min="0" value={formData.purchasePrice} onChange={handleChange} />
+                            <Label htmlFor="purchase_price">Purchase Price</Label>
+                            <Input id="purchase_price" name="purchase_price" type="number" step="0.01" min="0" value={formData.purchase_price} onChange={handleChange} />
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="salePrice">Sale Price *</Label>
-                            <Input id="salePrice" name="salePrice" type="number" step="0.01" min="0" value={formData.salePrice} onChange={handleChange} required />
+                            <Label htmlFor="selling_price">Sale Price *</Label>
+                            <Input id="selling_price" name="selling_price" type="number" step="0.01" min="0" value={formData.selling_price} onChange={handleChange} required />
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="gst">GST (%)</Label>
-                            <Input id="gst" name="gst" type="number" step="0.01" min="0" value={formData.gst} onChange={handleChange} />
+                            <Label htmlFor="gst_percent">GST (%)</Label>
+                            <Input id="gst_percent" name="gst_percent" type="number" step="0.01" min="0" value={formData.gst_percent} onChange={handleChange} />
                         </div>
                     </div>
 

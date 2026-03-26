@@ -39,11 +39,11 @@ export function EditMedicineDialog({
         if (medicine && open) {
             setFormData({
                 name: medicine.name || "",
-                genericName: medicine.generic_name || medicine.genericName || "",
+                generic_name: medicine.generic_name || medicine.genericName || "",
                 category: typeof medicine.category === 'object' ? medicine.category.name : (medicine.category || ""),
                 manufacturer: medicine.manufacturer || "",
                 unit: medicine.unit || "tablet",
-                reorderLevel: medicine.min_stock_level || medicine.reorderLevel || 10,
+                min_stock_level: medicine.min_stock_level || medicine.reorderLevel || 10,
                 isActive: medicine.status !== 'out_of_stock'
             });
         }
@@ -62,7 +62,7 @@ export function EditMedicineDialog({
             // Convert types
             const payload = {
                 ...formData,
-                reorderLevel: parseInt(formData.reorderLevel) || 10
+                min_stock_level: parseInt(formData.min_stock_level) || 10
             };
 
             await api.put(`/pharmacy/medicines/${medicine.id}`, payload);
@@ -94,8 +94,8 @@ export function EditMedicineDialog({
                             <Input id="name" name="name" value={formData.name} onChange={handleChange} required />
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="genericName">Generic Name</Label>
-                            <Input id="genericName" name="genericName" value={formData.genericName} onChange={handleChange} />
+                            <Label htmlFor="generic_name">Generic Name</Label>
+                            <Input id="generic_name" name="generic_name" value={formData.generic_name} onChange={handleChange} />
                         </div>
                     </div>
                     <div className="grid grid-cols-2 gap-4">
@@ -150,8 +150,8 @@ export function EditMedicineDialog({
                             </Select>
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="reorderLevel">Min. Stock Level</Label>
-                            <Input id="reorderLevel" name="reorderLevel" type="number" min="0" value={formData.reorderLevel} onChange={handleChange} />
+                            <Label htmlFor="min_stock_level">Min. Stock Level</Label>
+                            <Input id="min_stock_level" name="min_stock_level" type="number" min="0" value={formData.min_stock_level} onChange={handleChange} />
                         </div>
                     </div>
                     

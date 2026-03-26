@@ -88,7 +88,7 @@ export default function MedicineReturns() {
             } else {
                 const bill = items[0];
                 if (bill.items) {
-                    bill.items = bill.items.filter((item: any) => item.medicineId !== null);
+                    bill.items = bill.items.filter((item: any) => item.medicine_id !== null);
                 }
                 setSelectedBill(bill);
                 setReturnItems([]);
@@ -132,7 +132,7 @@ export default function MedicineReturns() {
     };
 
     const calculateRefund = () => {
-        return returnItems.reduce((sum, item) => sum + (item.returnQty * item.unitPrice), 0);
+        return returnItems.reduce((sum, item) => sum + (item.returnQty * item.unit_price), 0);
     };
 
     const handleProcessReturn = async () => {
@@ -141,14 +141,14 @@ export default function MedicineReturns() {
         setProcessing(true);
         try {
             const payload = {
-                billId: selectedBill.id,
-                patientId: selectedBill.patientId,
-                refundMethod,
+                bill_id: selectedBill.id,
+                patient_id: selectedBill.patient_id,
+                refund_method: refundMethod,
                 items: returnItems.map(item => ({
-                    medicineId: item.medicineId,
-                    batchNumber: item.batchNumber || null,
-                    returnQty: item.returnQty,
-                    salePrice: item.unitPrice,
+                    medicine_id: item.medicine_id,
+                    batch_number: item.batch_number || null,
+                    return_qty: item.returnQty,
+                    selling_price: item.unit_price,
                     reason: item.reason
                 }))
             };
@@ -258,7 +258,7 @@ export default function MedicineReturns() {
                                                             )}
                                                         </TableCell>
                                                         <TableCell>{item.quantity}</TableCell>
-                                                        <TableCell>₹{item.unitPrice.toFixed(2)}</TableCell>
+                                                        <TableCell>₹{item.unit_price.toFixed(2)}</TableCell>
                                                         <TableCell>₹{item.total.toFixed(2)}</TableCell>
                                                         <TableCell className="text-right">
                                                             <Button 
@@ -295,7 +295,7 @@ export default function MedicineReturns() {
                                                         <div key={item.id} className="p-3 border rounded-lg space-y-3 bg-card hover:shadow-md transition-shadow">
                                                             <div className="flex justify-between font-bold text-sm">
                                                                 <span className="truncate flex-1">{item.description}</span>
-                                                                <span className="text-primary ml-2">₹{(item.returnQty * item.unitPrice).toFixed(2)}</span>
+                                                                <span className="text-primary ml-2">₹{(item.returnQty * item.unit_price).toFixed(2)}</span>
                                                             </div>
                                                             <div className="grid grid-cols-2 gap-2">
                                                                 <div className="space-y-1">
