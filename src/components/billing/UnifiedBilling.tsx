@@ -393,6 +393,11 @@ export function UnifiedBilling({ portalRole, billType }: UnifiedBillingProps) {
                             </div>
                             <div className="flex items-center gap-3">
                                 <DatePicker date={selectedDate} setDate={setSelectedDate} />
+                                {selectedDate && (
+                                    <Button variant="ghost" size="sm" onClick={() => setSelectedDate(undefined)}>
+                                        Clear Date
+                                    </Button>
+                                )}
                                 <div className="relative w-64">
                                     <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                                     <Input
