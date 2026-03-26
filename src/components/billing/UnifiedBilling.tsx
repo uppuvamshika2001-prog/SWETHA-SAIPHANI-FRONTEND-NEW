@@ -35,7 +35,7 @@ export function UnifiedBilling({ portalRole, billType }: UnifiedBillingProps) {
     const [bills, setBills] = useState<Bill[]>([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
-    const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
+    const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
     const [confirmingBillId, setConfirmingBillId] = useState<string | null>(null);
 
     const { hasPermission } = usePermissions();
