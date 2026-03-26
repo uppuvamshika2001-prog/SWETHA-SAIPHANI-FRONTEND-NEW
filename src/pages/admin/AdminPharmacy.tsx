@@ -208,7 +208,7 @@ const AdminPharmacy = () => {
                                             </TableCell>
                                             <TableCell className="text-sm">
                                                 {(() => {
-                                                    const expiryDate = med.batch?.expiry_date || med.expiry_date || (med as any).expiryDate || med.batch?.expiryDate;
+                                                    const expiryDate = med.batch?.expiry_date || med.expiry_date;
                                                     if (!expiryDate) return <span className="text-muted-foreground">N/A</span>;
                                                     
                                                     const now = new Date();
