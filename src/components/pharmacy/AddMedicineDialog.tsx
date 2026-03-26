@@ -174,7 +174,7 @@ export function AddMedicineDialog({ children, onAdd }: AddMedicineDialogProps) {
                     </Button>
                 )}
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[650px] max-h-[90vh] overflow-y-auto">
+            <DialogContent className="sm:max-w-[1100px] max-h-[95vh] overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle>Add New Medicine Stock</DialogTitle>
                     <DialogDescription>
@@ -183,38 +183,40 @@ export function AddMedicineDialog({ children, onAdd }: AddMedicineDialogProps) {
                 </DialogHeader>
 
                 <div className="grid gap-6 py-4">
-                    {/* Section 1: Product Details */}
-                    <div className="space-y-4">
-                        <h3 className="text-sm font-semibold text-purple-700 border-b pb-1 flex items-center gap-2">
+                    {/* Section 1: Product Details (Row 1-2, 3 columns) */}
+                    <div className="space-y-3">
+                        <h3 className="text-xs font-bold uppercase tracking-wider text-purple-600 flex items-center gap-2">
                             <Plus className="h-3 w-3" />
-                            📦 Product Details
+                            🟣 Product Details
                         </h3>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="name">Medicine Name *</Label>
+                        <div className="grid grid-cols-3 gap-x-6 gap-y-4">
+                            <div className="space-y-1.5">
+                                <Label htmlFor="name" className="text-xs text-gray-500">Medicine Name *</Label>
                                 <Input
                                     id="name"
                                     placeholder="e.g. Paracetamol 500mg"
+                                    className="h-9"
                                     value={formData.name}
                                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                                 />
                             </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="generic_name">Generic Name *</Label>
+                            <div className="space-y-1.5">
+                                <Label htmlFor="generic_name" className="text-xs text-gray-500">Generic Name *</Label>
                                 <Input
                                     id="generic_name"
                                     placeholder="e.g. Acetaminophen"
+                                    className="h-9"
                                     value={formData.generic_name}
                                     onChange={(e) => setFormData({ ...formData, generic_name: e.target.value })}
                                 />
                             </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="category">Category *</Label>
+                            <div className="space-y-1.5">
+                                <Label htmlFor="category" className="text-xs text-gray-500">Category *</Label>
                                 <Select
                                     value={formData.category}
                                     onValueChange={(value) => setFormData({ ...formData, category: value })}
                                 >
-                                    <SelectTrigger>
+                                    <SelectTrigger className="h-9">
                                         <SelectValue placeholder="Select category" />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -233,143 +235,158 @@ export function AddMedicineDialog({ children, onAdd }: AddMedicineDialogProps) {
                                     </SelectContent>
                                 </Select>
                             </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="manufacturer">Manufacturer</Label>
+                            <div className="space-y-1.5">
+                                <Label htmlFor="manufacturer" className="text-xs text-gray-500">Manufacturer</Label>
                                 <Input
                                     id="manufacturer"
                                     placeholder="e.g. Sun Pharma"
+                                    className="h-9"
                                     value={formData.manufacturer}
                                     onChange={(e) => setFormData({ ...formData, manufacturer: e.target.value })}
                                 />
                             </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="hsn_code">HSN Code *</Label>
-                                <Input
-                                    id="hsn_code"
-                                    placeholder="e.g. 30049099"
-                                    value={formData.hsn_code}
-                                    onChange={(e) => setFormData({ ...formData, hsn_code: e.target.value })}
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="distributor_name">Distributor Name *</Label>
+                            <div className="space-y-1.5">
+                                <Label htmlFor="distributor_name" className="text-xs text-gray-500">Distributor Name *</Label>
                                 <Input
                                     id="distributor_name"
                                     placeholder="e.g. Apollo Distributor"
+                                    className="h-9"
                                     value={formData.distributor_name}
                                     onChange={(e) => setFormData({ ...formData, distributor_name: e.target.value })}
+                                />
+                            </div>
+                            <div className="space-y-1.5">
+                                <Label htmlFor="hsn_code" className="text-xs text-gray-500">HSN Code *</Label>
+                                <Input
+                                    id="hsn_code"
+                                    placeholder="e.g. 30049099"
+                                    className="h-9"
+                                    value={formData.hsn_code}
+                                    onChange={(e) => setFormData({ ...formData, hsn_code: e.target.value })}
                                 />
                             </div>
                         </div>
                     </div>
 
-                    {/* Section 2: Stock Details */}
-                    <div className="space-y-4">
-                        <h3 className="text-sm font-semibold text-purple-700 border-b pb-1 flex items-center gap-2">
+                    {/* Section 2: Stock Details (Row 3-4, 3 columns) */}
+                    <div className="space-y-3">
+                        <h3 className="text-xs font-bold uppercase tracking-wider text-green-600 flex items-center gap-2">
                             <Plus className="h-3 w-3" />
-                            📊 Stock Details
+                            🟢 Stock Details
                         </h3>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="batch_number">Batch Number *</Label>
+                        <div className="grid grid-cols-3 gap-x-6 gap-y-4">
+                            <div className="space-y-1.5">
+                                <Label htmlFor="batch_number" className="text-xs text-gray-500">Batch Number *</Label>
                                 <Input
                                     id="batch_number"
                                     placeholder="e.g. BN-2024-001"
+                                    className="h-9"
                                     value={formData.batch_number}
                                     onChange={(e) => setFormData({ ...formData, batch_number: e.target.value })}
                                 />
                             </div>
-                            <div className="grid grid-cols-2 gap-2">
-                                <div className="space-y-2">
-                                    <Label htmlFor="manufacturing_date">Mfg. Date</Label>
-                                    <Input
-                                        id="manufacturing_date"
-                                        type="date"
-                                        value={formData.manufacturing_date}
-                                        onChange={(e) => setFormData({ ...formData, manufacturing_date: e.target.value })}
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="expiry_date">Expiry Date *</Label>
-                                    <Input
-                                        id="expiry_date"
-                                        type="date"
-                                        value={formData.expiry_date}
-                                        onChange={(e) => setFormData({ ...formData, expiry_date: e.target.value })}
-                                    />
-                                </div>
+                            <div className="space-y-1.5">
+                                <Label htmlFor="manufacturing_date" className="text-xs text-gray-500">Mfg. Date</Label>
+                                <Input
+                                    id="manufacturing_date"
+                                    type="date"
+                                    className="h-9"
+                                    value={formData.manufacturing_date}
+                                    onChange={(e) => setFormData({ ...formData, manufacturing_date: e.target.value })}
+                                />
                             </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="stock_quantity">Stock Quantity *</Label>
+                            <div className="space-y-1.5">
+                                <Label htmlFor="expiry_date" className="text-xs text-gray-500">Expiry Date *</Label>
+                                <Input
+                                    id="expiry_date"
+                                    type="date"
+                                    className="h-9 border-red-200 focus-visible:ring-red-500"
+                                    value={formData.expiry_date}
+                                    onChange={(e) => setFormData({ ...formData, expiry_date: e.target.value })}
+                                />
+                            </div>
+                            <div className="space-y-1.5">
+                                <Label htmlFor="stock_quantity" className="text-xs text-gray-500 font-bold">Stock Quantity *</Label>
                                 <Input
                                     id="stock_quantity"
                                     type="number"
-                                    className="text-right"
+                                    className="h-9 text-right font-bold border-green-200"
                                     placeholder="0"
                                     value={formData.stock_quantity}
                                     onChange={(e) => setFormData({ ...formData, stock_quantity: e.target.value })}
                                 />
                             </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="free_quantity">Free Quantity</Label>
+                            <div className="space-y-1.5">
+                                <Label htmlFor="free_quantity" className="text-xs text-gray-500 border-dashed">Free Quantity</Label>
                                 <Input
                                     id="free_quantity"
                                     type="number"
-                                    className="text-right"
-                                    placeholder="e.g. 10"
+                                    className="h-9 text-right"
+                                    placeholder="0"
                                     value={formData.free_quantity}
                                     onChange={(e) => setFormData({ ...formData, free_quantity: e.target.value })}
+                                />
+                            </div>
+                            <div className="space-y-1.5">
+                                <Label htmlFor="min_stock_level" className="text-xs text-gray-500">Min Stock Level</Label>
+                                <Input
+                                    id="min_stock_level"
+                                    type="number"
+                                    className="h-9 text-right"
+                                    placeholder="10"
+                                    value={formData.min_stock_level}
+                                    onChange={(e) => setFormData({ ...formData, min_stock_level: e.target.value })}
                                 />
                             </div>
                         </div>
                     </div>
 
-                    {/* Section 3: Pricing Details */}
-                    <div className="space-y-4">
-                        <h3 className="text-sm font-semibold text-purple-700 border-b pb-1 flex items-center gap-2">
+                    {/* Section 3: Pricing Details (Row 5-6, 3 columns) */}
+                    <div className="space-y-3">
+                        <h3 className="text-xs font-bold uppercase tracking-wider text-amber-600 flex items-center gap-2">
                             <Plus className="h-3 w-3" />
-                            💰 Pricing Details
+                            🟡 Pricing Details
                         </h3>
-                        <div className="grid grid-cols-3 gap-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="ptr">PTR (₹) *</Label>
+                        <div className="grid grid-cols-3 gap-x-6 gap-y-4">
+                            <div className="space-y-1.5">
+                                <Label htmlFor="ptr" className="text-xs text-gray-500">PTR (₹) *</Label>
                                 <Input
                                     id="ptr"
                                     type="number"
                                     step="0.01"
-                                    className="text-right"
+                                    className="h-9 text-right"
                                     placeholder="0.00"
                                     value={formData.ptr}
                                     onChange={(e) => setFormData({ ...formData, ptr: e.target.value })}
                                 />
                             </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="purchase_price">Purchase Price (₹) *</Label>
+                            <div className="space-y-1.5">
+                                <Label htmlFor="purchase_price" className="text-xs text-gray-500">Purchase Price (₹) *</Label>
                                 <Input
                                     id="purchase_price"
                                     type="number"
                                     step="0.01"
-                                    className="text-right"
+                                    className="h-9 text-right border-amber-200"
                                     placeholder="0.00"
                                     value={formData.purchase_price}
                                     onChange={(e) => setFormData({ ...formData, purchase_price: e.target.value })}
                                 />
                             </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="mrp">MRP (₹)</Label>
+                            <div className="space-y-1.5">
+                                <Label htmlFor="mrp" className="text-xs text-gray-500">MRP (₹)</Label>
                                 <Input
                                     id="mrp"
                                     type="number"
                                     step="0.01"
-                                    className="text-right"
+                                    className="h-9 text-right"
                                     placeholder="0.00"
                                     value={formData.mrp}
                                     onChange={(e) => setFormData({ ...formData, mrp: e.target.value })}
                                 />
                             </div>
-                            <div className="space-y-2">
+                            <div className="space-y-1.5">
                                 <div className="flex justify-between items-center">
-                                    <Label htmlFor="sale_price">Rate (Selling Price) ₹*</Label>
+                                    <Label htmlFor="sale_price" className="text-xs text-gray-500 font-bold">Rate (Selling Price) *</Label>
                                     {profit !== 0 && (
                                         <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${profit > 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
                                             ₹{profit.toFixed(2)}
@@ -380,70 +397,67 @@ export function AddMedicineDialog({ children, onAdd }: AddMedicineDialogProps) {
                                     id="sale_price"
                                     type="number"
                                     step="0.01"
-                                    className="text-right border-purple-200"
+                                    className="h-9 text-right font-bold border-purple-300 bg-purple-50/30"
                                     placeholder="0.00"
                                     value={formData.sale_price}
                                     onChange={(e) => setFormData({ ...formData, sale_price: e.target.value })}
                                 />
                             </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="gst">GST (%)</Label>
+                            <div className="space-y-1.5">
+                                <Label htmlFor="gst" className="text-xs text-gray-500">GST (%)</Label>
                                 <Input
                                     id="gst"
                                     type="number"
                                     step="0.1"
-                                    className="text-right"
+                                    className="h-9 text-right"
                                     placeholder="0"
                                     value={formData.gst}
                                     onChange={(e) => setFormData({ ...formData, gst: e.target.value })}
                                 />
                             </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="min_stock_level">Min. Stock Level</Label>
-                                <Input
-                                    id="min_stock_level"
-                                    type="number"
-                                    className="text-right"
-                                    placeholder="10"
-                                    value={formData.min_stock_level}
-                                    onChange={(e) => setFormData({ ...formData, min_stock_level: e.target.value })}
-                                />
+                            <div className="flex items-end pb-1.5">
+                                <span className="text-[10px] text-gray-400 italic">Alignment Spacer</span>
                             </div>
                         </div>
                     </div>
 
-                    {/* Section 4: Calculations (Read-only) */}
-                    <div className="bg-gray-50 p-4 rounded-lg space-y-4 border border-gray-100">
-                        <h3 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                            <Plus className="h-3 w-3" />
-                            🧾 Calculations (Read-only)
-                        </h3>
-                        <div className="grid grid-cols-3 gap-4">
-                            <div className="space-y-1">
-                                <Label className="text-[11px] text-gray-500">Taxable Amount</Label>
-                                <div className="text-sm font-medium">₹ {taxableAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
+                    {/* Section 4: Calculations (Horizontal Summary Bar) */}
+                    <div className="mt-4 p-4 rounded-xl bg-purple-50/50 border border-purple-100 flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                            <span className="text-xs font-bold uppercase tracking-wider text-purple-700">Calculations</span>
+                            <div className="h-4 w-[1px] bg-purple-200 mx-2" />
+                        </div>
+                        
+                        <div className="flex gap-8 overflow-x-auto">
+                            <div className="flex flex-col">
+                                <span className="text-[10px] text-gray-500 uppercase tracking-tight">Taxable Amount</span>
+                                <span className="text-sm font-semibold text-gray-700">₹ {taxableAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
                             </div>
-                            <div className="space-y-1">
-                                <Label className="text-[11px] text-gray-500">GST Amount ({gstPercent}%)</Label>
-                                <div className="text-sm font-medium text-blue-600">₹ {gstAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
+                            
+                            <div className="flex flex-col">
+                                <span className="text-[10px] text-gray-500 uppercase tracking-tight">GST Amount ({gstPercent}%)</span>
+                                <span className="text-sm font-semibold text-blue-600">₹ {gstAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
                             </div>
-                            <div className="space-y-1">
-                                <Label className="text-[11px] text-gray-500">Total Amount</Label>
-                                <div className="text-lg font-bold text-purple-700 italic">₹ {totalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
+                            
+                            <div className="flex flex-col items-end pr-2 border-r border-purple-200 last:border-0 last:pr-0">
+                                <span className="text-[10px] text-purple-600 font-bold uppercase tracking-tight">Total Amount</span>
+                                <span className="text-xl font-black text-purple-800 tracking-tight leading-none bg-yellow-100 px-2 py-0.5 rounded">
+                                    ₹ {totalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                                </span>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <DialogFooter>
-                    <Button variant="outline" onClick={() => setOpen(false)} disabled={isLoading}>
+                <DialogFooter className="mt-6 border-t pt-4">
+                    <Button variant="ghost" onClick={() => setOpen(false)} disabled={isLoading} className="text-gray-500">
                         Cancel
                     </Button>
-                    <Button onClick={handleSubmit} disabled={isLoading} className="bg-purple-600 hover:bg-purple-700">
+                    <Button onClick={handleSubmit} disabled={isLoading} className="bg-purple-600 hover:bg-purple-700 px-8 font-bold">
                         {isLoading ? (
                             <>
                                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                Adding Stock...
+                                Processing...
                             </>
                         ) : (
                             "Add Medicine Stock"
