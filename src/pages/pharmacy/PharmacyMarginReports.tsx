@@ -12,7 +12,8 @@ import {
   Download, 
   Filter,
   BarChart3,
-  DollarSign
+  DollarSign,
+  AlertTriangle
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { pharmacyService } from '@/services/pharmacyService';
@@ -50,7 +51,21 @@ export default function MarginReports() {
     { 
       key: 'profit', 
       header: 'Total Profit',
-      render: (row: any) => <span className="font-medium text-green-600">₹{row.profit.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+      render: (row: any) => (
+        <div className="flex items-center gap-2">
+          <span className="font-medium text-green-600">
+            ₹{Number(row.profit).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+          </span>
+          {Number(row.profit) === 0 && Number(row.purchase_price) === 0 && Number(row.quantity) > 0 && (
+            <div className="group relative">
+              <AlertTriangle className="h-4 w-4 text-amber-500 cursor-help" />
+              <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 hidden group-hover:block w-48 p-2 bg-slate-800 text-white text-[10px] rounded shadow-lg z-50">
+                Purchase price missing. Profit may be inaccurate.
+              </div>
+            </div>
+          )}
+        </div>
+      )
     },
   ];
 
@@ -110,21 +125,21 @@ export default function MarginReports() {
         <div className="grid gap-4 md:grid-cols-3">
           <StatsCard
             title="Total Margin (Range)"
-            value={`₹${data?.totalProfit?.toLocaleString('en-IN') || '0'}`}
+            value={`₹${data?.totalMargin?.toLocaleString('en-IN') || '0'}`}
             icon={<TrendingUp className="h-5 w-5" />}
             description="Net profit in selected date range"
             variant="success"
           />
           <StatsCard
             title="Today's Margin"
-            value={`₹${data?.todayProfit?.toLocaleString('en-IN') || '0'}`}
+            value={`₹${data?.todayMargin?.toLocaleString('en-IN') || '0'}`}
             icon={<DollarSign className="h-5 w-5" />}
             description="Total profit generated today"
             variant="warning"
           />
           <StatsCard
             title="Monthly Margin"
-            value={`₹${data?.monthlyProfit?.toLocaleString('en-IN') || '0'}`}
+            value={`₹${data?.monthlyMargin?.toLocaleString('en-IN') || '0'}`}
             icon={<DollarSign className="h-5 w-5" />}
             description="Total profit this month"
             variant="primary"

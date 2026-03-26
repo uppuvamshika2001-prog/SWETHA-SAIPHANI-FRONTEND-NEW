@@ -16,7 +16,9 @@ export const downloadPharmacyBillPDF = async (bill: Bill) => {
         const pageHeight = doc.internal.pageSize.getHeight();
 
         // 1. Generate filename & Check Masking Status
-        const patientName = bill.patient ? `${bill.patient.firstName} ${bill.patient.lastName}`.trim() : "Patient";
+        const patientName = bill.isWalkIn 
+            ? (bill.customerName || "Walk-in Customer") 
+            : (bill.patient ? `${bill.patient.firstName} ${bill.patient.lastName}`.trim() : "Patient");
         const { filename, isMasked } = generatePdfFilename(patientName, bill.billNumber, bill.id, true);
 
         // 2. Layout Logic (Original vs Masked)
@@ -50,70 +52,145 @@ export const downloadPharmacyBillPDF = async (bill: Bill) => {
 
         // Patient Details (Masked if needed)
         const displayPatientName = isMasked ? maskData(patientName, 'name') : patientName;
-        const phone = bill.patient?.phone || "";
-        const displayPhone = isMasked ? '******' + phone.slice(-4) : phone;
+        const phone = bill.isWalkIn ? (bill.phone || "") : (bill.patient?.phone || "");
+        const displayPhone = isMasked ? (phone ? '******' + phone.slice(-4) : "") : phone;
 
         doc.setFontSize(10);
         doc.setFont('helvetica', 'normal');
+        
+        // Left Column
         doc.text(`Invoice #: ${bill.billNumber}`, 14, startY + 8);
         doc.text(`Date: ${new Date(bill.createdAt).toLocaleDateString()}`, 14, startY + 13);
-        doc.text(`Patient: ${displayPatientName}`, 14, startY + 18);
-        doc.text(`Status: ${bill.status}`, 14, startY + 23);
+        
+        const patientIdStr = bill.patientId ? `(UHID: ${bill.patientId})` : '(Walk-in)';
+        doc.text(`Patient: ${displayPatientName} ${patientIdStr}`, 14, startY + 18);
 
-        if (!isMasked) {
-            doc.text(`Phone: ${displayPhone}`, 14, startY + 28);
+        let ageGenderYOffset = startY + 23;
+        if (!bill.isWalkIn && bill.patient) {
+            const ageGender = [];
+            if ((bill.patient as any).dateOfBirth) {
+                const age = new Date().getFullYear() - new Date((bill.patient as any).dateOfBirth).getFullYear();
+                ageGender.push(`${age} Y`);
+            } else if ((bill.patient as any).age) {
+                ageGender.push(`${(bill.patient as any).age} Y`);
+            }
+            if ((bill.patient as any).gender) {
+                ageGender.push((bill.patient as any).gender);
+            }
+            if (ageGender.length > 0) {
+                doc.text(`Age/Gender: ${ageGender.join(' / ')}`, 14, ageGenderYOffset);
+                ageGenderYOffset += 5;
+            }
         }
 
-        // 7. Items Table
-        const tableData = bill.items.map((item) => [
-            item.description,
-            item.quantity,
-            `Rs. ${Number(item.unitPrice).toFixed(2)}`,
-            // Mocking GST logic if not available in item, assuming simple case or pre-calculated
-            // The item structure in Bill interface has 'total' but might miss individual tax breakdown if not stored
-            // We'll calculate roughly or use what's available. 
-            // In PharmacyBilling.tsx, GST% is stored. Let's start with basic fields.
-            // For now, let's keep it consistent with what PharmacyBilling was doing:
-            // It was using local state. History items might be simpler.
-            // Let's assume item structure from Bill interface: id, description, quantity, unitPrice, total.
-            // We might lack GST% per item in the Bill interface from billingService.ts. 
-            // If so, we'll omit GST column or show simplified view.
-            // Actually, PharmacyBilling sends: description, quantity, unitPrice (total/qty).
-            // So we might not have GST% stored per item in backend unless we update schema.
-            // Let's stick to valid properties of BillItem:
-            // "unitPrice", "quantity", "total". 
-            // We will omit GST column for history items to be safe, or just calculate if total > unit*qty.
-            `${Number(item.total).toFixed(2)}`
-        ]);
+        if (!isMasked && displayPhone) {
+            doc.text(`Phone: ${displayPhone}`, 14, ageGenderYOffset);
+        }
+
+        console.log("Pharmacy Bill PDF Data:", {
+            subtotal: bill.subtotal,
+            gstAmount: bill.gstAmount,
+            grandTotal: bill.grandTotal,
+            itemsCount: bill.items?.length
+        });
+
+        // Right Column
+        const rightColX = pageWidth - 60;
+        doc.text(`Status: ${bill.status}`, rightColX, startY + 8);
+        doc.text(`Mode: ${(bill as any).paymentMode || 'CASH'}`, rightColX, startY + 13);
+        doc.text(`Billed By: ${(bill as any).createdBy || "Pharmacist"}`, rightColX, startY + 18);
+
+        const computedTotalCGST = Number(bill.gstAmount || 0) / 2;
+        const computedTotalSGST = Number(bill.gstAmount || 0) / 2;
+
+        const tableData = bill.items.map((item: any) => {
+            const expiryStr = item.expiryDate 
+                ? new Date(item.expiryDate).toLocaleDateString('en-GB', { month: '2-digit', year: '2-digit' }) 
+                : '-';
+
+            return [
+                item.description || '-',
+                item.hsnCode || '-',
+                item.batchNumber || '-',
+                expiryStr,
+                item.quantity.toString(),
+                Number(item.unitPrice).toFixed(2),
+                item.discount ? `${item.discount}%` : '-',
+                item.gst ? `${item.gst}%` : '-',
+                Number(item.totalAmount || item.total).toFixed(2)
+            ];
+        });
 
         const tableStyles = getTransparentTableStyles();
 
         // --- ITEMS TABLE ---
-        // If details printed at startY + 28, then table should start below that
         const tableY = startY + 40;
 
         autoTable(doc, {
             startY: tableY,
-            head: [['Medicine', 'Qty', 'Unit Price', 'Total']],
+            head: [['Medicine', 'HSN', 'Batch', 'Expiry', 'Qty', 'Unit Price', 'Disc.', 'GST%', 'Total (Rs)']],
             body: tableData,
-            ...tableStyles
+            ...tableStyles,
+            styles: { fontSize: 8, cellPadding: 2 },
+            headStyles: { fillColor: [240, 240, 240], textColor: 20 },
+            columnStyles: {
+                0: { cellWidth: 45 },
+                8: { halign: 'right' }
+            }
         });
 
         const finalY = (doc as any).lastAutoTable.finalY + 10;
-        const labelX = pageWidth - 80;
-        const valueX = pageWidth - 20;
+        const col1X = 14;
+        const val1X = 80;
+        const labelX = pageWidth - 70;
+        const valueX = pageWidth - 14;
 
-        doc.text("Taxable Amount:", labelX, finalY, { align: "right" });
-        doc.text(`Rs. ${(bill.grandTotal - (bill.gstAmount || 0)).toFixed(2)}`, valueX, finalY, { align: "right" });
+        // --- TAX BREAKDOWN (Left Side) ---
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'bold');
+        doc.text("Tax Summary:", col1X, finalY);
+        doc.setFont('helvetica', 'normal');
+        doc.text("CGST:", col1X, finalY + 5);
+        doc.text(`Rs. ${computedTotalCGST.toFixed(2)}`, val1X, finalY + 5, { align: "right" });
+        doc.text("SGST:", col1X, finalY + 10);
+        doc.text(`Rs. ${computedTotalSGST.toFixed(2)}`, val1X, finalY + 10, { align: "right" });
+        doc.text("Total Tax Amount:", col1X, finalY + 15);
+        doc.text(`Rs. ${(computedTotalCGST + computedTotalSGST).toFixed(2)}`, val1X, finalY + 15, { align: "right" });
 
-        doc.text("Total GST:", labelX, finalY + 7, { align: "right" });
-        doc.text(`Rs. ${Number(bill.gstAmount || 0).toFixed(2)}`, valueX, finalY + 7, { align: "right" });
+        // --- BILL TOTALS (Right Side) ---
+        const totalDiscountAmt = Number(bill.discount || 0);
+        const subtotalBase = Number(bill.subtotal || 0);
+        
+        doc.text("Sub Total:", labelX, finalY, { align: "left" });
+        doc.text(`Rs. ${subtotalBase.toFixed(2)}`, valueX, finalY, { align: "right" });
+
+        if (totalDiscountAmt > 0) {
+            doc.text("Discount:", labelX, finalY + 5, { align: "left" });
+            doc.text(`- Rs. ${totalDiscountAmt.toFixed(2)}`, valueX, finalY + 5, { align: "right" });
+        }
+
+        doc.text("Total GST:", labelX, finalY + 10, { align: "left" });
+        doc.text(`Rs. ${(computedTotalCGST + computedTotalSGST).toFixed(2)}`, valueX, finalY + 10, { align: "right" });
 
         doc.setFont('helvetica', 'bold');
-        doc.text("Grand Total:", labelX, finalY + 14, { align: "right" });
-        doc.text(`Rs. ${Number(bill.grandTotal).toFixed(2)}`, valueX, finalY + 14, { align: "right" });
+        doc.setFontSize(11);
+        doc.text("Grand Total:", labelX, finalY + 16, { align: "left" });
+        doc.text(`Rs. ${Number(bill.grandTotal).toFixed(2)}`, valueX, finalY + 16, { align: "right" });
 
-        // Footer is handled by background image if not masked
+        // --- TERMS & CONDITIONS & SIGNATURE ---
+        const footerY = Math.max(finalY + 30, pageHeight - 50);
+        doc.setFontSize(8);
+        doc.setFont('helvetica', 'bold');
+        doc.text("Terms & Conditions:", 14, footerY);
+        doc.setFont('helvetica', 'normal');
+        doc.text("1. Goods once sold will not be taken back or exchanged.", 14, footerY + 5);
+        doc.text("2. Schedule H / H1 drugs are dispensed only against a valid medical prescription.", 14, footerY + 10);
+        doc.text("3. Subject to local jurisdiction only. This is a computer generated invoice.", 14, footerY + 15);
+        doc.text("4. E. & O.E (Errors and Omissions Excepted).", 14, footerY + 20);
+
+        doc.setFont('helvetica', 'bold');
+        doc.text("Authorized Signatory", pageWidth - 14, footerY + 20, { align: "right" });
+        doc.line(pageWidth - 55, footerY + 16, pageWidth - 14, footerY + 16);
 
         doc.save(filename);
         toast.success("Bill downloaded successfully");

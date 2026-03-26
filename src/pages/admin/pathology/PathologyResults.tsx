@@ -105,7 +105,8 @@ export default function PathologyResults() {
     };
 
     const filteredResults = results.filter(o => {
-        if (o.status !== 'completed') return false;
+        // Handle case mismatch: backend sends 'COMPLETED', frontend checks for 'completed'
+        if ((o.status || '').toLowerCase() !== 'completed') return false;
 
         if (selectedDate) {
             if (!o.completed_at) return false;

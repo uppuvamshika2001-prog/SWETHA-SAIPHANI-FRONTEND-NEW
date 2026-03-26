@@ -108,6 +108,7 @@ const LabPendingTests = lazy(() => import("./pages/lab/LabPendingTests"));
 const LabSampleCollection = lazy(() => import("./pages/lab/LabSampleCollection"));
 const LabResultsEntry = lazy(() => import("./pages/lab/LabResultsEntry"));
 const LabTestCatalog = lazy(() => import("./pages/lab/LabTestCatalog"));
+const LabBilling = lazy(() => import("./pages/lab/LabBilling"));
 const LabSettings = lazy(() => import("./pages/lab/LabSettings"));
 
 // Patient
@@ -245,6 +246,7 @@ const App = () => {
                         <Route path="/lab/sample-collection" element={<LabSampleCollection />} />
                         <Route path="/lab/results-entry" element={<ErrorBoundary><LabResultsEntry /></ErrorBoundary>} />
                         <Route path="/lab/test-catalog" element={<LabTestCatalog />} />
+                        <Route path="/lab/billing" element={<LabBilling />} />
                         <Route path="/lab/profile" element={<LabSettings />} />
                       </Route>
 

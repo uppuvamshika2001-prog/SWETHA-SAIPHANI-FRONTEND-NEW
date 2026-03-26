@@ -25,6 +25,7 @@ import { AddMedicineDialog } from '@/components/pharmacy/AddMedicineDialog';
 import { pharmacyService } from '@/services/pharmacyService';
 import { Medicine } from '@/types';
 import { StatsCardSkeleton } from '@/components/ui/skeleton';
+import { ExpiryDashboardCard } from '@/components/dashboard/ExpiryDashboardCard';
 
 export default function PharmacyDashboard() {
   const navigate = useNavigate();
@@ -376,38 +377,7 @@ export default function PharmacyDashboard() {
           </Card>
         </div>
 
-        {/* Expiry Alerts - Mock for now as API might not filter expiry yet */}
-        <Card className="border-destructive/30 bg-destructive/5">
-          <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-destructive" />
-              Expiring Soon
-            </CardTitle>
-            <CardDescription>Medicines expiring within 30 days</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-              <div className="p-3 rounded-lg bg-card/50 border border-destructive/20">
-                <p className="font-medium">Amoxicillin 500mg</p>
-                <p className="text-sm text-muted-foreground">Batch: AMX-2024-001</p>
-                <p className="text-sm text-destructive mt-1">Expires: Feb 15, 2026</p>
-                <p className="text-xs text-muted-foreground">Stock: 45 units</p>
-              </div>
-              <div className="p-3 rounded-lg bg-card/50 border border-warning/20">
-                <p className="font-medium">Paracetamol 650mg</p>
-                <p className="text-sm text-muted-foreground">Batch: PCM-2024-023</p>
-                <p className="text-sm text-warning mt-1">Expires: Feb 28, 2026</p>
-                <p className="text-xs text-muted-foreground">Stock: 120 units</p>
-              </div>
-              <div className="p-3 rounded-lg bg-card/50 border border-warning/20">
-                <p className="font-medium">Ibuprofen 400mg</p>
-                <p className="text-sm text-muted-foreground">Batch: IBU-2024-015</p>
-                <p className="text-sm text-warning mt-1">Expires: Mar 10, 2026</p>
-                <p className="text-xs text-muted-foreground">Stock: 80 units</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <ExpiryDashboardCard medicines={medicines} />
       </div>
     </DashboardLayout>
   );

@@ -33,24 +33,30 @@ export const pharmacyService = {
 
     async createMedicine(medicine: {
         name: string;
-        genericName?: string;
+        generic_name?: string;
         manufacturer?: string;
-        categoryId?: number;
+        hsn_code?: string;
+        category_id?: number;
         unit?: string;
-        distributorName: string;
-        batchNumber: string;
-        manufacturingDate?: string;
-        expiryDate: string;
-        purchasePrice: number;
-        salePrice: number;
+        distributor_name: string;
+        batch_number: string;
+        manufacturing_date?: string;
+        expiry_date: string;
+        purchase_price: number;
+        selling_price: number;
         mrp?: number;
-        gst?: number;
-        stockQuantity: number;
-        reorderLevel: number;
-        invoiceNumber?: string;
-        amountPaid?: number;
-        paymentDate?: string;
-        paymentMethod?: string;
+        gst_percent?: number;
+        stock_quantity: number;
+        free_quantity?: number;
+        ptr?: number;
+        taxable_amount?: number;
+        gst_amount?: number;
+        total_amount?: number;
+        reorder_level: number;
+        invoice_number?: string;
+        amount_paid?: number;
+        payment_date?: string;
+        payment_method?: string;
     }): Promise<Medicine> {
         // Invalidate cache after creation
         apiCache.invalidate('/pharmacy/medicines');
@@ -71,15 +77,39 @@ export const pharmacyService = {
         return api.delete(`/pharmacy/medicines/${id}`);
     },
 
-    async getBills(): Promise<PharmacyOrder[]> {
-        const cacheKey = getCacheKey('/pharmacy/bills');
-        const cached = apiCache.get<PharmacyOrder[]>(cacheKey);
-        if (cached) return cached;
+    async getBills(params?: any): Promise<any> {
+        const queryParams = new URLSearchParams();
+        if (params) {
+            Object.entries(params).forEach(([key, value]) => {
+                if (value !== undefined && value !== null && value !== '') {
+                    queryParams.append(key, String(value));
+                }
+            });
+        }
+        // Ensure bill_type is PHARMACY if not specified
+        if (!params?.bill_type) {
+            queryParams.append('bill_type', 'PHARMACY');
+        }
 
-        const response: any = await api.get('/pharmacy/bills');
-        const result = Array.isArray(response) ? response : (response.items || response.data || []);
-        apiCache.set(cacheKey, result, CACHE_TTL.BILLS);
-        return result;
+        const endpoint = `/pharmacy/bills${queryParams.toString() ? '?' + queryParams.toString() : ''}`;
+        const response: any = await api.get(endpoint);
+        
+        // Legacy compatibility: If no params provided, return just the items array
+        // Use pagination object if it contains items
+        if (response && response.items && Array.isArray(response.items)) {
+            if (!params || Object.keys(params).length === 0) {
+                return response.items;
+            }
+            return response;
+        }
+        
+        return Array.isArray(response) ? response : (response.items || response.data || []);
+    },
+
+    async createBill(data: any): Promise<any> {
+        // Invalidate cache after creation
+        apiCache.invalidate('/pharmacy/bills');
+        return api.post('/pharmacy/bills', data);
     },
 
     async getMedicalRecordById(id: string): Promise<any> {
@@ -101,8 +131,8 @@ export const pharmacyService = {
         return Array.isArray(response) ? response : (response.items || response.data || []);
     },
 
-    async getDispensedHistory(): Promise<any[]> {
-        const response: any = await api.get('/pharmacy/dispensed-history');
+    async getDispensedHistory(params?: { startDate?: string; endDate?: string }): Promise<any[]> {
+        const response: any = await api.get('/pharmacy/dispensed-history', { params });
         return Array.isArray(response) ? response : (response.items || response.data || []);
     },
 
@@ -116,31 +146,50 @@ export const pharmacyService = {
     },
 
     async processReturn(data: any) {
-        const response: any = await api.post('/pharmacy/returns', data);
-        return response.data;
+        return api.post('/pharmacy/returns', data);
     },
 
     async getReturns(params: any) {
-        const response: any = await api.get('/pharmacy/returns', { params });
-        return response.data;
+        return api.get('/pharmacy/returns', { params });
     },
 
     async processStockReturn(data: any) {
-        const response: any = await api.post('/pharmacy/stock-returns', data);
-        return response.data;
+        return api.post('/pharmacy/stock-returns', data);
     },
 
     async getStockReturns(params: any) {
-        const response: any = await api.get('/pharmacy/stock-returns', { params });
-        return response.data;
+        return api.get('/pharmacy/stock-returns', { params });
     },
     
     async getMarginReport(params: { startDate?: string; endDate?: string }): Promise<any> {
         return api.get('/pharmacy/margin-reports', { params });
     },
 
-    async createPurchase(data: any): Promise<any> {
-        return api.post('/pharmacy/purchases', data);
+    async createPurchase(data: any, file?: File): Promise<any> {
+        const formData = new FormData();
+        formData.append('distributor_name', data.distributor_name);
+        formData.append('invoice_number', data.invoice_number);
+        if (data.purchase_date) formData.append('purchase_date', data.purchase_date);
+        formData.append('items', JSON.stringify(data.items));
+        if (file) formData.append('invoice', file);
+        return api.post('/pharmacy/purchases', formData, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+        });
+    },
+
+    async updatePurchase(id: string, data: any, file?: File): Promise<any> {
+        const formData = new FormData();
+        if (data.distributor_name) formData.append('distributor_name', data.distributor_name);
+        if (data.invoice_number) formData.append('invoice_number', data.invoice_number);
+        if (data.purchase_date) formData.append('purchase_date', data.purchase_date);
+        if (file) formData.append('invoice', file);
+        return api.put(`/pharmacy/purchases/${id}`, formData, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+        });
+    },
+
+    async deletePurchase(id: string): Promise<any> {
+        return api.delete(`/pharmacy/purchases/${id}`);
     },
 
     async recordPayment(purchaseId: string, data: any): Promise<any> {
@@ -162,5 +211,10 @@ export const pharmacyService = {
 
     async deleteCategory(id: string): Promise<any> {
         return api.delete(`/pharmacy/categories/${id}`);
+    },
+
+    async updateBatch(id: string, data: any): Promise<any> {
+        apiCache.invalidate('/pharmacy/medicines');
+        return api.patch(`/pharmacy/batches/${id}`, data);
     }
 };

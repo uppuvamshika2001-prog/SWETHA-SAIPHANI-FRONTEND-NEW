@@ -95,13 +95,13 @@ export function MedicineDetailsDialog({ children, medicine, onEdit, onDelete }: 
                             <span className="text-xs text-muted-foreground flex items-center gap-1">
                                 <Package className="h-3 w-3" /> Batch Number
                             </span>
-                            <p className="font-mono font-medium">{medicine.batch_number}</p>
+                            <p className="font-mono font-medium">{medicine.batch?.batch_number || medicine.batch_number || '-'}</p>
                         </div>
                         <div className="space-y-1 p-3 bg-muted/40 rounded-lg">
                             <span className="text-xs text-muted-foreground flex items-center gap-1">
                                 <Calendar className="h-3 w-3" /> Expiry Date
                             </span>
-                            <p className="font-medium">{new Date(medicine.expiry_date).toLocaleDateString()}</p>
+                            <p className="font-medium">{medicine.batch?.expiry_date || medicine.expiry_date ? new Date(medicine.batch?.expiry_date || medicine.expiry_date).toLocaleDateString() : '-'}</p>
                         </div>
                     </div>
 

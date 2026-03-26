@@ -11,6 +11,7 @@ import { pharmacyService } from "@/services/pharmacyService";
 import { Medicine } from "@/types";
 import { toast } from "sonner";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { normalizeResponse } from "@/utils/api-helpers";
 
 const AdminPharmacy = () => {
     const [searchTerm, setSearchTerm] = useState("");
@@ -23,7 +24,8 @@ const AdminPharmacy = () => {
             try {
                 setLoading(true);
                 const data = await pharmacyService.getMedicines();
-                setMedicineList(data || []);
+                const items = normalizeResponse(data);
+                setMedicineList(items || []);
             } catch (error) {
                 console.error("Failed to fetch pharmacy stock:", error);
                 toast.error("Failed to load pharmacy stock.");
@@ -39,7 +41,8 @@ const AdminPharmacy = () => {
         try {
             setLoading(true);
             const data = await pharmacyService.getMedicines();
-            setMedicineList(data || []);
+            const items = normalizeResponse(data);
+            setMedicineList(items || []);
         } catch (error) {
             console.error("Failed to fetch pharmacy stock:", error);
             toast.error("Failed to load pharmacy stock.");
@@ -204,7 +207,24 @@ const AdminPharmacy = () => {
                                                 </Badge>
                                             </TableCell>
                                             <TableCell className="text-sm">
-                                                {med.expiry_date ? new Date(med.expiry_date).toLocaleDateString() : 'N/A'}
+                                                {(() => {
+                                                    const expiryDate = med.batch?.expiry_date || med.expiry_date;
+                                                    if (!expiryDate) return <span className="text-muted-foreground">N/A</span>;
+                                                    
+                                                    const now = new Date();
+                                                    const expDate = new Date(expiryDate);
+                                                    const daysToExpiry = Math.ceil((expDate.getTime() - now.getTime()) / (1000 * 3600 * 24));
+                                                    
+                                                    if (expDate < now) {
+                                                        return <Badge variant="outline" className="bg-slate-800 text-slate-100 border-none">Expired</Badge>;
+                                                    } else if (daysToExpiry <= 30) {
+                                                        return <Badge variant="outline" className="bg-red-100 text-red-800 border-none">Expiring Soon</Badge>;
+                                                    } else if (daysToExpiry <= 90) {
+                                                        return <Badge variant="outline" className="bg-yellow-100 text-yellow-800 border-none">Expiring</Badge>;
+                                                    }
+                                                    
+                                                    return new Date(expiryDate).toLocaleDateString();
+                                                })()}
                                             </TableCell>
                                             <TableCell className="text-right">{formatCurrency(med.unit_price)}</TableCell>
                                             <TableCell className="text-right">

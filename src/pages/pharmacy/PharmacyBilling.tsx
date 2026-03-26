@@ -23,17 +23,20 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
 
 interface BillItem {
     id: string;
-    medicineId: string;
+    medicine_id: string;
     name: string;
     quantity: number;
-    salePrice: number;
-    gst: number;
+    selling_price: number;
+    gst_percent: number;
     discount: number;
-    batchNumber: string;
-    availableStock: number;
+    batch_number: string;
+    expiry_date?: string;
+    hsn_code?: string;
+    available_stock: number;
     total: number;
 }
 
@@ -42,6 +45,9 @@ export default function PharmacyBilling() {
 
     // Form State
     const [selectedPatient, setSelectedPatient] = useState<any>(null);
+    const [isWalkIn, setIsWalkIn] = useState(false);
+    const [customerName, setCustomerName] = useState('');
+    const [phone, setPhone] = useState('');
     const [billItems, setBillItems] = useState<BillItem[]>([]);
     const [isSaving, setIsSaving] = useState(false);
 
@@ -56,10 +62,10 @@ export default function PharmacyBilling() {
         let totalDiscount = 0;
 
         billItems.forEach(item => {
-            const baseAmount = item.quantity * item.salePrice;
+            const baseAmount = item.quantity * item.selling_price;
             const itemDiscount = baseAmount * (item.discount / 100);
             const taxableAmount = baseAmount - itemDiscount;
-            const itemGst = taxableAmount * (item.gst / 100);
+            const itemGst = taxableAmount * (item.gst_percent / 100);
             
             subtotal += baseAmount;
             totalDiscount += itemDiscount;
@@ -83,15 +89,14 @@ export default function PharmacyBilling() {
     const fetchBillHistory = async () => {
         setLoadingHistory(true);
         try {
-            const result = await billingService.getBills({ limit: 50 });
-            if (result && result.items) {
-                const pharmacyBills = result.items.filter(bill =>
-                    bill.notes?.toLowerCase().includes('pharmacy')
-                );
-                setHistoryBills(pharmacyBills.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
-            }
+            // Correctly use pharmacyService to fetch pharmacy-restricted bills
+            const result = await (pharmacyService as any).getBills({ limit: 50 });
+            // Handle both array (legacy) and paginated response formats
+            const items = Array.isArray(result) ? result : (result.items || []);
+            setHistoryBills(items.sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
         } catch (error) {
-            console.error("Failed to fetch bill history", error);
+            console.error("Failed to fetch pharmacy bill history", error);
+            toast({ title: "Error", description: "Could not load billing history", variant: "destructive" });
         } finally {
             setLoadingHistory(false);
         }
@@ -124,7 +129,7 @@ export default function PharmacyBilling() {
         }
 
         // Check if already in bill
-        const existing = billItems.find(item => item.medicineId === medicine.id);
+        const existing = billItems.find(item => item.medicine_id === medicine.id);
         if (existing) {
             updateItem(existing.id, 'quantity', existing.quantity + 1);
             return;
@@ -132,14 +137,16 @@ export default function PharmacyBilling() {
 
         const newItem: BillItem = {
             id: Math.random().toString(36).substr(2, 9),
-            medicineId: medicine.id,
+            medicine_id: medicine.id,
             name: medicine.name,
             quantity: 1,
-            salePrice: medicine.unit_price || 0,
-            gst: medicine.gst || 0, // Fallback to 0 if not provided
+            selling_price: medicine.unit_price || 0,
+            gst_percent: medicine.gst_percent || 0,
             discount: 0,
-            batchNumber: medicine.batch_number || '-',
-            availableStock: medicine.stock_quantity,
+            batch_number: medicine.batch_number || '-',
+            expiry_date: medicine.expiry_date || undefined,
+            hsn_code: medicine.hsn_code || undefined,
+            available_stock: medicine.stock_quantity,
             total: medicine.unit_price || 0
         };
 
@@ -155,13 +162,13 @@ export default function PharmacyBilling() {
             // Validation for stock
             if (field === 'quantity') {
                 const qty = parseInt(value) || 0;
-                if (qty > item.availableStock) {
+                if (qty > item.available_stock) {
                     toast({
                         title: "Insufficient Stock",
-                        description: `Only ${item.availableStock} available for ${item.name}`,
+                        description: `Only ${item.available_stock} available for ${item.name}`,
                         variant: "destructive"
                     });
-                    updated.quantity = item.availableStock;
+                    updated.quantity = item.available_stock;
                 } else if (qty < 1) {
                     updated.quantity = 1;
                 } else {
@@ -170,10 +177,10 @@ export default function PharmacyBilling() {
             }
 
             // Recalculate item total
-            const baseAmount = updated.quantity * updated.salePrice;
+            const baseAmount = updated.quantity * updated.selling_price;
             const discountAmount = baseAmount * (updated.discount / 100);
             const taxableAmount = baseAmount - discountAmount;
-            const gstAmount = taxableAmount * (updated.gst / 100);
+            const gstAmount = taxableAmount * (updated.gst_percent / 100);
             updated.total = taxableAmount + gstAmount;
 
             return updated;
@@ -185,8 +192,8 @@ export default function PharmacyBilling() {
     };
 
     const handleSaveBill = async () => {
-        if (!selectedPatient) {
-            toast({ title: "Select Patient", description: "Please search and select a patient first.", variant: "destructive" });
+        if (!isWalkIn && !selectedPatient) {
+            toast({ title: "Select Patient", description: "Please search and select a patient, or use Walk-in mode.", variant: "destructive" });
             return;
         }
         if (billItems.length === 0) {
@@ -196,27 +203,40 @@ export default function PharmacyBilling() {
 
         setIsSaving(true);
         try {
+            const totalBillGstPercent = billItems.length > 0 ? (billItems.reduce((acc, item) => acc + item.gst_percent, 0) / billItems.length) : 0;
+            const totalBillDiscount = billItems.reduce((acc, item) => acc + (item.quantity * item.selling_price * (item.discount / 100)), 0);
+
             const payload = {
-                patientId: selectedPatient.uhid,
+                patient_id: isWalkIn ? undefined : selectedPatient?.uhid,
+                customer_name: isWalkIn && customerName ? customerName : undefined,
+                phone: isWalkIn && phone ? phone : undefined,
+                is_walk_in: isWalkIn,
                 items: billItems.map(item => ({
-                    medicineId: item.medicineId,
+                    medicine_id: item.medicine_id,
                     description: item.name,
                     quantity: item.quantity,
-                    unitPrice: item.salePrice
+                    unit_price: item.selling_price,
+                    batch_number: item.batch_number,
+                    expiry_date: item.expiry_date,
+                    hsn_code: item.hsn_code,
+                    gst_percent: item.gst_percent || 0,
+                    discount: item.discount || 0
                 })),
-                gstPercent: 0, // Individual GST already included in item prices on backend if needed, or we send 0
-                discount: 0,
+                gst_percent: totalBillGstPercent, 
+                discount: totalBillDiscount,
                 status: 'PAID',
                 notes: 'Pharmacy Bill'
             };
 
-            const savedBill = await billingService.createBill(payload);
+            const savedBill = await pharmacyService.createBill(payload);
             await downloadPharmacyBillPDF(savedBill);
             toast({ title: "Success", description: "Bill generated and stock updated successfully." });
             
             // Reset
             setBillItems([]);
             setSelectedPatient(null);
+            setCustomerName('');
+            setPhone('');
             fetchBillHistory();
         } catch (error: any) {
             toast({ 
@@ -261,24 +281,63 @@ export default function PharmacyBilling() {
                                 <Card className="glass">
                                     <CardContent className="pt-6">
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                            <div className="space-y-2">
-                                                <Label className="flex items-center gap-2">
-                                                    <User className="h-4 w-4 text-primary" />
-                                                    Patient Search (Name/UHID/Phone)
-                                                </Label>
-                                                <SearchableSelect
-                                                    onSearch={searchPatients}
-                                                    onSelect={setSelectedPatient}
-                                                    getDisplayValue={(p) => p ? `${p.full_name} (${p.uhid})` : "Search Patient..."}
-                                                    renderItem={(p) => (
-                                                        <div className="flex flex-col">
-                                                            <span>{p.full_name}</span>
-                                                            <span className="text-xs text-muted-foreground">{p.uhid} | {p.phone}</span>
+                                            <div className="space-y-4">
+                                                <div className="flex items-center justify-between">
+                                                    <Label className="flex items-center gap-2">
+                                                        <User className="h-4 w-4 text-primary" />
+                                                        Patient Details
+                                                    </Label>
+                                                    <div className="flex items-center space-x-2">
+                                                        <Switch
+                                                            id="walk-in-mode"
+                                                            checked={isWalkIn}
+                                                            onCheckedChange={(checked) => {
+                                                                setIsWalkIn(checked);
+                                                                if (checked) setSelectedPatient(null);
+                                                            }}
+                                                        />
+                                                        <Label htmlFor="walk-in-mode" className="text-sm font-normal cursor-pointer text-muted-foreground hover:text-foreground">
+                                                            Walk-in Customer
+                                                        </Label>
+                                                    </div>
+                                                </div>
+
+                                                {!isWalkIn ? (
+                                                    <div className="space-y-2">
+                                                        <SearchableSelect
+                                                            onSearch={searchPatients}
+                                                            onSelect={setSelectedPatient}
+                                                            getDisplayValue={(p) => p ? `${p.full_name} (${p.uhid})` : "Search Patient..."}
+                                                            renderItem={(p) => (
+                                                                <div className="flex flex-col">
+                                                                    <span>{p.full_name}</span>
+                                                                    <span className="text-xs text-muted-foreground">{p.uhid} | {p.phone}</span>
+                                                                </div>
+                                                            )}
+                                                            value={selectedPatient}
+                                                            placeholder="Search Patient..."
+                                                        />
+                                                    </div>
+                                                ) : (
+                                                    <div className="grid grid-cols-2 gap-4">
+                                                        <div className="space-y-2">
+                                                            <Input 
+                                                                placeholder="Customer Name (Optional)" 
+                                                                value={customerName} 
+                                                                onChange={e => setCustomerName(e.target.value)} 
+                                                                className="bg-background"
+                                                            />
                                                         </div>
-                                                    )}
-                                                    value={selectedPatient}
-                                                    placeholder="Search Patient..."
-                                                />
+                                                        <div className="space-y-2">
+                                                            <Input 
+                                                                placeholder="Phone Number (Optional)" 
+                                                                value={phone} 
+                                                                onChange={e => setPhone(e.target.value)} 
+                                                                className="bg-background"
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                )}
                                             </div>
                                             <div className="space-y-2">
                                                 <Label className="flex items-center gap-2">
@@ -364,7 +423,7 @@ export default function PharmacyBilling() {
                                                     billItems.map(item => (
                                                         <TableRow key={item.id} className="hover:bg-primary/5 transition-colors">
                                                             <TableCell className="pl-6 font-medium">{item.name}</TableCell>
-                                                            <TableCell><span className="text-xs font-mono">{item.batchNumber}</span></TableCell>
+                                                            <TableCell><span className="text-xs font-mono">{item.batch_number}</span></TableCell>
                                                             <TableCell>
                                                                 <div className="space-y-1">
                                                                     <Input
@@ -374,11 +433,11 @@ export default function PharmacyBilling() {
                                                                         className="h-8 text-center"
                                                                     />
                                                                     <p className="text-[10px] text-center text-muted-foreground">
-                                                                        Max: {item.availableStock}
+                                                                        Max: {item.available_stock}
                                                                     </p>
                                                                 </div>
                                                             </TableCell>
-                                                            <TableCell className="text-right">₹{item.salePrice.toFixed(2)}</TableCell>
+                                                            <TableCell className="text-right">₹{item.selling_price.toFixed(2)}</TableCell>
                                                             <TableCell className="text-right">
                                                                 <Input
                                                                     type="number"
@@ -390,8 +449,8 @@ export default function PharmacyBilling() {
                                                             <TableCell className="text-right">
                                                                 <Input
                                                                     type="number"
-                                                                    value={item.gst}
-                                                                    onChange={(e) => updateItem(item.id, 'gst', e.target.value)}
+                                                                    value={item.gst_percent}
+                                                                    onChange={(e) => updateItem(item.id, 'gst_percent', e.target.value)}
                                                                     className="h-8 text-right"
                                                                 />
                                                             </TableCell>
@@ -509,13 +568,19 @@ export default function PharmacyBilling() {
                                             ) : (
                                                 historyBills.map((bill) => (
                                                     <TableRow key={bill.id} className="hover:bg-primary/5 transition-colors">
-                                                        <TableCell>{new Date(bill.createdAt).toLocaleDateString()}</TableCell>
-                                                        <TableCell className="font-mono text-xs">{bill.billNumber}</TableCell>
+                                                        <TableCell>{new Date(bill.created_at || bill.createdAt).toLocaleDateString()}</TableCell>
+                                                        <TableCell className="font-mono text-xs">{bill.bill_number || bill.billNumber}</TableCell>
                                                         <TableCell>
-                                                            <div className="font-medium">{bill.patient?.firstName} {bill.patient?.lastName}</div>
-                                                            <div className="text-xs text-muted-foreground">{bill.patient?.phone}</div>
+                                                            <div className="font-medium">
+                                                                {bill.is_walk_in || bill.isWalkIn 
+                                                                    ? (bill.customer_name || bill.customerName || "Walk-in Customer") 
+                                                                    : `${bill.patient?.firstName || ''} ${bill.patient?.lastName || ''}`.trim() || 'N/A'}
+                                                            </div>
+                                                            <div className="text-xs text-muted-foreground">
+                                                                {(bill.is_walk_in || bill.isWalkIn) ? bill.phone : bill.patient?.phone}
+                                                            </div>
                                                         </TableCell>
-                                                        <TableCell className="text-right font-bold">₹{Number(bill.grandTotal).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</TableCell>
+                                                        <TableCell className="text-right font-bold">₹{Number(bill.grand_total || bill.grandTotal || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</TableCell>
                                                         <TableCell className="text-center">
                                                             <Badge variant={bill.status === 'PAID' ? 'secondary' : 'destructive'}>
                                                                 {bill.status}

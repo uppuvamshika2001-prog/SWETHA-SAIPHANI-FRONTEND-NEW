@@ -9,6 +9,7 @@ import { useState, useEffect } from "react";
 import { formatCurrency } from "@/utils/format";
 import { AddMedicineDialog } from "@/components/pharmacy/AddMedicineDialog";
 import { EditMedicineDialog } from "@/components/pharmacy/EditMedicineDialog";
+import { EditStockDialog } from "@/components/pharmacy/EditStockDialog";
 import { MedicineDetailsDialog } from "@/components/pharmacy/MedicineDetailsDialog";
 import { toast } from "sonner";
 import { pharmacyService } from "@/services/pharmacyService";
@@ -28,7 +29,7 @@ const PharmacyInventory = () => {
     const fetchMedicines = async () => {
         try {
             setLoading(true);
-            const data = await pharmacyService.getMedicines();
+            const data = await pharmacyService.getMedicines({ allBatches: true });
             console.log("API Response (Medicines):", data);
             const items = normalizeResponse(data);
             setMedicineList(items);
@@ -41,8 +42,7 @@ const PharmacyInventory = () => {
     };
 
     const filteredMedicines = medicineList.filter(med => {
-        // Handle both snake_case (frontend) and camelCase (backend) field names
-        const genericName = med.generic_name || (med as any).genericName || '';
+        const genericName = med.generic_name || '';
         const category = typeof med.category === 'object' ? med.category.name : (med.category || '');
         const name = med.name || '';
 
@@ -73,7 +73,10 @@ const PharmacyInventory = () => {
     const handleDeleteMedicine = async (id: string) => {
         try {
             await pharmacyService.deleteMedicine(id);
-            setMedicineList(prev => prev.filter(med => med.id !== id));
+            // Remove all rows that belong to this medicine
+            setMedicineList(prev => prev.filter(med => 
+                med.id !== id && (med as any).medicineId !== id
+            ));
             toast.success("Medicine deleted successfully");
         } catch (error) {
             console.error("Failed to delete medicine", error);
@@ -82,9 +85,16 @@ const PharmacyInventory = () => {
     };
 
     const [editingMedicine, setEditingMedicine] = useState<Medicine | null>(null);
+    const [editingBatch, setEditingBatch] = useState<any | null>(null);
 
     const handleEditMedicine = (medicine: Medicine) => {
-        setEditingMedicine(medicine);
+        // Find the medicine ID if it's a batch-wise row
+        const medId = (medicine as any).medicineId || medicine.id;
+        setEditingMedicine({ ...medicine, id: medId });
+    };
+
+    const handleEditBatch = (batch: any) => {
+        setEditingBatch(batch);
     };
 
     const handleEditSuccess = () => {
@@ -162,50 +172,67 @@ const PharmacyInventory = () => {
                                         <TableHead>Batch No.</TableHead>
                                         <TableHead>Distributor</TableHead>
                                         <TableHead>Stock</TableHead>
-                                        <TableHead>Status</TableHead>
-                                        <TableHead>Expiry</TableHead>
+                                        <TableHead>Stock Status</TableHead>
+                                        <TableHead>Expiry Status</TableHead>
                                         <TableHead className="text-right">Sale Price</TableHead>
-                                        <TableHead className="text-right">Action</TableHead>
+                                        <TableHead className="text-right">Actions</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
                                     {filteredMedicines.map((med) => {
-                                        // Handle both snake_case (frontend type) and camelCase (backend response)
-                                        const genericName = med.generic_name || (med as any).genericName || '-';
-                                        const batchNumber = med.batch_number || (med as any).batchNumber || '-';
-                                        const distributor = med.distributor || (med as any).distributorName || '-';
-                                        const stockQty = med.stock_quantity ?? (med as any).stockQuantity ?? 0;
-                                        const salePrice = med.unit_price ?? (med as any).salePrice ?? 0;
-                                        const expiryDate = med.expiry_date || (med as any).expiryDate;
+                                        const genericName = med.generic_name || '-';
+                                        const batchNumber = med.batch?.batch_number || med.batch_number || '-';
+                                        const distributor = med.batch?.distributor || med.distributor || '-';
+                                        const stockQty = med.stock_quantity ?? 0;
+                                        const sellingPrice = med.unit_price ?? med.selling_price ?? 0;
+                                        const expiryDate = med.batch?.expiry_date || med.expiry_date;
                                         const status = med.status || 'in_stock';
 
-                                        const getStatusBadge = (status: string, expiry: any) => {
-                                            const now = new Date();
-                                            const expiryDate = expiry ? new Date(expiry) : null;
-                                            
-                                            if (expiryDate && expiryDate < now) {
-                                                return <Badge variant="outline" className="bg-red-100 text-red-800 border-red-200">EXPIRED</Badge>;
-                                            }
-                                            
-                                            if (expiryDate) {
-                                                const daysToExpiry = Math.ceil((expiryDate.getTime() - now.getTime()) / (1000 * 3600 * 24));
-                                                if (daysToExpiry <= 30) {
-                                                    return <Badge variant="outline" className="bg-orange-100 text-orange-800 border-orange-200">EXPIRING SOON</Badge>;
-                                                }
-                                                if (daysToExpiry <= 90) {
-                                                    return <Badge variant="outline" className="bg-yellow-100 text-yellow-800 border-yellow-200">EXPIRING (90D)</Badge>;
-                                                }
-                                            }
-
+                                        const getStockBadge = (status: string) => {
                                             switch (status) {
-                                                case 'out_of_stock': return <Badge variant="outline" className="bg-red-100 text-red-800">OUT OF STOCK</Badge>;
-                                                case 'low_stock': return <Badge variant="outline" className="bg-yellow-100 text-yellow-800">LOW STOCK</Badge>;
-                                                default: return <Badge variant="outline" className="bg-green-100 text-green-800 border-green-200">VALID</Badge>;
+                                                case 'out_of_stock': return <Badge variant="outline" className="bg-red-100 text-red-800 border-red-200">OUT OF STOCK</Badge>;
+                                                case 'low_stock': return <Badge variant="outline" className="bg-orange-100 text-orange-800 border-orange-200">LOW STOCK</Badge>;
+                                                default: return <Badge variant="outline" className="bg-green-100 text-green-800 border-green-200">IN STOCK</Badge>;
                                             }
                                         };
 
+                                        const getExpiryBadge = (expiry: any) => {
+                                            if (!expiry) return <Badge variant="outline" className="bg-slate-100 text-slate-800 border-slate-200">-</Badge>;
+                                            
+                                            const now = new Date();
+                                            const expiryDate = new Date(expiry);
+                                            
+                                            if (expiryDate < now) {
+                                                return <Badge variant="outline" className="bg-slate-800 text-slate-100 border-slate-900">⚫ Expired</Badge>;
+                                            }
+                                            
+                                            const daysToExpiry = Math.ceil((expiryDate.getTime() - now.getTime()) / (1000 * 3600 * 24));
+                                            if (daysToExpiry <= 30) {
+                                                return <Badge variant="outline" className="bg-red-100 text-red-800 border-red-500">🔴 Expiring Soon</Badge>;
+                                            }
+                                            if (daysToExpiry <= 90) {
+                                                return <Badge variant="outline" className="bg-yellow-100 text-yellow-800 border-yellow-500">🟡 Expiring</Badge>;
+                                            }
+                                            
+                                            return <Badge variant="outline" className="bg-green-100 text-green-800 border-green-500">🟢 Valid</Badge>;
+                                        };
+
+                                        let rowClassName = "transition-colors";
+                                        if (expiryDate) {
+                                            const now = new Date();
+                                            const expDate = new Date(expiryDate);
+                                            const daysToExpiry = Math.ceil((expDate.getTime() - now.getTime()) / (1000 * 3600 * 24));
+                                            if (daysToExpiry <= 30 && expDate >= now) {
+                                                rowClassName = "bg-red-50 hover:bg-red-100/80 transition-colors";
+                                            } else if (daysToExpiry <= 90 && expDate >= now) {
+                                                rowClassName = "bg-yellow-50 hover:bg-yellow-100/80 transition-colors";
+                                            } else if (expDate < now) {
+                                                rowClassName = "bg-slate-100 hover:bg-slate-200/80 transition-colors opacity-75"; 
+                                            }
+                                        }
+
                                         return (
-                                            <TableRow key={med.id}>
+                                            <TableRow key={med.id} className={rowClassName}>
                                                 <TableCell>
                                                     <div className="flex flex-col">
                                                         <span className="font-medium">{med.name}</span>
@@ -222,18 +249,44 @@ const PharmacyInventory = () => {
                                                     </div>
                                                 </TableCell>
                                                 <TableCell>
-                                                    {getStatusBadge(status, expiryDate)}
+                                                    {getStockBadge(status)}
                                                 </TableCell>
-                                                <TableCell className="text-sm">
-                                                    {expiryDate ? new Date(expiryDate).toLocaleDateString() : '-'}
+                                                <TableCell>
+                                                    <div className="flex flex-col gap-1 items-start">
+                                                        {getExpiryBadge(expiryDate)}
+                                                        <span className="text-[10px] text-muted-foreground font-medium pl-1">
+                                                            {expiryDate ? new Date(expiryDate).toLocaleDateString() : '-'}
+                                                        </span>
+                                                    </div>
                                                 </TableCell>
-                                                <TableCell className="text-right font-medium">{formatCurrency(salePrice)}</TableCell>
+                                                <TableCell className="text-right font-medium">{formatCurrency(sellingPrice)}</TableCell>
                                                 <TableCell className="text-right">
-                                                    <MedicineDetailsDialog
-                                                        medicine={med}
-                                                        onEdit={handleEditMedicine}
-                                                        onDelete={handleDeleteMedicine}
-                                                    />
+                                                    <div className="flex justify-end gap-2">
+                                                        <Button 
+                                                            variant="outline" 
+                                                            size="sm" 
+                                                            onClick={() => handleEditMedicine(med)}
+                                                            className="h-8 px-2 text-xs border-slate-200 hover:bg-slate-50"
+                                                        >
+                                                            Edit Info
+                                                        </Button>
+                                                        <Button 
+                                                            variant="outline" 
+                                                            size="sm" 
+                                                            onClick={() => handleEditBatch(med)}
+                                                            className="h-8 px-2 text-xs border-indigo-200 text-indigo-700 hover:bg-indigo-50"
+                                                        >
+                                                            Edit Stock
+                                                        </Button>
+                                                        <Button 
+                                                            variant="ghost" 
+                                                            size="sm" 
+                                                            onClick={() => handleDeleteMedicine((med as any).medicineId || med.id)}
+                                                            className="h-8 px-2 text-xs text-red-600 hover:text-red-700 hover:bg-red-50"
+                                                        >
+                                                            Delete
+                                                        </Button>
+                                                    </div>
                                                 </TableCell>
                                             </TableRow>
                                         );
@@ -248,6 +301,13 @@ const PharmacyInventory = () => {
                     open={!!editingMedicine} 
                     onOpenChange={(open) => !open && setEditingMedicine(null)}
                     medicine={editingMedicine}
+                    onSuccess={handleEditSuccess}
+                />
+
+                <EditStockDialog 
+                    open={!!editingBatch} 
+                    onOpenChange={(open) => !open && setEditingBatch(null)} 
+                    batch={editingBatch}
                     onSuccess={handleEditSuccess}
                 />
             </div>

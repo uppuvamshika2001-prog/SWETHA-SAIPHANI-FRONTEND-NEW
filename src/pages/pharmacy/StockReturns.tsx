@@ -14,7 +14,7 @@ import { format, addDays, isBefore } from "date-fns";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { normalizeResponse } from "@/utils/api-helpers";
 import { API_BASE_URL } from "@/config/api";
-import axios from "axios";
+import { api } from "@/services/api";
 
 const RETURN_REASONS = [
     "Expired",
@@ -59,11 +59,30 @@ export default function StockReturns() {
     const fetchHistory = async () => {
         setHistoryLoading(true);
         try {
-            const response = await pharmacyService.getStockReturns(historyFilters);
+            // Convert dd-mm-yyyy or other local formats to ISO strings for the backend
+            const params = { ...historyFilters };
+            if (params.startDate) {
+                const sDate = new Date(params.startDate);
+                if (!isNaN(sDate.getTime())) params.startDate = sDate.toISOString();
+            }
+            if (params.endDate) {
+                const eDate = new Date(params.endDate);
+                if (!isNaN(eDate.getTime())) params.endDate = eDate.toISOString();
+            }
+
+            const response = await pharmacyService.getStockReturns(params) as any;
             console.log("API response (Stock Returns):", response);
-            setHistory(normalizeResponse(response));
+            
+            // Standardize response extraction: response?.items (wrapped) or response (unwrapped)
+            const items = response?.items || normalizeResponse(response);
+            setHistory(items);
         } catch (error) {
             console.error("Failed to fetch stock return history", error);
+            toast({
+                title: "Error",
+                description: "Failed to load stock return history.",
+                variant: "destructive"
+            });
         } finally {
             setHistoryLoading(false);
         }
@@ -79,7 +98,7 @@ export default function StockReturns() {
             for (const med of data) {
                 if (med.batches) {
                     for (const batch of med.batches) {
-                        if (batch.isActive && batch.stockQuantity > 0 && isBefore(new Date(batch.expiryDate), sixtyDays)) {
+                        if (batch.isActive && batch.stock_quantity > 0 && isBefore(new Date(batch.expiry_date), sixtyDays)) {
                             soon.push({ ...batch, medicineName: med.name, medicineId: med.id });
                         }
                     }
@@ -103,10 +122,8 @@ export default function StockReturns() {
         const delayDebounceOptions = setTimeout(async () => {
             try {
                 const url = `${API_BASE_URL.replace(/\/+$/, '')}/api/pharmacy/medicines?search=${encodeURIComponent(searchQuery)}&format=returns&limit=50`;
-                const response = await axios.get(url, {
-                    headers: { Authorization: `Bearer ${localStorage.getItem('accessToken')}` }
-                });
-                setMedicines(response.data.items || []);
+                const response = await api.getAxiosInstance().get(url);
+                setMedicines((response as any)?.items || response.data?.items || []);
             } catch (err) {
                 console.error("Search API failed:", err);
             } finally {
@@ -121,11 +138,11 @@ export default function StockReturns() {
         const item = flatBatch ? {
             id: med.id,
             name: med.name,
-            batchNumber: flatBatch.batchNumber,
-            distributor: flatBatch.distributorName,
-            stock: flatBatch.stockQuantity,
-            expiry: flatBatch.expiryDate,
-            purchasePrice: flatBatch.purchasePrice || 0
+            batchNumber: flatBatch.batch_number,
+            distributor: flatBatch.distributor_name,
+            stock: flatBatch.stock_quantity,
+            expiry: flatBatch.expiry_date,
+            purchasePrice: flatBatch.purchase_price || 0
         } : {
             id: med.id,
             name: med.name,
@@ -192,13 +209,13 @@ export default function StockReturns() {
         try {
             const payload = {
                 distributor,
-                returnType,
+                return_type: returnType,
                 items: returnItems.map(item => ({
-                    medicineId: item.medicineId,
-                    batchNumber: item.batchNumber,
-                    returnQty: item.returnQty,
-                    returnReason: item.returnReason,
-                    unitPrice: item.unitPrice
+                    medicine_id: item.medicineId,
+                    batch_number: item.batchNumber,
+                    return_qty: item.returnQty,
+                    return_reason: item.returnReason,
+                    unit_price: item.unitPrice
                 }))
             };
 
@@ -562,15 +579,15 @@ export default function StockReturns() {
                                         history.map((record) => (
                                             <TableRow key={record.id} className="hover:bg-primary/5 transition-colors border-b last:border-0">
                                                 <TableCell className="font-medium">
-                                                    <div className="font-bold">{format(new Date(record.returnDate), 'dd MMM yyyy')}</div>
-                                                    <div className="text-[10px] text-muted-foreground">{format(new Date(record.returnDate), 'hh:mm a')}</div>
+                                                    <div className="font-bold">{format(new Date(record.return_date || record.returnDate), 'dd MMM yyyy')}</div>
+                                                    <div className="text-[10px] text-muted-foreground">{format(new Date(record.return_date || record.returnDate), 'hh:mm a')}</div>
                                                 </TableCell>
                                                 <TableCell>
                                                     <div className="font-black text-slate-800">{record.distributor}</div>
                                                 </TableCell>
                                                 <TableCell>
                                                     <Badge variant="outline" className="font-bold text-[10px] bg-slate-50">
-                                                        {record.returnType?.replace('_', ' ')}
+                                                        {(record.return_type || record.returnType)?.replace('_', ' ')}
                                                     </Badge>
                                                 </TableCell>
                                                 <TableCell>
@@ -578,7 +595,7 @@ export default function StockReturns() {
                                                         {record.items?.length || 0} Batches
                                                     </Badge>
                                                 </TableCell>
-                                                <TableCell className="text-primary font-black text-lg">₹{record.totalAmount.toFixed(2)}</TableCell>
+                                                <TableCell className="text-primary font-black text-lg">₹{Number(record.total_amount || record.totalAmount || 0).toFixed(2)}</TableCell>
                                                 <TableCell className="text-right">
                                                     <Button variant="ghost" size="sm" className="font-bold" onClick={() => {
                                                         toast({ title: "Details View", description: "Expanded bill details and item distribution history is being generated." });

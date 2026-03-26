@@ -36,6 +36,7 @@ class ApiService {
             baseURL: API_URL,
             headers: {
                 'Content-Type': 'application/json',
+                'Cache-Control': 'no-cache',
             }
         });
 
@@ -91,7 +92,13 @@ class ApiService {
                         return new Promise((resolve, reject) => {
                             this.failedQueue.push({
                                 resolve: (token: string) => {
-                                    originalRequest.headers.Authorization = `Bearer ${token}`;
+                                    if (originalRequest.headers && typeof originalRequest.headers.set === 'function') {
+                                        originalRequest.headers.set('Authorization', `Bearer ${token}`);
+                                    } else {
+                                        originalRequest.headers = originalRequest.headers || {};
+                                        originalRequest.headers['Authorization'] = `Bearer ${token}`;
+                                        delete originalRequest.headers['authorization'];
+                                    }
                                     resolve(this.instance(originalRequest));
                                 },
                                 reject: (err: any) => reject(err)
@@ -105,10 +112,9 @@ class ApiService {
                     try {
                         console.log('[API] Attempting to refresh access token...');
                         const refreshToken = localStorage.getItem('refreshToken');
-                        if (!refreshToken) throw new Error('No refresh token');
+                        if (!refreshToken) throw new Error('No refresh token available');
 
                         const response = await axios.post(`${API_URL}/auth/refresh`, { refreshToken });
-                        // Handle standard project response structure
                         const resData = response.data;
                         const tokens = (resData && resData.status === 'success' && resData.data !== undefined) ? resData.data : resData;
 
@@ -121,11 +127,23 @@ class ApiService {
 
                         console.log('[API] Token refreshed successfully');
                         this.instance.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`;
+                        
+                        // CRITICAL: Update the original request's Authorization header safely
+                        if (originalRequest.headers && typeof originalRequest.headers.set === 'function') {
+                            originalRequest.headers.set('Authorization', `Bearer ${accessToken}`);
+                        } else {
+                            originalRequest.headers = originalRequest.headers || {};
+                            originalRequest.headers['Authorization'] = `Bearer ${accessToken}`;
+                            delete originalRequest.headers['authorization'];
+                        }
+                        
+                        // Resolve all pending requests in the queue with the new token
                         this.processQueue(null, accessToken);
                         
+                        // Retry the original request
                         return this.instance(originalRequest);
                     } catch (refreshError) {
-                        console.error('[API] Token refresh failed', refreshError);
+                        console.error('[API] Token refresh failed:', refreshError);
                         this.processQueue(refreshError, null);
                         this.handleLogout();
                         return Promise.reject(refreshError);
@@ -182,35 +200,40 @@ class ApiService {
         }
     }
 
-    async get<T>(endpoint: string, options?: { params?: any, signal?: any }): Promise<T> {
+    async get<T>(endpoint: string, options?: { params?: any; signal?: any; headers?: any }): Promise<T> {
         return this.instance.get(endpoint, { 
             params: options?.params,
-            signal: options?.signal
+            signal: options?.signal,
+            headers: options?.headers
         });
     }
 
-    async post<T>(endpoint: string, body: any, options?: { signal?: any }): Promise<T> {
+    async post<T>(endpoint: string, body: any, options?: { signal?: any; headers?: any }): Promise<T> {
         return this.instance.post(endpoint, body, {
-            signal: options?.signal
+            signal: options?.signal,
+            headers: options?.headers
         });
     }
 
-    async patch<T>(endpoint: string, body: any, options?: { signal?: any }): Promise<T> {
+    async patch<T>(endpoint: string, body: any, options?: { signal?: any; headers?: any }): Promise<T> {
         return this.instance.patch(endpoint, body, {
-            signal: options?.signal
+            signal: options?.signal,
+            headers: options?.headers
         });
     }
 
-    async put<T>(endpoint: string, body: any, options?: { signal?: any }): Promise<T> {
+    async put<T>(endpoint: string, body: any, options?: { signal?: any; headers?: any }): Promise<T> {
         return this.instance.put(endpoint, body, {
-            signal: options?.signal
+            signal: options?.signal,
+            headers: options?.headers
         });
     }
 
-    async delete<T>(endpoint: string, options?: { params?: any, signal?: any }): Promise<T> {
+    async delete<T>(endpoint: string, options?: { params?: any; signal?: any; headers?: any }): Promise<T> {
         return this.instance.delete(endpoint, {
             params: options?.params,
-            signal: options?.signal
+            signal: options?.signal,
+            headers: options?.headers
         });
     }
 
@@ -247,6 +270,10 @@ class ApiService {
 
     async confirmLabPayment(id: string) {
         return this.patch<any>(`/lab/orders/${id}/confirm-payment`, {});
+    }
+    // Expose raw axios instance (with interceptors) for edge cases
+    getAxiosInstance(): AxiosInstance {
+        return this.instance;
     }
 }
 

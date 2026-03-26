@@ -28,13 +28,14 @@ import {
 
 interface UnifiedBillingProps {
     portalRole: 'admin' | 'receptionist';
+    billType?: 'CONSULTATION' | 'LAB' | 'PHARMACY';
 }
 
-export function UnifiedBilling({ portalRole }: UnifiedBillingProps) {
+export function UnifiedBilling({ portalRole, billType }: UnifiedBillingProps) {
     const [bills, setBills] = useState<Bill[]>([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
-    const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
+    const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
     const [confirmingBillId, setConfirmingBillId] = useState<string | null>(null);
 
     const { hasPermission } = usePermissions();
@@ -47,7 +48,12 @@ export function UnifiedBilling({ portalRole }: UnifiedBillingProps) {
                 params.startDate = format(selectedDate, 'yyyy-MM-dd');
                 params.endDate = format(selectedDate, 'yyyy-MM-dd');
             }
+            if (billType) {
+                params.billType = billType;
+            }
             const response = await billingService.getBills(params);
+            console.log(`[UnifiedBilling] fetchBills params:`, params);
+            console.log(`[UnifiedBilling] fetchBills response (first 2 items):`, response.items?.slice(0, 2), 'Total count:', response.total);
             setBills(response.items || []);
         } catch (error) {
             console.error('Failed to fetch bills:', error);
@@ -387,6 +393,11 @@ export function UnifiedBilling({ portalRole }: UnifiedBillingProps) {
                             </div>
                             <div className="flex items-center gap-3">
                                 <DatePicker date={selectedDate} setDate={setSelectedDate} />
+                                {selectedDate && (
+                                    <Button variant="ghost" size="sm" onClick={() => setSelectedDate(undefined)}>
+                                        Clear Date
+                                    </Button>
+                                )}
                                 <div className="relative w-64">
                                     <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                                     <Input

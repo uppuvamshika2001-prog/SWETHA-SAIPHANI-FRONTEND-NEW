@@ -26,6 +26,7 @@ export interface SearchableSelectProps<T> {
   emptyMessage?: string;
   className?: string;
   value?: T | null;
+  disabled?: boolean;
 }
 
 export function SearchableSelect<T extends { id: string | number }>({
@@ -37,6 +38,7 @@ export function SearchableSelect<T extends { id: string | number }>({
   emptyMessage = "No results found.",
   className,
   value = null,
+  disabled = false,
 }: SearchableSelectProps<T>) {
   const [open, setOpen] = React.useState(false);
   const [query, setQuery] = React.useState("");
@@ -66,12 +68,13 @@ export function SearchableSelect<T extends { id: string | number }>({
   }, [debouncedQuery, fetchResults]);
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover open={disabled ? false : open} onOpenChange={disabled ? undefined : setOpen}>
       <PopoverTrigger asChild>
         <Button
           variant="outline"
           role="combobox"
           aria-expanded={open}
+          disabled={disabled}
           className={cn("w-full justify-between", className)}
         >
           <span className="truncate">
