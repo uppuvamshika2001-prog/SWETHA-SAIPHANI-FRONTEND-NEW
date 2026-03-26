@@ -135,6 +135,7 @@ const getNavItems = (role: AppRole, basePath: string): NavItem[] => {
                 { title: 'Sample Collection', href: `${basePath}/sample-collection`, icon: <ClipboardList className="h-5 w-5" /> },
                 { title: 'Results Entry', href: `${basePath}/results-entry`, icon: <FileText className="h-5 w-5" /> },
                 { title: 'Test Catalog', href: `${basePath}/test-catalog`, icon: <Activity className="h-5 w-5" /> },
+                { title: 'Billing', href: `${basePath}/billing`, icon: <IndianRupee className="h-5 w-5" /> },
             ];
         case 'patient':
             return [

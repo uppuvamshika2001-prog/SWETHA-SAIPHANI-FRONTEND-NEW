@@ -91,9 +91,9 @@ export default function PharmacyBilling() {
         try {
             // Correctly use pharmacyService to fetch pharmacy-restricted bills
             const result = await (pharmacyService as any).getBills({ limit: 50 });
-            if (result && result.items) {
-                setHistoryBills(result.items.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
-            }
+            // Handle both array (legacy) and paginated response formats
+            const items = Array.isArray(result) ? result : (result.items || []);
+            setHistoryBills(items.sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
         } catch (error) {
             console.error("Failed to fetch pharmacy bill history", error);
             toast({ title: "Error", description: "Could not load billing history", variant: "destructive" });

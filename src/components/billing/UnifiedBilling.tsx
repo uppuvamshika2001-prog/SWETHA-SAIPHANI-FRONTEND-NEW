@@ -28,9 +28,10 @@ import {
 
 interface UnifiedBillingProps {
     portalRole: 'admin' | 'receptionist';
+    billType?: 'CONSULTATION' | 'LAB' | 'PHARMACY';
 }
 
-export function UnifiedBilling({ portalRole }: UnifiedBillingProps) {
+export function UnifiedBilling({ portalRole, billType }: UnifiedBillingProps) {
     const [bills, setBills] = useState<Bill[]>([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
@@ -46,6 +47,9 @@ export function UnifiedBilling({ portalRole }: UnifiedBillingProps) {
             if (selectedDate) {
                 params.startDate = format(selectedDate, 'yyyy-MM-dd');
                 params.endDate = format(selectedDate, 'yyyy-MM-dd');
+            }
+            if (billType) {
+                params.billType = billType;
             }
             const response = await billingService.getBills(params);
             setBills(response.items || []);

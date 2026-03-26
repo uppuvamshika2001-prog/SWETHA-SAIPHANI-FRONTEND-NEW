@@ -41,25 +41,35 @@ const AdminAnalytics = () => {
                 setTotalRevenue(total);
                 setTotalPatients(patients.length);
 
-                // Calculate Revenue by Department (estimate based on bill items)
+                // Calculate Revenue by Department
                 let opdRevenue = 0;
                 let pharmacyRevenue = 0;
                 let labRevenue = 0;
                 let otherRevenue = 0;
 
                 bills.forEach(bill => {
-                    (bill.items || []).forEach(item => {
-                        const desc = item.description?.toLowerCase() || '';
-                        if (desc.includes('consultation') || desc.includes('opd')) {
-                            opdRevenue += item.total || 0;
-                        } else if (desc.includes('medicine') || desc.includes('tablet') || desc.includes('syrup') || item.medicineId) {
-                            pharmacyRevenue += item.total || 0;
-                        } else if (desc.includes('test') || desc.includes('lab') || desc.includes('blood') || desc.includes('urine')) {
-                            labRevenue += item.total || 0;
-                        } else {
-                            otherRevenue += item.total || 0;
-                        }
-                    });
+                    const bType = (bill as any).billType || (bill as any).bill_type;
+                    if (bType === 'PHARMACY') {
+                        pharmacyRevenue += bill.grandTotal || 0;
+                    } else if (bType === 'LAB') {
+                        labRevenue += bill.grandTotal || 0;
+                    } else if (bType === 'CONSULTATION') {
+                        opdRevenue += bill.grandTotal || 0;
+                    } else {
+                        // Fallback to item-based categorization for legacy bills
+                        (bill.items || []).forEach(item => {
+                            const desc = item.description?.toLowerCase() || '';
+                            if (desc.includes('consultation') || desc.includes('opd')) {
+                                opdRevenue += item.total || 0;
+                            } else if (desc.includes('medicine') || desc.includes('tablet') || item.medicineId) {
+                                pharmacyRevenue += item.total || 0;
+                            } else if (desc.includes('test') || desc.includes('lab')) {
+                                labRevenue += item.total || 0;
+                            } else {
+                                otherRevenue += item.total || 0;
+                            }
+                        });
+                    }
                 });
 
                 // Add pharmacy bills revenue

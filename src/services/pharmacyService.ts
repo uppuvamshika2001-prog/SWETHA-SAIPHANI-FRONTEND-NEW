@@ -82,6 +82,11 @@ export const pharmacyService = {
         }
         const endpoint = `/pharmacy/bills${queryParams.toString() ? '?' + queryParams.toString() : ''}`;
 
+        // Ensure billType is PHARMACY if not specified
+        if (!params?.billType) {
+            queryParams.append('billType', 'PHARMACY');
+        }
+
         const response: any = await api.get(endpoint);
         
         // Legacy compatibility: If no params provided, return just the items array
