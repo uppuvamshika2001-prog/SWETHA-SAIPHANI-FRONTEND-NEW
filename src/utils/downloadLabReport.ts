@@ -33,7 +33,7 @@ export const downloadLabReportPDF = async (order: LabOrder, forceMasked: boolean
         const finalFilename = isMasked ? filename.replace('.pdf', '_Masked.pdf') : `Lab_Report_${filename}`;
 
         // 1. Add Background Template
-        try {
+     /*   try {
             if (!isMasked) {
                 const headerUrl = '/templete%20new.jpeg';
                 const headerBase64 = await getBase64ImageFromUrl(headerUrl);
@@ -41,7 +41,7 @@ export const downloadLabReportPDF = async (order: LabOrder, forceMasked: boolean
             }
         } catch (error) {
             console.error("Failed to load background template", error);
-        }
+        } */
 
         // 2. Report Header Info
         const startY = 60;

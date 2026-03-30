@@ -135,7 +135,7 @@ export function ReportDetailsDialog({ children }: { children: React.ReactNode })
             doc.text("SWETHA SAIPHANI CLINIC", textX, 18);
 
             doc.setFontSize(14);
-            doc.text("THE BRAIN AND BONE CENTER", textX, 26);
+            doc.text("THE BRAIN AND BONE CENTER2", textX, 26);
 
             doc.setFont("helvetica", "normal");
             doc.setFontSize(10);

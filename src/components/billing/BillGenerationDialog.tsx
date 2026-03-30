@@ -258,10 +258,10 @@ export function BillGenerationDialog({
         }
 
         // Prevent duplicate lab adding
-        if (opt.type === 'lab' && items.some(i => i.lab_order_id === opt.lab_order_id)) {
+       /* if (opt.type === 'lab' && items.some(i => i.lab_order_id === opt.lab_order_id)) {
             toast.error("This lab test is already in the bill.");
             return;
-        }
+        } */
 
         const total = qty * price;
         const isSpecialMode = selectedServiceId === CUSTOM_SERVICE_ID || selectedServiceId === LAB_CATALOG_ID;
