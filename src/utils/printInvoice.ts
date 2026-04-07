@@ -183,15 +183,15 @@ export const printInvoice = (bill: Bill, title: string = 'Invoice') => {
                              <table style="width: 100%; margin-top: 0;">
                                 <tr>
                                     <td style="padding: 4px 0; border: none; color: #6b7280; font-size: 11px; font-weight: 600; text-transform: uppercase; width: 80px;">Name</td>
-                                    <td style="padding: 4px 0; border: none; font-weight: 500;">${bill.patient?.firstName} ${bill.patient?.lastName}</td>
+                                    <td style="padding: 4px 0; border: none; font-weight: 500;">${bill.patient?.firstName || bill.customerName || bill.customer_name || 'Walk-in Customer'} ${bill.patient?.lastName || ''}</td>
                                 </tr>
                                 <tr>
                                     <td style="padding: 4px 0; border: none; color: #6b7280; font-size: 11px; font-weight: 600; text-transform: uppercase;">ID</td>
-                                    <td style="padding: 4px 0; border: none; font-weight: 500;">${bill.patientId}</td>
+                                    <td style="padding: 4px 0; border: none; font-weight: 500;">${bill.patientId || bill.patient_id || (bill.isWalkIn || bill.is_walk_in ? 'Walk-in' : 'N/A')}</td>
                                 </tr>
                                 <tr>
                                     <td style="padding: 4px 0; border: none; color: #6b7280; font-size: 11px; font-weight: 600; text-transform: uppercase;">Phone</td>
-                                    <td style="padding: 4px 0; border: none; font-weight: 500;">${bill.patient?.phone || 'N/A'}</td>
+                                    <td style="padding: 4px 0; border: none; font-weight: 500;">${bill.patient?.phone || bill.phone || 'N/A'}</td>
                                 </tr>
                              </table>
                         </div>

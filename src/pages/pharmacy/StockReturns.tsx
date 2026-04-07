@@ -1,3 +1,4 @@
+import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -241,6 +242,7 @@ export default function StockReturns() {
     };
 
     return (
+        <DashboardLayout role="pharmacist">
         <div className="p-6 space-y-6">
             <div className="flex justify-between items-center">
                 <div>
@@ -613,5 +615,6 @@ export default function StockReturns() {
                 </TabsContent>
             </Tabs>
         </div>
+        </DashboardLayout>
     );
 }

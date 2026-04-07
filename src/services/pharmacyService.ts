@@ -86,7 +86,10 @@ export const pharmacyService = {
                 }
             });
         }
-        // Ensure bill_type is PHARMACY if not specified
+        // Ensure pharmacy bill filter is sent using the backend's expected key.
+        if (!params?.billType) {
+            queryParams.append('billType', 'PHARMACY');
+        }
         if (!params?.bill_type) {
             queryParams.append('bill_type', 'PHARMACY');
         }

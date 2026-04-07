@@ -7,7 +7,7 @@ import { compression } from "vite-plugin-compression2";
 export default defineConfig(({ mode }) => ({
   server: {
     host: "::",
-    port: 5173,
+    port: 3000,
     hmr: {
       overlay: false,
     },

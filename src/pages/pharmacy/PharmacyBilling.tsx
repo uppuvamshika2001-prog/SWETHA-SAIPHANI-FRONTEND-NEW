@@ -56,16 +56,26 @@ export default function PharmacyBilling() {
     const [loadingHistory, setLoadingHistory] = useState(false);
 
     // Totals Calculation
+    const parseNumericValue = (value: string | number, fallback = 0) => {
+        const numericValue = typeof value === 'string' ? parseFloat(value) : value;
+        return Number.isFinite(numericValue) ? numericValue : fallback;
+    };
+
     const calculateTotals = () => {
         let subtotal = 0;
         let totalTax = 0;
         let totalDiscount = 0;
 
         billItems.forEach(item => {
-            const baseAmount = item.quantity * item.selling_price;
-            const itemDiscount = baseAmount * (item.discount / 100);
+            const quantity = parseNumericValue(item.quantity, 0);
+            const sellingPrice = parseNumericValue(item.selling_price, 0);
+            const discount = parseNumericValue(item.discount, 0);
+            const gstPercent = parseNumericValue(item.gst_percent, 0);
+
+            const baseAmount = quantity * sellingPrice;
+            const itemDiscount = baseAmount * (discount / 100);
             const taxableAmount = baseAmount - itemDiscount;
-            const itemGst = taxableAmount * (item.gst_percent / 100);
+            const itemGst = taxableAmount * (gstPercent / 100);
             
             subtotal += baseAmount;
             totalDiscount += itemDiscount;
@@ -86,14 +96,44 @@ export default function PharmacyBilling() {
         fetchBillHistory();
     }, []);
 
+    const isPharmacyBill = (bill: any) => {
+        const billType = String(
+            bill.bill_type ||
+            bill.billType ||
+            bill.type ||
+            bill.source ||
+            bill.sourceType ||
+            ''
+        ).toUpperCase();
+
+        // First check if bill type is pharmacy
+        const hasPharmacyType = [
+            'PHARMACY',
+            'PHARMACY_BILL',
+            'PHARMACY_INVOICE',
+            'PHARMACY_BILLS'
+        ].includes(billType);
+
+        if (!hasPharmacyType) return false;
+
+        // Additionally check if bill contains actual pharmacy items (not lab tests)
+        // Pharmacy items should have medicineId and medicine object
+        const items = bill.items || [];
+        if (items.length === 0) return false;
+
+        // Check if at least one item has a medicineId (indicating it's a pharmacy item)
+        const hasPharmacyItems = items.some((item: any) => item.medicineId || item.medicine_id || item.medicine);
+
+        return hasPharmacyItems;
+    };
+
     const fetchBillHistory = async () => {
         setLoadingHistory(true);
         try {
-            // Correctly use pharmacyService to fetch pharmacy-restricted bills
-            const result = await (pharmacyService as any).getBills({ limit: 50 });
-            // Handle both array (legacy) and paginated response formats
-            const items = Array.isArray(result) ? result : (result.items || []);
-            setHistoryBills(items.sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
+            const result = await billingService.getBills({ limit: 50, billType: 'PHARMACY' });
+            const items = Array.isArray(result) ? result : result.items || [];
+            const pharmacyItems = items.filter(isPharmacyBill);
+            setHistoryBills(pharmacyItems.sort((a: any, b: any) => new Date(b.createdAt || b.created_at).getTime() - new Date(a.createdAt || a.created_at).getTime()));
         } catch (error) {
             console.error("Failed to fetch pharmacy bill history", error);
             toast({ title: "Error", description: "Could not load billing history", variant: "destructive" });
@@ -159,9 +199,8 @@ export default function PharmacyBilling() {
             
             const updated = { ...item, [field]: value };
             
-            // Validation for stock
             if (field === 'quantity') {
-                const qty = parseInt(value) || 0;
+                const qty = parseNumericValue(value, 0);
                 if (qty > item.available_stock) {
                     toast({
                         title: "Insufficient Stock",
@@ -174,6 +213,14 @@ export default function PharmacyBilling() {
                 } else {
                     updated.quantity = qty;
                 }
+            }
+
+            if (field === 'discount') {
+                updated.discount = parseNumericValue(value, 0);
+            }
+
+            if (field === 'gst_percent') {
+                updated.gst_percent = parseNumericValue(value, 0);
             }
 
             // Recalculate item total
@@ -191,6 +238,57 @@ export default function PharmacyBilling() {
         setBillItems(billItems.filter(item => item.id !== id));
     };
 
+    const buildPrintableBill = (): Bill => {
+        const printableItems = billItems.map(item => ({
+            id: item.id,
+            medicine_id: item.medicine_id,
+            description: item.name,
+            quantity: parseNumericValue(item.quantity, 0),
+            unitPrice: parseNumericValue(item.selling_price, 0),
+            unit_price: parseNumericValue(item.selling_price, 0),
+            total: parseNumericValue(item.total, 0),
+            totalAmount: parseNumericValue(item.total, 0),
+            total_amount: parseNumericValue(item.total, 0),
+            discount: parseNumericValue(item.discount, 0),
+            gst: parseNumericValue(item.gst_percent, 0),
+            gst_percent: parseNumericValue(item.gst_percent, 0),
+            batchNumber: item.batch_number,
+            batch_number: item.batch_number,
+            expiryDate: item.expiry_date,
+            expiry_date: item.expiry_date,
+            hsnCode: item.hsn_code,
+            hsn_code: item.hsn_code,
+        }));
+
+        return {
+            id: 'draft-bill',
+            billNumber: 'DRAFT',
+            bill_number: 'DRAFT',
+            patientId: selectedPatient?.uhid || null,
+            patient_id: selectedPatient?.uhid || null,
+            isWalkIn: isWalkIn,
+            is_walk_in: isWalkIn,
+            customerName: customerName || selectedPatient?.full_name || null,
+            customer_name: customerName || selectedPatient?.full_name || null,
+            phone: phone || selectedPatient?.phone || null,
+            patient: selectedPatient ? {
+                firstName: selectedPatient.full_name?.split(' ')[0] || '',
+                lastName: selectedPatient.full_name?.split(' ').slice(1).join(' ') || '',
+                phone: selectedPatient.phone || phone || ''
+            } : undefined,
+            items: printableItems,
+            subtotal: totals.subtotal,
+            discount: totals.totalDiscount,
+            gstAmount: totals.totalTax,
+            gstPercent: billItems.length > 0 ? billItems.reduce((acc, item) => acc + parseNumericValue(item.gst_percent, 0), 0) / billItems.length : 0,
+            grandTotal: totals.grandTotal,
+            status: 'PAID',
+            createdAt: new Date().toISOString(),
+            created_at: new Date().toISOString(),
+            notes: 'Draft Pharmacy Invoice'
+        } as Bill;
+    };
+
     const handleSaveBill = async () => {
         if (!isWalkIn && !selectedPatient) {
             toast({ title: "Select Patient", description: "Please search and select a patient, or use Walk-in mode.", variant: "destructive" });
@@ -203,8 +301,21 @@ export default function PharmacyBilling() {
 
         setIsSaving(true);
         try {
-            const totalBillGstPercent = billItems.length > 0 ? (billItems.reduce((acc, item) => acc + item.gst_percent, 0) / billItems.length) : 0;
-            const totalBillDiscount = billItems.reduce((acc, item) => acc + (item.quantity * item.selling_price * (item.discount / 100)), 0);
+            const totalBillGstPercent = billItems.length > 0 ? (billItems.reduce((acc, item) => acc + parseNumericValue(item.gst_percent, 0), 0) / billItems.length) : 0;
+            const subtotal = billItems.reduce((acc, item) => {
+                return acc + (parseNumericValue(item.quantity, 0) * parseNumericValue(item.selling_price, 0));
+            }, 0);
+            const totalBillDiscount = billItems.reduce((acc, item) => {
+                const baseAmount = parseNumericValue(item.quantity, 0) * parseNumericValue(item.selling_price, 0);
+                return acc + (baseAmount * (parseNumericValue(item.discount, 0) / 100));
+            }, 0);
+            const totalBillTax = billItems.reduce((acc, item) => {
+                const baseAmount = parseNumericValue(item.quantity, 0) * parseNumericValue(item.selling_price, 0);
+                const discountAmount = baseAmount * (parseNumericValue(item.discount, 0) / 100);
+                const taxableAmount = baseAmount - discountAmount;
+                return acc + (taxableAmount * (parseNumericValue(item.gst_percent, 0) / 100));
+            }, 0);
+            const grandTotal = subtotal - totalBillDiscount + totalBillTax;
 
             const payload = {
                 patient_id: isWalkIn ? undefined : selectedPatient?.uhid,
@@ -214,22 +325,46 @@ export default function PharmacyBilling() {
                 items: billItems.map(item => ({
                     medicine_id: item.medicine_id,
                     description: item.name,
-                    quantity: item.quantity,
-                    unit_price: item.selling_price,
+                    quantity: parseNumericValue(item.quantity, 0),
+                    unit_price: parseNumericValue(item.selling_price, 0),
                     batch_number: item.batch_number,
                     expiry_date: item.expiry_date,
                     hsn_code: item.hsn_code,
-                    gst_percent: item.gst_percent || 0,
-                    discount: item.discount || 0
+                    gst_percent: parseNumericValue(item.gst_percent, 0),
+                    discount: parseNumericValue(item.discount, 0),
+                    total_amount: parseNumericValue(item.total, 0)
                 })),
-                gst_percent: totalBillGstPercent, 
+                subtotal,
                 discount: totalBillDiscount,
+                gst_amount: totalBillTax,
+                gstAmount: totalBillTax,
+                gst_percent: totalBillGstPercent,
+                gstPercent: totalBillGstPercent,
+                grandTotal,
                 status: 'PAID',
                 notes: 'Pharmacy Bill'
             };
 
             const savedBill = await pharmacyService.createBill(payload);
-            await downloadPharmacyBillPDF(savedBill);
+            const normalizedBill = {
+                ...savedBill,
+                subtotal,
+                discount: totalBillDiscount,
+                gstAmount: totalBillTax,
+                gstPercent: totalBillGstPercent,
+                grandTotal,
+                items: (savedBill.items || billItems).map((item: any) => ({
+                    ...item,
+                    unitPrice: item.unitPrice ?? item.unit_price ?? parseNumericValue(item.unit_price, 0),
+                    totalAmount: item.totalAmount ?? item.total_amount ?? parseNumericValue(item.total, 0),
+                    gst: item.gst ?? item.gst_percent ?? item.gstPercent,
+                    discount: item.discount ?? item.discount_amount ?? item.discountAmount,
+                    batchNumber: item.batchNumber ?? item.batch_number,
+                    expiryDate: item.expiryDate ?? item.expiry_date,
+                    hsnCode: item.hsnCode ?? item.hsn_code,
+                }))
+            };
+            await downloadPharmacyBillPDF(normalizedBill);
             toast({ title: "Success", description: "Bill generated and stock updated successfully." });
             
             // Reset
@@ -520,7 +655,8 @@ export default function PharmacyBilling() {
                                                 className="w-full" 
                                                 disabled={billItems.length === 0}
                                                 onClick={() => {
-                                                    // Quick print logic
+                                                    const draftBill = buildPrintableBill();
+                                                    printInvoice(draftBill, 'Pharmacy Invoice');
                                                 }}
                                             >
                                                 <Printer className="mr-2 h-4 w-4" /> 
@@ -572,12 +708,19 @@ export default function PharmacyBilling() {
                                                         <TableCell className="font-mono text-xs">{bill.bill_number || bill.billNumber}</TableCell>
                                                         <TableCell>
                                                             <div className="font-medium">
-                                                                {bill.is_walk_in || bill.isWalkIn 
-                                                                    ? (bill.customer_name || bill.customerName || "Walk-in Customer") 
-                                                                    : `${bill.patient?.firstName || ''} ${bill.patient?.lastName || ''}`.trim() || 'N/A'}
+                                                                {(() => {
+                                                                    const patientName = bill.patient?.first_name
+                                                                        || bill.patient?.last_name
+                                                                        || [bill.patient?.firstName, bill.patient?.lastName].filter(Boolean).join(' ')
+                                                                        || bill.customer_name
+                                                                        || bill.customerName;
+                                                                    if (patientName) return patientName;
+                                                                    if (bill.is_walk_in || bill.isWalkIn) return bill.customer_name || bill.customerName || 'Walk-in Customer';
+                                                                    return 'Unknown Patient';
+                                                                })()}
                                                             </div>
                                                             <div className="text-xs text-muted-foreground">
-                                                                {(bill.is_walk_in || bill.isWalkIn) ? bill.phone : bill.patient?.phone}
+                                                                {bill.phone || bill.patient?.phone || ''}
                                                             </div>
                                                         </TableCell>
                                                         <TableCell className="text-right font-bold">₹{Number(bill.grand_total || bill.grandTotal || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</TableCell>

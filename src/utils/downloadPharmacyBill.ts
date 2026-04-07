@@ -16,10 +16,15 @@ export const downloadPharmacyBillPDF = async (bill: Bill) => {
         const pageHeight = doc.internal.pageSize.getHeight();
 
         // 1. Generate filename & Check Masking Status
-        const patientName = bill.isWalkIn 
-            ? (bill.customerName || "Walk-in Customer") 
-            : (bill.patient ? `${bill.patient.firstName} ${bill.patient.lastName}`.trim() : "Patient");
-        const { filename, isMasked } = generatePdfFilename(patientName, bill.billNumber, bill.id, true);
+        const isWalkIn = Boolean(bill.isWalkIn || bill.is_walk_in);
+        const patientName = isWalkIn
+            ? (bill.customerName || bill.customer_name || "Walk-in Customer")
+            : (bill.patient ? `${bill.patient.firstName || bill.patient.first_name || ''} ${bill.patient.lastName || bill.patient.last_name || ''}`.trim() : "Patient");
+        const invoiceNumber = bill.billNumber || bill.bill_number || bill.id || 'N/A';
+        const invoiceDate = new Date(bill.createdAt || bill.created_at || Date.now());
+        const displayDate = Number.isNaN(invoiceDate.getTime()) ? new Date() : invoiceDate;
+
+        const { filename, isMasked } = generatePdfFilename(patientName, invoiceNumber, bill.id, true);
 
         // 2. Layout Logic (Original vs Masked)
 
@@ -59,10 +64,11 @@ export const downloadPharmacyBillPDF = async (bill: Bill) => {
         doc.setFont('helvetica', 'normal');
         
         // Left Column
-        doc.text(`Invoice #: ${bill.billNumber}`, 14, startY + 8);
-        doc.text(`Date: ${new Date(bill.createdAt).toLocaleDateString()}`, 14, startY + 13);
+        doc.text(`Invoice #: ${invoiceNumber}`, 14, startY + 8);
+        doc.text(`Date: ${displayDate.toLocaleDateString()}`, 14, startY + 13);
         
-        const patientIdStr = bill.patientId ? `(UHID: ${bill.patientId})` : '(Walk-in)';
+        const patientId = bill.patientId || bill.patient_id || (bill.isWalkIn ? undefined : undefined);
+        const patientIdStr = patientId ? `(UHID: ${patientId})` : '(Walk-in)';
         doc.text(`Patient: ${displayPatientName} ${patientIdStr}`, 14, startY + 18);
 
         let ageGenderYOffset = startY + 23;
@@ -88,6 +94,8 @@ export const downloadPharmacyBillPDF = async (bill: Bill) => {
         }
 
         console.log("Pharmacy Bill PDF Data:", {
+            invoiceNumber,
+            invoiceDate: displayDate,
             subtotal: bill.subtotal,
             gstAmount: bill.gstAmount,
             grandTotal: bill.grandTotal,
@@ -103,21 +111,30 @@ export const downloadPharmacyBillPDF = async (bill: Bill) => {
         const computedTotalCGST = Number(bill.gstAmount || 0) / 2;
         const computedTotalSGST = Number(bill.gstAmount || 0) / 2;
 
+        const normalizeItemNumber = (value: any) => {
+            const numericValue = Number(value);
+            return Number.isFinite(numericValue) ? numericValue : 0;
+        };
+
         const tableData = bill.items.map((item: any) => {
             const expiryStr = item.expiryDate 
                 ? new Date(item.expiryDate).toLocaleDateString('en-GB', { month: '2-digit', year: '2-digit' }) 
                 : '-';
+            const unitPrice = normalizeItemNumber(item.unitPrice ?? item.unit_price ?? item.price);
+            const totalAmount = normalizeItemNumber(item.totalAmount ?? item.total_amount ?? item.total);
+            const gstPercent = item.gst ?? item.gst_percent ?? item.gstPercent;
+            const discountPercent = item.discount ?? item.discount_amount ?? item.discountAmount;
 
             return [
                 item.description || '-',
-                item.hsnCode || '-',
-                item.batchNumber || '-',
+                item.hsnCode || item.hsn_code || '-',
+                item.batchNumber || item.batch_number || '-',
                 expiryStr,
-                item.quantity.toString(),
-                Number(item.unitPrice).toFixed(2),
-                item.discount ? `${item.discount}%` : '-',
-                item.gst ? `${item.gst}%` : '-',
-                Number(item.totalAmount || item.total).toFixed(2)
+                String(item.quantity || 0),
+                unitPrice.toFixed(2),
+                discountPercent ? `${discountPercent}%` : '-',
+                gstPercent ? `${gstPercent}%` : '-',
+                totalAmount.toFixed(2)
             ];
         });
 

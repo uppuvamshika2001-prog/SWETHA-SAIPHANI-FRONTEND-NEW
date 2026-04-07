@@ -42,18 +42,29 @@ const PharmacyInventory = () => {
     };
 
     const filteredMedicines = medicineList.filter(med => {
-        const genericName = med.generic_name || '';
-        const category = typeof med.category === 'object' ? med.category.name : (med.category || '');
-        const name = med.name || '';
+    // 1. Safe extraction of names
+    const name = med?.name?.toLowerCase() || '';
+    const generic = med?.generic_name?.toLowerCase() || '';
 
-        const matchesSearch = name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            genericName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            category.toLowerCase().includes(searchTerm.toLowerCase());
+    // 2. FIXED: Safe Category Handling for the search
+    // This handles if category is null, a string, or an object
+    const medCategory = (med?.category && typeof med.category === 'object')
+        ? (med.category.name?.toLowerCase() || '')
+        : (typeof med?.category === 'string' ? med.category.toLowerCase() : '');
 
-        const matchesFilter = !filterStatus || med.status === filterStatus;
+    const search = searchTerm.toLowerCase();
 
-        return matchesSearch && matchesFilter;
-    });
+    // 3. Search logic
+    const matchesSearch =
+        name.includes(search) ||
+        generic.includes(search) ||
+        medCategory.includes(search);
+
+    // 4. Status logic
+    const matchesFilter = filterStatus ? med?.status === filterStatus : true;
+
+    return matchesSearch && matchesFilter;
+});
 
     const getStatusColor = (status: string) => {
         switch (status) {
@@ -239,7 +250,12 @@ const PharmacyInventory = () => {
                                                         <span className="text-xs text-muted-foreground">{genericName}</span>
                                                     </div>
                                                 </TableCell>
-                                                <TableCell>{(typeof med.category === 'object' ? med.category.name : med.category) || '-'}</TableCell>
+                                              <TableCell>
+                                                {/* FIXED: Defensive check against null category */}
+                                                {(med?.category && typeof med.category === 'object') 
+                                                    ? (med.category.name as string) || '-'
+                                                    : (typeof med?.category === 'string' ? med.category : '-')}
+                                            </TableCell>
                                                 <TableCell className="font-mono text-xs">{batchNumber}</TableCell>
                                                 <TableCell className="text-xs">{distributor}</TableCell>
                                                 <TableCell>
