@@ -73,7 +73,7 @@ export function AddMedicineDialog({ children, onAdd }: AddMedicineDialogProps) {
         : 0;
 
     const handleSubmit = async () => {
-        if (!formData.name || !formData.generic_name || !formData.category || !formData.distributor_name || !formData.expiry_date || !formData.purchase_price || !formData.sale_price || !formData.stock_quantity || !formData.hsn_code) {
+        if (!formData.name || !formData.category || !formData.distributor_name || !formData.expiry_date || !formData.purchase_price || !formData.sale_price || !formData.stock_quantity || !formData.hsn_code) {
             toast.error("Please fill in all required fields marked with *");
             return;
         }
@@ -200,7 +200,7 @@ export function AddMedicineDialog({ children, onAdd }: AddMedicineDialogProps) {
                                 />
                             </div>
                             <div className="space-y-1.5">
-                                <Label htmlFor="generic_name" className="text-xs text-gray-500">Generic Name *</Label>
+                                <Label htmlFor="generic_name" className="text-xs text-gray-500">Generic Name</Label>
                                 <Input
                                     id="generic_name"
                                     placeholder="e.g. Acetaminophen"
