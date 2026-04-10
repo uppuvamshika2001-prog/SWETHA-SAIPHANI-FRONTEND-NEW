@@ -262,7 +262,7 @@ export function UnifiedBilling({ portalRole, billType }: UnifiedBillingProps) {
         {
             key: 'patient',
             header: 'Patient',
-            render: (b: Bill) => <span>{b.patient.firstName} {b.patient.lastName}</span>
+            render: (b: Bill) => <span>{b.patientName || 'N/A'}</span>
         },
         {
             key: 'grandTotal',

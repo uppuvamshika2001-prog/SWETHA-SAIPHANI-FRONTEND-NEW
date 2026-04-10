@@ -37,6 +37,7 @@ export function AddMedicineDialog({ children, onAdd }: AddMedicineDialogProps) {
         stock_quantity: "",
         free_quantity: "0",
         ptr: "",
+        pts: "",
         purchase_price: "",
         mrp: "",
         sale_price: "", // This will be the "Rate" field
@@ -73,7 +74,7 @@ export function AddMedicineDialog({ children, onAdd }: AddMedicineDialogProps) {
         : 0;
 
     const handleSubmit = async () => {
-        if (!formData.name || !formData.category || !formData.distributor_name || !formData.expiry_date || !formData.purchase_price || !formData.sale_price || !formData.stock_quantity || !formData.hsn_code) {
+        if (!formData.name || !formData.category || !formData.distributor_name || !formData.expiry_date || !formData.purchase_price || !formData.sale_price || !formData.stock_quantity || !formData.hsn_code || !formData.ptr || !formData.pts) {
             toast.error("Please fill in all required fields marked with *");
             return;
         }
@@ -110,16 +111,17 @@ export function AddMedicineDialog({ children, onAdd }: AddMedicineDialogProps) {
                 expiry_date: new Date(formData.expiry_date).toISOString(),
                 purchase_price: purchasePrice,
                 selling_price: salePrice,
-                gst_percent: parseFloat(formData.gst) || 0,
-                mrp: parseFloat(formData.mrp) || undefined,
+                gst_percent: formData.gst !== "" ? parseFloat(formData.gst) : 0,
+                mrp: formData.mrp !== "" ? parseFloat(formData.mrp) : undefined,
                 stock_quantity: parseInt(formData.stock_quantity),
-                free_quantity: parseInt(formData.free_quantity) || 0,
-                ptr: parseFloat(formData.ptr) || 0,
+                free_quantity: formData.free_quantity !== "" ? parseInt(formData.free_quantity) : 0,
+                ptr: formData.ptr !== "" ? parseFloat(formData.ptr) : 0,
                 taxable_amount: taxableAmount,
                 gst_amount: gstAmount,
                 total_amount: totalAmount,
-                reorder_level: parseInt(formData.min_stock_level) || 10,
+                reorder_level: formData.min_stock_level !== "" ? parseInt(formData.min_stock_level) : 10,
                 invoice_number: formData.invoice_number,
+                pts: formData.pts !== "" ? parseFloat(formData.pts) : 0,
             };
 
             await pharmacyService.createMedicine(medicinePayload);
@@ -145,6 +147,7 @@ export function AddMedicineDialog({ children, onAdd }: AddMedicineDialogProps) {
                 stock_quantity: "",
                 free_quantity: "0",
                 ptr: "",
+                pts: "",
                 purchase_price: "",
                 mrp: "",
                 sale_price: "",
@@ -357,6 +360,18 @@ export function AddMedicineDialog({ children, onAdd }: AddMedicineDialogProps) {
                                     placeholder="0.00"
                                     value={formData.ptr}
                                     onChange={(e) => setFormData({ ...formData, ptr: e.target.value })}
+                                />
+                            </div>
+                            <div className="space-y-1.5">
+                                <Label htmlFor="pts" className="text-xs text-gray-500">PTS (₹) *</Label>
+                                <Input
+                                    id="pts"
+                                    type="number"
+                                    step="0.01"
+                                    className="h-9 text-right"
+                                    placeholder="0.00"
+                                    value={formData.pts}
+                                    onChange={(e) => setFormData({ ...formData, pts: e.target.value })}
                                 />
                             </div>
                             <div className="space-y-1.5">

@@ -38,6 +38,7 @@ export interface Bill {
     is_walk_in?: boolean;
     customerName?: string | null;
     customer_name?: string | null;
+    patientName?: string | null;
     phone?: string | null;
     patient?: {
         firstName: string;

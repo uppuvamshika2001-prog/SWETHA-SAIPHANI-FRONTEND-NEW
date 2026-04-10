@@ -186,6 +186,7 @@ const PharmacyInventory = () => {
                                         <TableHead>Stock Status</TableHead>
                                         <TableHead>Expiry Status</TableHead>
                                         <TableHead className="text-right">Sale Price</TableHead>
+                                        <TableHead className="text-right">Total Value</TableHead>
                                         <TableHead className="text-right">Actions</TableHead>
                                     </TableRow>
                                 </TableHeader>
@@ -275,7 +276,8 @@ const PharmacyInventory = () => {
                                                         </span>
                                                     </div>
                                                 </TableCell>
-                                                <TableCell className="text-right font-medium">{formatCurrency(sellingPrice)}</TableCell>
+                                                 <TableCell className="text-right font-medium">{formatCurrency(sellingPrice)}</TableCell>
+                                                <TableCell className="text-right font-medium">{formatCurrency(sellingPrice * stockQty)}</TableCell>
                                                 <TableCell className="text-right">
                                                     <div className="flex justify-end gap-2">
                                                         <Button 
