@@ -184,7 +184,8 @@ class ApiService {
         localStorage.removeItem('refreshToken');
         
         const currentPath = window.location.pathname;
-        const isOnLoginPage = currentPath.includes('/login') || currentPath === '/';
+       
+       {/* const isOnLoginPage = currentPath.includes('/login') || currentPath === '/';
 
         if (!isOnLoginPage) {
             let loginPath = '/';
@@ -199,7 +200,16 @@ class ApiService {
             setTimeout(() => {
                 window.location.href = loginPath;
             }, 100);
-        }
+        } */}
+         if (currentPath !== '/') {
+        toast.error("Logged out successfully.");
+        
+        setTimeout(() => {
+            // Force the browser to go to the base URL (http://localhost:3000/)
+            window.location.href = '/'; 
+        }, 100);
+    
+    }
     }
 
     async get<T>(endpoint: string, options?: { params?: any; signal?: any; headers?: any }): Promise<T> {

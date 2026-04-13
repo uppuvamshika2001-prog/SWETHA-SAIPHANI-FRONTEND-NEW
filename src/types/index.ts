@@ -190,6 +190,7 @@ export interface Medicine {
   manufacturer: string;
   unit_price: number;
   stock_quantity: number;
+  pack_quantity?: number;
   min_stock_level: number;
   batch_number: string;
   expiry_date: string;

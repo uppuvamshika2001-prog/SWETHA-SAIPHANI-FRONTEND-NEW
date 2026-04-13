@@ -35,12 +35,14 @@ export function AddMedicineDialog({ children, onAdd }: AddMedicineDialogProps) {
         manufacturing_date: "",
         expiry_date: "",
         stock_quantity: "",
+        pack_quantity: "",
         free_quantity: "0",
         ptr: "",
         pts: "",
         purchase_price: "",
         mrp: "",
         sale_price: "", // This will be the "Rate" field
+        discount: "0",
         gst: "0",
         min_stock_level: "10",
         invoice_number: "",
@@ -61,20 +63,22 @@ export function AddMedicineDialog({ children, onAdd }: AddMedicineDialogProps) {
 
     // Derived calculations
     const quantity = parseFloat(formData.stock_quantity) || 0;
+    const packQuantity = parseFloat(formData.pack_quantity) || 0;
     const rate_val = parseFloat(formData.sale_price) || 0;
     const gstPercent = parseFloat(formData.gst) || 0;
-    const discount = 0;
-
-    const taxableAmount = (rate_val * quantity) - discount;
-    const gstAmount = taxableAmount * (gstPercent / 100);
-    const totalAmount = taxableAmount + gstAmount;
+    const discount = parseFloat(formData.discount) || 0;
+    const purchasePrice = parseFloat(formData.purchase_price) || 0;
+    const taxableAmount = (purchasePrice * quantity);
+    const gstAmount2 = (taxableAmount-discount) * (gstPercent / 100);
+    const gstAmount = Math.round((taxableAmount-discount) * (gstPercent / 100) * 100) / 100;
+    const totalAmount = Math.round(taxableAmount + gstAmount - discount);
 
     const profit = formData.sale_price && formData.purchase_price 
         ? parseFloat(formData.sale_price) - parseFloat(formData.purchase_price)
         : 0;
 
     const handleSubmit = async () => {
-        if (!formData.name || !formData.category || !formData.distributor_name || !formData.expiry_date || !formData.purchase_price || !formData.sale_price || !formData.stock_quantity || !formData.hsn_code || !formData.ptr || !formData.pts) {
+        if (!formData.name || !formData.category || !formData.distributor_name || !formData.expiry_date || !formData.purchase_price || !formData.sale_price || !formData.stock_quantity || !formData.pack_quantity || !formData.hsn_code || !formData.ptr || !formData.pts) {
             toast.error("Please fill in all required fields marked with *");
             return;
         }
@@ -114,6 +118,7 @@ export function AddMedicineDialog({ children, onAdd }: AddMedicineDialogProps) {
                 gst_percent: formData.gst !== "" ? parseFloat(formData.gst) : 0,
                 mrp: formData.mrp !== "" ? parseFloat(formData.mrp) : undefined,
                 stock_quantity: parseInt(formData.stock_quantity),
+                pack_quantity: formData.pack_quantity !== "" ? parseInt(formData.pack_quantity) : 0,
                 free_quantity: formData.free_quantity !== "" ? parseInt(formData.free_quantity) : 0,
                 ptr: formData.ptr !== "" ? parseFloat(formData.ptr) : 0,
                 taxable_amount: taxableAmount,
@@ -145,12 +150,14 @@ export function AddMedicineDialog({ children, onAdd }: AddMedicineDialogProps) {
                 manufacturing_date: "",
                 expiry_date: "",
                 stock_quantity: "",
+                pack_quantity: "",
                 free_quantity: "0",
                 ptr: "",
                 pts: "",
                 purchase_price: "",
                 mrp: "",
                 sale_price: "",
+                discount: "0",
                 gst: "0",
                 min_stock_level: "10",
                 invoice_number: "",
@@ -202,7 +209,7 @@ export function AddMedicineDialog({ children, onAdd }: AddMedicineDialogProps) {
                                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                                 />
                             </div>
-                            <div className="space-y-1.5">
+                            {/* <div className="space-y-1.5">
                                 <Label htmlFor="generic_name" className="text-xs text-gray-500">Generic Name</Label>
                                 <Input
                                     id="generic_name"
@@ -211,7 +218,7 @@ export function AddMedicineDialog({ children, onAdd }: AddMedicineDialogProps) {
                                     value={formData.generic_name}
                                     onChange={(e) => setFormData({ ...formData, generic_name: e.target.value })}
                                 />
-                            </div>
+                            </div> */}
                             <div className="space-y-1.5">
                                 <Label htmlFor="category" className="text-xs text-gray-500">Category *</Label>
                                 <Select
@@ -319,6 +326,18 @@ export function AddMedicineDialog({ children, onAdd }: AddMedicineDialogProps) {
                                 />
                             </div>
                             <div className="space-y-1.5">
+                                <Label htmlFor="pack_quantity" className="text-xs text-gray-500 border-dashed">Pack</Label>
+                                <Input
+                                    id="pack_quantity"
+                                    type="number"
+                                    className="h-9 text-right"
+                                    placeholder="0"
+                                    value={formData.pack_quantity}
+                                    onChange={(e) => setFormData({ ...formData, pack_quantity: e.target.value })}
+                                />
+                            </div>
+
+                            <div className="space-y-1.5">
                                 <Label htmlFor="free_quantity" className="text-xs text-gray-500 border-dashed">Free Quantity</Label>
                                 <Input
                                     id="free_quantity"
@@ -418,6 +437,19 @@ export function AddMedicineDialog({ children, onAdd }: AddMedicineDialogProps) {
                                 />
                             </div>
                             <div className="space-y-1.5">
+                                <Label htmlFor="discount" className="text-xs text-gray-500">Overall Discount(₹)</Label>
+                                <Input
+                                    id="discount"
+                                    type="number"
+                                    step="0.1"
+                                    className="h-9 text-right"
+                                    placeholder="0"
+                                    value={formData.discount}
+                                    onChange={(e) => setFormData({ ...formData, discount: e.target.value })}
+                                />
+                            </div>
+
+                            <div className="space-y-1.5">
                                 <Label htmlFor="gst" className="text-xs text-gray-500">GST (%)</Label>
                                 <Input
                                     id="gst"
@@ -429,8 +461,17 @@ export function AddMedicineDialog({ children, onAdd }: AddMedicineDialogProps) {
                                     onChange={(e) => setFormData({ ...formData, gst: e.target.value })}
                                 />
                             </div>
-                            <div className="flex items-end pb-1.5">
-                                <span className="text-[10px] text-gray-400 italic">Alignment Spacer</span>
+
+                            <div className="space-y-1.5">
+                                <Label htmlFor="gst" className="text-xs text-gray-500">GST (₹)</Label>
+                                <Input
+                                    id="gst"
+                                    type="text" // Changed to text to support the formatted string
+                                    readOnly    // This makes the field non-editable
+                                    className="h-9 text-right bg-gray-50 cursor-not-allowed" // Optional: adds a subtle "locked" look
+                                    placeholder="0"
+                                    value={gstAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                                />
                             </div>
                         </div>
                     </div>
@@ -448,6 +489,11 @@ export function AddMedicineDialog({ children, onAdd }: AddMedicineDialogProps) {
                                 <span className="text-sm font-semibold text-gray-700">₹ {taxableAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
                             </div>
                             
+                            <div className="flex flex-col">
+                                <span className="text-[10px] text-gray-500 uppercase tracking-tight">OverAll Discount</span>
+                                <span className="text-sm font-semibold text-gray-700">₹ {discount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                            </div>
+
                             <div className="flex flex-col">
                                 <span className="text-[10px] text-gray-500 uppercase tracking-tight">GST Amount ({gstPercent}%)</span>
                                 <span className="text-sm font-semibold text-blue-600">₹ {gstAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>

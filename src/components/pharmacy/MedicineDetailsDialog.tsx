@@ -19,10 +19,16 @@ interface MedicineDetailsDialogProps {
     medicine: any;
     onEdit?: (medicine: any) => void;
     onDelete?: (id: string) => void;
+    open?: boolean;
+    onOpenChange?: (open: boolean) => void;
 }
 
-export function MedicineDetailsDialog({ children, medicine, onEdit, onDelete }: MedicineDetailsDialogProps) {
-    const [open, setOpen] = useState(false);
+export function MedicineDetailsDialog({ children, medicine, onEdit, onDelete, open: controlledOpen, onOpenChange }: MedicineDetailsDialogProps) {
+    const [internalOpen, setInternalOpen] = useState(false);
+    
+    // Use controlled open if provided, otherwise use internal state
+    const isOpen = controlledOpen !== undefined ? controlledOpen : internalOpen;
+    const setOpen = controlledOpen !== undefined ? onOpenChange! : setInternalOpen;
 
     if (!medicine) return null;
 
@@ -56,7 +62,7 @@ export function MedicineDetailsDialog({ children, medicine, onEdit, onDelete }: 
     };
 
     return (
-        <Dialog open={open} onOpenChange={setOpen}>
+        <Dialog open={isOpen} onOpenChange={setOpen}>
             <DialogTrigger asChild>
                 {children || <Button variant="ghost" size="sm">Details</Button>}
             </DialogTrigger>
@@ -117,6 +123,10 @@ export function MedicineDetailsDialog({ children, medicine, onEdit, onDelete }: 
                         <div className="space-y-1 p-3 bg-muted/40 rounded-lg text-center">
                             <span className="text-xs text-muted-foreground">Unit Price</span>
                             <p className="font-bold text-lg text-purple-600">{formatCurrency(medicine.unit_price)}</p>
+                        </div>
+                        <div className="space-y-1 p-3 bg-muted/40 rounded-lg text-center">
+                            <span className="text-xs text-muted-foreground">Available Pack</span>
+                            <p className="font-bold text-lg text-purple-600">{formatCurrency(medicine.availableStock)}</p>
                         </div>
                     </div>
 

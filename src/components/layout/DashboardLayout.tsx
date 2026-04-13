@@ -182,7 +182,7 @@ export function DashboardLayout({ children, role }: DashboardLayoutProps) {
 
     const handleSignOut = async () => {
         await signOut();
-        navigate('/');
+        navigate('/'); 
     };
 
     const getInitials = (name: string) => {

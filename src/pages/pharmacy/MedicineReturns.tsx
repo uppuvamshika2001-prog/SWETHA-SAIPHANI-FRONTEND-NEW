@@ -356,7 +356,7 @@ export default function MedicineReturns() {
                                                     <div className="bg-primary/5 p-4 rounded-xl border border-primary/10">
                                                         <div className="flex justify-between items-center text-sm text-muted-foreground mb-1">
                                                             <span>Total Refund</span>
-                                                            <span className="line-through">₹{selectedBill.grandTotal.toFixed(2)}</span>
+                                                            <span className="line-through">₹ {selectedBill.grandTotal || 0}</span>
                                                         </div>
                                                         <div className="flex justify-between text-xl font-black text-primary">
                                                             <span>Refund Amt</span>

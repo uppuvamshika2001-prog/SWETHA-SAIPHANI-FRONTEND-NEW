@@ -4,7 +4,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, Filter } from "lucide-react";
+import { Search, Filter, Eye } from "lucide-react";
 import { useState, useEffect } from "react";
 import { formatCurrency } from "@/utils/format";
 import { AddMedicineDialog } from "@/components/pharmacy/AddMedicineDialog";
@@ -97,11 +97,16 @@ const PharmacyInventory = () => {
 
     const [editingMedicine, setEditingMedicine] = useState<Medicine | null>(null);
     const [editingBatch, setEditingBatch] = useState<any | null>(null);
+    const [viewingMedicine, setViewingMedicine] = useState<Medicine | null>(null);
 
     const handleEditMedicine = (medicine: Medicine) => {
         // Find the medicine ID if it's a batch-wise row
         const medId = (medicine as any).medicineId || medicine.id;
         setEditingMedicine({ ...medicine, id: medId });
+    };
+
+    const handleViewMedicine = (medicine: Medicine) => {
+        setViewingMedicine(medicine);
     };
 
     const handleEditBatch = (batch: any) => {
@@ -182,10 +187,11 @@ const PharmacyInventory = () => {
                                         <TableHead>Category</TableHead>
                                         <TableHead>Batch No.</TableHead>
                                         <TableHead>Distributor</TableHead>
-                                        <TableHead>Stock</TableHead>
+                                        <TableHead>Available Stock</TableHead>
+                                        <TableHead>Available Pack</TableHead>
                                         <TableHead>Stock Status</TableHead>
                                         <TableHead>Expiry Status</TableHead>
-                                        <TableHead className="text-right">Sale Price</TableHead>
+                                        <TableHead className="text-right">M.R.P</TableHead>
                                         <TableHead className="text-right">Total Value</TableHead>
                                         <TableHead className="text-right">Actions</TableHead>
                                     </TableRow>
@@ -196,7 +202,10 @@ const PharmacyInventory = () => {
                                         const batchNumber = med.batch?.batch_number || med.batch_number || '-';
                                         const distributor = med.batch?.distributor || med.distributor || '-';
                                         const stockQty = med.stock_quantity ?? 0;
+                                        const availableStock = med.pack_quantity ? stockQty / med.pack_quantity : stockQty;
                                         const sellingPrice = med.unit_price ?? med.selling_price ?? 0;
+                                        const mrp = med.mrp;
+                                        console.log("Rendering medicine:", med.mrp);
                                         const expiryDate = med.batch?.expiry_date || med.expiry_date;
                                         const status = med.status || 'in_stock';
 
@@ -220,13 +229,13 @@ const PharmacyInventory = () => {
                                             
                                             const daysToExpiry = Math.ceil((expiryDate.getTime() - now.getTime()) / (1000 * 3600 * 24));
                                             if (daysToExpiry <= 30) {
-                                                return <Badge variant="outline" className="bg-red-100 text-red-800 border-red-500">🔴 Expiring Soon</Badge>;
+                                                return <Badge variant="outline" className="bg-red-1 text-red-800 border-red-500">Expiring Soon</Badge>;
                                             }
-                                            if (daysToExpiry <= 90) {
-                                                return <Badge variant="outline" className="bg-yellow-100 text-yellow-800 border-yellow-500">🟡 Expiring</Badge>;
+                                            if (daysToExpiry <= 90) {       
+                                                return <Badge variant="outline" className="bg-yellow-100 text-yellow-800 border-yellow-500">Expiring</Badge>;
                                             }
                                             
-                                            return <Badge variant="outline" className="bg-green-100 text-green-800 border-green-500">🟢 Valid</Badge>;
+                                            return <Badge variant="outline" className="bg-green-100 text-green-800 border-green-500">Valid</Badge>;
                                         };
 
                                         let rowClassName = "transition-colors";
@@ -266,6 +275,12 @@ const PharmacyInventory = () => {
                                                     </div>
                                                 </TableCell>
                                                 <TableCell>
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="font-medium text-purple-700">{availableStock}</span>
+                                                       {/* <span className="text-[10px] text-muted-foreground uppercase">{med.unit || 'units'}</span> */}
+                                                    </div>
+                                                </TableCell>
+                                                <TableCell>
                                                     {getStockBadge(status)}
                                                 </TableCell>
                                                 <TableCell>
@@ -276,10 +291,18 @@ const PharmacyInventory = () => {
                                                         </span>
                                                     </div>
                                                 </TableCell>
-                                                 <TableCell className="text-right font-medium">{formatCurrency(sellingPrice)}</TableCell>
+                                                 <TableCell className="text-right font-medium">{formatCurrency(mrp)}</TableCell>
                                                 <TableCell className="text-right font-medium">{formatCurrency(sellingPrice * stockQty)}</TableCell>
                                                 <TableCell className="text-right">
-                                                    <div className="flex justify-end gap-2">
+                                                    <div className="flex justify-end gap-1">
+                                                        <Button 
+                                                            variant="outline" 
+                                                            size="sm" 
+                                                            onClick={() => handleViewMedicine(med)}
+                                                            className="h-8 px-2 text-xs border-blue-200 text-blue-700 hover:bg-blue-50"
+                                                        >
+                                                            <Eye className="h-4 w-4" />
+                                                        </Button>
                                                         <Button 
                                                             variant="outline" 
                                                             size="sm" 
@@ -327,6 +350,12 @@ const PharmacyInventory = () => {
                     onOpenChange={(open) => !open && setEditingBatch(null)} 
                     batch={editingBatch}
                     onSuccess={handleEditSuccess}
+                />
+
+                <MedicineDetailsDialog 
+                    open={!!viewingMedicine} 
+                    onOpenChange={(open) => !open && setViewingMedicine(null)}
+                    medicine={viewingMedicine}
                 />
             </div>
         </DashboardLayout>

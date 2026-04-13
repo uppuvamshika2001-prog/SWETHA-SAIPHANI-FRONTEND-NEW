@@ -205,7 +205,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setRole(null);
 
     // Redirect to role-specific login page
-    if (shouldRedirect) {
+   {/*} if (shouldRedirect) {
       let loginPath = '/';
       if (currentRole === 'admin') loginPath = '/admin/login';
       else if (currentRole === 'doctor') loginPath = '/doctor/login';
@@ -216,7 +216,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       console.log(`[AUTH] Signed out, redirecting to ${loginPath}`);
       window.location.href = loginPath;
-    }
+    }*/}
+    if (shouldRedirect) {
+    // Force redirect to the main Home Page (http://localhost:3000/)
+    // instead of the role-based login pages.
+    const loginPath = '/'; 
+    
+    console.log(`[AUTH] Signed out, redirecting to ${loginPath}`);
+    window.location.href = loginPath;
+  }
   };
 
   const resetPassword = async (email: string): Promise<{ error: string | null }> => {
