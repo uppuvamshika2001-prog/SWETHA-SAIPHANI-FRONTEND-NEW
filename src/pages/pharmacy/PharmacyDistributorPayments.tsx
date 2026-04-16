@@ -65,12 +65,13 @@ export default function DistributorPayments() {
                 pharmacyService.getDistributorReport()
             ]);
             
+            console.log("Purchases Response:", purchasesRes.items);
             if (purchasesRes && purchasesRes.items) {
                 setPurchases(purchasesRes.items);
             } else {
                 setPurchases([]);
             }
-
+          
             if (reportRes && reportRes.stats) {
                 setReport(reportRes);
             } else {
@@ -115,8 +116,8 @@ export default function DistributorPayments() {
     };
 
     const filteredPurchases = purchases.filter(p => 
-        p.invoiceNumber?.toLowerCase().includes(filters.searchTerm.toLowerCase()) ||
-        p.distributorName?.toLowerCase().includes(filters.searchTerm.toLowerCase())
+        p.invoice_number?.toLowerCase().includes(filters.searchTerm.toLowerCase()) ||
+        p.distributor_name?.toLowerCase().includes(filters.searchTerm.toLowerCase())
     );
 
     return (
@@ -140,7 +141,7 @@ export default function DistributorPayments() {
                                 <div className="flex justify-between items-start">
                                     <div>
                                         <p className="text-sm font-medium text-slate-500">Total Purchase</p>
-                                        <h3 className="text-2xl font-bold">₹{report?.stats?.totalAmount?.toLocaleString() ?? 0}</h3>
+                                        <h3 className="text-2xl font-bold">₹{report?.stats?.total_amount?.toLocaleString() ?? 0}</h3>
                                     </div>
                                     <div className="p-2 bg-blue-50 rounded-lg">
                                         <IndianRupee className="h-5 w-5 text-blue-500" />
@@ -153,7 +154,7 @@ export default function DistributorPayments() {
                                 <div className="flex justify-between items-start">
                                     <div>
                                         <p className="text-sm font-medium text-slate-500">Total Paid</p>
-                                        <h3 className="text-2xl font-bold">₹{report?.stats?.totalPaid?.toLocaleString() ?? 0}</h3>
+                                        <h3 className="text-2xl font-bold">₹{report?.stats?.total_paid?.toLocaleString() ?? 0}</h3>
                                     </div>
                                     <div className="p-2 bg-green-50 rounded-lg">
                                         <ArrowUpRight className="h-5 w-5 text-green-500" />
@@ -166,7 +167,7 @@ export default function DistributorPayments() {
                                 <div className="flex justify-between items-start">
                                     <div>
                                         <p className="text-sm font-medium text-slate-500">Total Balance</p>
-                                        <h3 className="text-2xl font-bold">₹{report?.stats?.totalBalance?.toLocaleString() ?? 0}</h3>
+                                        <h3 className="text-2xl font-bold">₹{report?.stats?.total_balance?.toLocaleString() ?? 0}</h3>
                                     </div>
                                     <div className="p-2 bg-red-50 rounded-lg">
                                         <ArrowDownRight className="h-5 w-5 text-red-500" />
@@ -179,7 +180,7 @@ export default function DistributorPayments() {
                                 <div className="flex justify-between items-start">
                                     <div>
                                         <p className="text-sm font-medium text-slate-500">Pending Invoices</p>
-                                        <h3 className="text-2xl font-bold">{report?.stats?.pendingCount ?? 0}</h3>
+                                        <h3 className="text-2xl font-bold">{report?.stats?.pending_count ?? 0}</h3>
                                     </div>
                                     <div className="p-2 bg-purple-50 rounded-lg">
                                         <AlertCircle className="h-5 w-5 text-purple-500" />
@@ -263,18 +264,18 @@ export default function DistributorPayments() {
                                                     </TableCell>
                                                 </TableRow>
                                             ) : (
-                                                filteredPurchases.map((purchase) => (
-                                                    <TableRow key={purchase.id}>
-                                                        <TableCell className="font-medium text-purple-700">{purchase.invoiceNumber}</TableCell>
-                                                        <TableCell>{purchase.distributorName}</TableCell>
-                                                        <TableCell className="text-xs">{format(new Date(purchase.purchaseDate), "dd MMM yy")}</TableCell>
-                                                        <TableCell className="text-right">₹{(purchase.totalAmount || 0).toFixed(2)}</TableCell>
-                                                        <TableCell className="text-right text-red-600 font-semibold">₹{(purchase.balanceAmount || 0).toFixed(2)}</TableCell>
-                                                        <TableCell className="text-center">{getStatusBadge(purchase.paymentStatus)}</TableCell>
+                                                filteredPurchases.map((purchases) => (
+                                                    <TableRow key={purchases.id}>
+                                                        <TableCell className="font-medium text-purple-700">{purchases.invoice_number}</TableCell>
+                                                        <TableCell>{purchases.distributor_name}</TableCell>
+                                                        <TableCell className="text-xs">{format(new Date(purchases.purchase_date), "dd MMM yy")}</TableCell>
+                                                        <TableCell className="text-right">₹{(purchases.total_amount || 0).toFixed(2)}</TableCell>
+                                                        <TableCell className="text-right text-red-600 font-semibold">₹{(purchases.balance_amount || 0).toFixed(2)}</TableCell>
+                                                        <TableCell className="text-center">{getStatusBadge(purchases.payment_status)}</TableCell>
                                                         <TableCell className="text-center">
-                                                            {purchase.fileUrl ? (
+                                                            {purchases.file_url ? (
                                                                 <a 
-                                                                    href={`${API_BASE_URL.replace(/\/+$/, '')}/${purchase.fileUrl}`} 
+                                                                    href={`${API_BASE_URL.replace(/\/+$/, '')}/${purchases.file_url}`} 
                                                                     target="_blank" 
                                                                     rel="noopener noreferrer"
                                                                     className="inline-flex items-center justify-center h-8 w-8 rounded-full bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors"
@@ -294,17 +295,17 @@ export default function DistributorPayments() {
                                                                     </Button>
                                                                 </DropdownMenuTrigger>
                                                                 <DropdownMenuContent align="end">
-                                                                    {purchase.paymentStatus !== "PAID" && (
+                                                                    {purchases.payment_status !== "PAID" && (
                                                                         <RecordPaymentMenuItem 
-                                                                            purchase={purchase} 
+                                                                            purchase={purchases} 
                                                                             onSuccess={fetchData} 
                                                                         />
                                                                     )}
-                                                                    <DropdownMenuItem onClick={() => { setSelectedPurchase(purchase); setIsAddPurchaseOpen(true); }}>
+                                                                    <DropdownMenuItem onClick={() => { setSelectedPurchase(purchases); setIsAddPurchaseOpen(true); }}>
                                                                         <Edit className="h-4 w-4 mr-2" />
                                                                         Edit Basic Info
                                                                     </DropdownMenuItem>
-                                                                    <DropdownMenuItem className="text-red-600 focus:text-red-600" onClick={() => handleDeletePurchase(purchase.id)}>
+                                                                    <DropdownMenuItem className="text-red-600 focus:text-red-600" onClick={() => handleDeletePurchase(purchases.id)}>
                                                                         <Trash2 className="h-4 w-4 mr-2" />
                                                                         Delete Record
                                                                     </DropdownMenuItem>
@@ -396,7 +397,7 @@ function RecordPaymentMenuItem({ purchase, onSuccess }: { purchase: any, onSucce
     const [open, setOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [formData, setFormData] = useState({
-        amount: purchase.balanceAmount.toString(),
+        amount: purchase.balanceAmount?.toString() || "",
         paymentMethod: "Cash",
         paymentDate: new Date().toISOString().split('T')[0],
         notes: ""
@@ -418,9 +419,9 @@ function RecordPaymentMenuItem({ purchase, onSuccess }: { purchase: any, onSucce
         try {
             setIsLoading(true);
             await pharmacyService.recordPayment(purchase.id, {
-                purchaseId: purchase.id,
+                purchase_id: purchase.id,
                 amount,
-                paymentMethod: formData.paymentMethod,
+                payment_method: formData.paymentMethod,
                 paymentDate: formData.paymentDate,
                 notes: formData.notes
             });
@@ -445,18 +446,18 @@ function RecordPaymentMenuItem({ purchase, onSuccess }: { purchase: any, onSucce
                 <DialogHeader>
                     <DialogTitle>Record Payment</DialogTitle>
                     <DialogDescription>
-                        Payment for Invoice #{purchase.invoiceNumber} (Distributor: {purchase.distributorName})
+                        Payment for Invoice #{purchase.invoice_number} (Distributor: {purchase.distributor_name})
                     </DialogDescription>
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
                     <div className="bg-slate-50 p-3 rounded-lg border border-slate-100 mb-2">
                         <div className="flex justify-between items-center mb-1">
                             <span className="text-xs text-slate-500 uppercase">Total Amount</span>
-                            <span className="font-semibold text-slate-700">₹{Number(purchase.totalAmount).toFixed(2)}</span>
+                            <span className="font-semibold text-slate-700">₹{Number(purchase.total_amount).toFixed(2)}</span>
                         </div>
                         <div className="flex justify-between items-center">
                             <span className="text-xs text-slate-500 uppercase">Current Balance</span>
-                            <span className="font-bold text-red-600">₹{Number(purchase.balanceAmount).toFixed(2)}</span>
+                            <span className="font-bold text-red-600">₹{Number(purchase.balance_amount).toFixed(2)}</span>
                         </div>
                     </div>
                     <div className="space-y-2">

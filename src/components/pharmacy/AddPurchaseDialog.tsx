@@ -40,6 +40,8 @@ interface PurchaseItem {
 export function AddPurchaseDialog({ open, onOpenChange, onSuccess, purchase }: AddPurchaseDialogProps) {
     const [isLoading, setIsLoading] = useState(false);
     const [medicines, setMedicines] = useState<any[]>([]);
+    const [knownDistributors, setKnownDistributors] = useState<string[]>([]);
+    const [distributorSuggestions, setDistributorSuggestions] = useState<string[]>([]);
 
     const [distributorName, setDistributorName] = useState("");
     const [invoiceNumber, setInvoiceNumber] = useState("");
@@ -50,6 +52,7 @@ export function AddPurchaseDialog({ open, onOpenChange, onSuccess, purchase }: A
 
     const [items, setItems] = useState<PurchaseItem[]>([]);
     const isEdit = !!purchase;
+    const [hasInitialized, setHasInitialized] = useState(false);
 
     useEffect(() => {
         if (open) {
@@ -61,7 +64,6 @@ export function AddPurchaseDialog({ open, onOpenChange, onSuccess, purchase }: A
                 setSelectedFile(null);
                 setFilePreview(purchase.fileUrl || null);
                 
-                // Map existing items if provided (though we might disable editing them)
                 if (purchase.batches) {
                     setItems(purchase.batches.map((b: any) => ({
                         id: b.id,
@@ -74,35 +76,56 @@ export function AddPurchaseDialog({ open, onOpenChange, onSuccess, purchase }: A
                         mrp: b.mrp?.toString() || "",
                         expiryDate: b.expiryDate ? new Date(b.expiryDate).toISOString().split('T')[0] : "",
                         manufacturingDate: b.manufacturingDate ? new Date(b.manufacturingDate).toISOString().split('T')[0] : "",
-                        gst: b.gst?.toString() || "0"
+                        gst: b.gst?.toString(),
+
                     })));
                 } else {
                     setItems([]);
                 }
+                setHasInitialized(true);
             } else {
-                // Reset form for new purchase
                 setDistributorName("");
                 setInvoiceNumber("");
                 setPurchaseDate(new Date().toISOString().split('T')[0]);
                 setSelectedFile(null);
                 setFilePreview(null);
                 setItems([]);
-                addNewItem(); // Start with one empty row
+                addNewItem();
+                setHasInitialized(true);
             }
+        } else {
+            setHasInitialized(false);
         }
     }, [open, purchase]);
 
     const fetchMedicines = async () => {
         try {
-            const res: any = await pharmacyService.getMedicines({ limit: 50 });
-            if (res?.items) {
-                setMedicines(res.items);
-            } else if (Array.isArray(res)) {
-                setMedicines(res);
-            }
+            const res: any = await pharmacyService.getMedicines({ limit: 100 });
+            const itemsList = res?.items || (Array.isArray(res) ? res : []);
+            setMedicines(itemsList);
+
+            // Extract unique distributor names from batch object
+            const distributors = itemsList
+                .map((item: any) => item.batch?.distributor)
+                .filter((name: string | undefined): name is string => !!name);
+            
+            setKnownDistributors(Array.from(new Set(distributors)));
         } catch (error) {
             console.error("Failed to fetch medicines", error);
-            toast.error("Failed to load medicines. Please try searching.");
+            toast.error("Failed to load medicines.");
+        }
+    };
+
+    // Handle distributor name typing and suggestions
+    const handleDistributorChange = (value: string) => {
+        setDistributorName(value);
+        if (value.length >= 3) {
+            const filtered = knownDistributors.filter(d => 
+                d.toLowerCase().includes(value.toLowerCase())
+            );
+            setDistributorSuggestions(filtered);
+        } else {
+            setDistributorSuggestions([]);
         }
     };
 
@@ -148,8 +171,8 @@ export function AddPurchaseDialog({ open, onOpenChange, onSuccess, purchase }: A
                 purchasePrice: "",
                 salePrice: "",
                 mrp: "",
-                gst: "0",
-                stockQuantity: "1"
+                gst: "",
+                stockQuantity: ""
             }
         ]);
     };
@@ -166,11 +189,15 @@ export function AddPurchaseDialog({ open, onOpenChange, onSuccess, purchase }: A
         return items.reduce((sum, item) => {
             const qty = parseFloat(item.stockQuantity) || 0;
             const price = parseFloat(item.purchasePrice) || 0;
-            return sum + (qty * price);
+            const gstPercent = parseFloat(item.gst) || 0;
+            const itemTotal = qty * price;
+            const itemGst = itemTotal * (gstPercent / 100);
+            return sum + (qty * price) + itemGst;
         }, 0);
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
+        
         e.preventDefault();
         
         if (!distributorName || !invoiceNumber) {
@@ -191,15 +218,15 @@ export function AddPurchaseDialog({ open, onOpenChange, onSuccess, purchase }: A
             }
 
             formattedItems.push({
-                medicineId: item.medicineId,
-                batchNumber: item.batchNumber,
-                manufacturingDate: item.manufacturingDate || undefined,
-                expiryDate: item.expiryDate,
-                purchasePrice: parseFloat(item.purchasePrice),
-                salePrice: parseFloat(item.salePrice),
+                medicine_id: item.medicineId,
+                batch_number: item.batchNumber,
+                manufacturing_date: item.manufacturingDate || undefined,
+                expiry_date: item.expiryDate,
+                purchase_price: parseFloat(item.purchasePrice),
+                selling_price: parseFloat(item.salePrice),
                 mrp: item.mrp ? parseFloat(item.mrp) : undefined,
-                gst: parseFloat(item.gst || "0"),
-                stockQuantity: parseInt(item.stockQuantity, 10)
+                gst: parseFloat(item.gst ),
+                stock_quantity: parseInt(item.stockQuantity, 10)
             });
         }
 
@@ -207,16 +234,16 @@ export function AddPurchaseDialog({ open, onOpenChange, onSuccess, purchase }: A
             setIsLoading(true);
             if (isEdit) {
                 await pharmacyService.updatePurchase(purchase.id, {
-                    distributorName,
-                    invoiceNumber,
-                    purchaseDate
+                    distributor_name: distributorName,
+                    invoice_number: invoiceNumber,
+                    purchase_date: purchaseDate
                 }, selectedFile || undefined);
                 toast.success("Purchase updated successfully");
             } else {
                 await pharmacyService.createPurchase({
-                    distributorName,
-                    invoiceNumber,
-                    purchaseDate,
+                    distributor_name: distributorName,
+                    invoice_number: invoiceNumber,
+                    purchase_date: purchaseDate,
                     items: formattedItems
                 }, selectedFile || undefined);
                 toast.success("Purchase and inventory recorded successfully");
@@ -245,14 +272,31 @@ export function AddPurchaseDialog({ open, onOpenChange, onSuccess, purchase }: A
 
                 <form onSubmit={handleSubmit} className="space-y-6 mt-4">
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 bg-slate-50 rounded-lg border">
-                        <div className="space-y-2">
+                        <div className="space-y-2 relative">
                             <Label>Distributor Name <span className="text-red-500">*</span></Label>
                             <Input 
                                 value={distributorName} 
-                                onChange={(e) => setDistributorName(e.target.value)} 
+                                onChange={(e) => handleDistributorChange(e.target.value)} 
                                 placeholder="e.g. Apollo Pharmacy"
                                 required
+                                autoComplete="off"
                             />
+                            {distributorSuggestions.length > 0 && (
+                                <div className="absolute z-50 w-full bg-white border rounded-md shadow-lg mt-1 max-h-40 overflow-y-auto">
+                                    {distributorSuggestions.map((suggestion, index) => (
+                                        <div 
+                                            key={index}
+                                            className="px-3 py-2 hover:bg-slate-100 cursor-pointer text-sm"
+                                            onClick={() => {
+                                                setDistributorName(suggestion);
+                                                setDistributorSuggestions([]);
+                                            }}
+                                        >
+                                            {suggestion}
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
                         </div>
                         <div className="space-y-2">
                             <Label>Invoice Number <span className="text-red-500">*</span></Label>
@@ -299,12 +343,6 @@ export function AddPurchaseDialog({ open, onOpenChange, onSuccess, purchase }: A
                                     </Button>
                                 )}
                             </div>
-                            {filePreview && typeof filePreview === 'string' && !selectedFile && !filePreview.startsWith('invoice') && (
-                                <p className="text-[10px] text-slate-500 flex items-center mt-1">
-                                    <FileText className="h-3 w-3 mr-1" />
-                                    Current file: {filePreview.split('/').pop()}
-                                </p>
-                            )}
                         </div>
                     </div>
 
@@ -330,6 +368,7 @@ export function AddPurchaseDialog({ open, onOpenChange, onSuccess, purchase }: A
                                         <TableHead className="w-[110px]">Pur. Price *</TableHead>
                                         <TableHead className="w-[110px]">Sale Price *</TableHead>
                                         <TableHead className="w-[110px]">MRP</TableHead>
+                                        <TableHead className="w-[110px]">GST</TableHead>
                                         <TableHead className="w-[110px]">Total</TableHead>
                                         {!isEdit && <TableHead className="w-[60px]"></TableHead>}
                                     </TableRow>
@@ -373,6 +412,9 @@ export function AddPurchaseDialog({ open, onOpenChange, onSuccess, purchase }: A
                                                 <TableCell className="p-2">
                                                     <Input disabled={isEdit} type="number" step="0.01" min="0" value={item.mrp} onChange={(e) => updateItem(item.id, "mrp", e.target.value)} />
                                                 </TableCell>
+                                                <TableCell className="p-2">
+                                                    <Input disabled={isEdit} type="number" step="0.01" min="0" value={item.gst} onChange={(e) => updateItem(item.id, "gst", e.target.value)} />
+                                                </TableCell>
                                                 <TableCell className="p-2 font-medium">
                                                     ₹{total.toFixed(2)}
                                                 </TableCell>
@@ -393,7 +435,7 @@ export function AddPurchaseDialog({ open, onOpenChange, onSuccess, purchase }: A
 
                     <div className="flex items-center justify-between p-4 bg-purple-50 rounded-lg border border-purple-100">
                         <div>
-                            <p className="text-sm text-purple-600 font-medium">Total Purchase Amount</p>
+                            <p className="text-sm text-purple-600 font-medium">Total Purchase Amount(Inc GST)</p>
                             <p className="text-xs text-purple-500 mt-1">{isEdit ? "Original purchase amount" : "This amount will be added to pending payments"}</p>
                         </div>
                         <div className="text-2xl font-bold text-purple-700 flex items-center">

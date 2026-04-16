@@ -70,12 +70,12 @@ export default function PharmacyBilling() {
             const quantity = parseNumericValue(item.quantity, 0);
             const sellingPrice = parseNumericValue(item.selling_price, 0);
             const discount = parseNumericValue(item.discount, 0);
-            const gstPercent = parseNumericValue(item.gst_percent, 0);
+            const gstPercent = parseNumericValue( 0);
 
             const baseAmount = quantity * sellingPrice;
             const itemDiscount = baseAmount * (discount / 100);
             const taxableAmount = baseAmount - itemDiscount;
-            const itemGst = taxableAmount * (gstPercent / 100);
+            const itemGst = 0;//taxableAmount * (gstPercent / 100);
             
             subtotal += baseAmount;
             totalDiscount += itemDiscount;
@@ -181,7 +181,8 @@ export default function PharmacyBilling() {
             name: medicine.name,
             quantity: 1,
             selling_price: medicine.unit_price || 0,
-            gst_percent: medicine.gst_percent || 0,
+           // gst_percent: medicine.gst_percent || 0,
+           gst_percent: 0,
             discount: 0,
             batch_number: medicine.batch_number || '-',
             expiry_date: medicine.expiry_date || undefined,
@@ -538,8 +539,9 @@ export default function PharmacyBilling() {
                                                     <TableHead>Batch</TableHead>
                                                     <TableHead className="w-[120px]">Quantity</TableHead>
                                                     <TableHead className="text-right">Price (₹)</TableHead>
-                                                    <TableHead className="w-[100px] text-right">Disc %</TableHead>
+                                                    
                                                     <TableHead className="w-[100px] text-right">GST %</TableHead>
+                                                    <TableHead className="w-[100px] text-right">Disc %</TableHead>
                                                     <TableHead className="text-right pr-6">Total (₹)</TableHead>
                                                     <TableHead className="w-[50px]"></TableHead>
                                                 </TableRow>
@@ -573,19 +575,20 @@ export default function PharmacyBilling() {
                                                                 </div>
                                                             </TableCell>
                                                             <TableCell className="text-right">₹{item.selling_price.toFixed(2)}</TableCell>
+                                                            
                                                             <TableCell className="text-right">
                                                                 <Input
                                                                     type="number"
-                                                                    value={item.discount}
-                                                                    onChange={(e) => updateItem(item.id, 'discount', e.target.value)}
+                                                                    value={item.gst_percent}
+                                                                    onChange={(e) => updateItem(item.id, 'gst_percent', e.target.value)}
                                                                     className="h-8 text-right"
                                                                 />
                                                             </TableCell>
                                                             <TableCell className="text-right">
                                                                 <Input
                                                                     type="number"
-                                                                    value={item.gst_percent}
-                                                                    onChange={(e) => updateItem(item.id, 'gst_percent', e.target.value)}
+                                                                    value={item.discount}
+                                                                    onChange={(e) => updateItem(item.id, 'discount', e.target.value)}
                                                                     className="h-8 text-right"
                                                                 />
                                                             </TableCell>

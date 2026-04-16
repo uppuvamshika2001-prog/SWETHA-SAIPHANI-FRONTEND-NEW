@@ -93,12 +93,8 @@ export function EditMedicineDialog({
                             <Label htmlFor="name">Brand Name *</Label>
                             <Input id="name" name="name" value={formData.name} onChange={handleChange} required />
                         </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="generic_name">Generic Name</Label>
-                            <Input id="generic_name" name="generic_name" value={formData.generic_name} onChange={handleChange} />
-                        </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
+                        
+                    
                         <div className="space-y-2">
                             <Label htmlFor="category">Category</Label>
                             <Select 

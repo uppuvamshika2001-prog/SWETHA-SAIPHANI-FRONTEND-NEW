@@ -108,7 +108,7 @@ export function AddMedicineDialog({ children, onAdd }: AddMedicineDialogProps) {
                 generic_name: formData.generic_name,
                 category_id: formData.category ? parseInt(formData.category) : undefined,
                 manufacturer: formData.manufacturer || undefined,
-                hsn_code: formData.hsn_code,
+                hsnCode: formData.hsn_code,
                 batch_number: formData.batch_number,
                 distributor_name: formData.distributor_name,
                 manufacturing_date: formData.manufacturing_date ? new Date(formData.manufacturing_date).toISOString() : undefined,
@@ -127,6 +127,7 @@ export function AddMedicineDialog({ children, onAdd }: AddMedicineDialogProps) {
                 reorder_level: formData.min_stock_level !== "" ? parseInt(formData.min_stock_level) : 10,
                 invoice_number: formData.invoice_number,
                 pts: formData.pts !== "" ? parseFloat(formData.pts) : 0,
+                overalldiscount:formData.discount !== "" ? parseFloat(formData.discount) : 0,
             };
 
             await pharmacyService.createMedicine(medicinePayload);
