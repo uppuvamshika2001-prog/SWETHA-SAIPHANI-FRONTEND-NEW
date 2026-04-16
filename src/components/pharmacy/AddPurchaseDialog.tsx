@@ -217,17 +217,25 @@ export function AddPurchaseDialog({ open, onOpenChange, onSuccess, purchase }: A
                 return;
             }
 
-            formattedItems.push({
-                medicine_id: item.medicineId,
-                batch_number: item.batchNumber,
-                manufacturing_date: item.manufacturingDate || undefined,
-                expiry_date: item.expiryDate,
-                purchase_price: parseFloat(item.purchasePrice),
-                selling_price: parseFloat(item.salePrice),
-                mrp: item.mrp ? parseFloat(item.mrp) : undefined,
-                gst: parseFloat(item.gst ),
-                stock_quantity: parseInt(item.stockQuantity, 10)
-            });
+           const qty = parseInt(item.stockQuantity, 10) || 0;
+const price = parseFloat(item.purchasePrice) || 0;
+const gstPercent = parseFloat(item.gst) || 0;
+
+const base = qty * price;
+const gstAmount = (base * gstPercent) / 100;
+
+formattedItems.push({
+    medicine_id: item.medicineId,
+    batch_number: item.batchNumber,
+    manufacturing_date: item.manufacturingDate || undefined,
+    expiry_date: item.expiryDate,
+    purchase_price: price,
+    selling_price: parseFloat(item.salePrice) || 0,
+    mrp: item.mrp ? parseFloat(item.mrp) : undefined,
+    gst_percent: gstPercent,
+    stock_quantity: qty,
+    gst_amount: gstAmount,
+});
         }
 
         try {
