@@ -174,6 +174,7 @@ export const pharmacyService = {
         formData.append('distributor_name', data.distributor_name);
         formData.append('invoice_number', data.invoice_number);
         if (data.purchase_date) formData.append('purchase_date', data.purchase_date);
+        formData.append('overalldiscount', data.overalldiscount);
         formData.append('items', JSON.stringify(data.items));
         if (file) formData.append('invoice', file);
         return api.post('/pharmacy/purchases', formData, {
