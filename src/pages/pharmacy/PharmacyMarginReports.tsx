@@ -49,22 +49,12 @@ export default function MarginReports() {
     { key: 'name', header: 'Medicine Name' },
     { key: 'quantity', header: 'Quantity Sold' },
     { 
-      key: 'profit', 
+      key: 'sales', 
       header: 'Total Profit',
       render: (row: any) => (
-        <div className="flex items-center gap-2">
-          <span className="font-medium text-green-600">
-            ₹{Number(row.profit).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-          </span>
-          {Number(row.profit) === 0 && Number(row.purchase_price) === 0 && Number(row.quantity) > 0 && (
-            <div className="group relative">
-              <AlertTriangle className="h-4 w-4 text-amber-500 cursor-help" />
-              <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 hidden group-hover:block w-48 p-2 bg-slate-800 text-white text-[10px] rounded shadow-lg z-50">
-                Purchase price missing. Profit may be inaccurate.
-              </div>
-            </div>
-          )}
-        </div>
+        <span className="font-medium text-slate-700">
+          ₹{Number(row.sales).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+        </span>
       )
     },
   ];
@@ -123,38 +113,58 @@ export default function MarginReports() {
 
         {/* Stats Cards */}
         <div className="grid gap-4 md:grid-cols-3">
-          <StatsCard
-            title="Total Margin (Range)"
-            value={`₹${data?.totalMargin?.toLocaleString('en-IN') || '0'}`}
-            icon={<TrendingUp className="h-5 w-5" />}
-            description="Net profit in selected date range"
-            variant="success"
-          />
-          <StatsCard
-            title="Today's Margin"
-            value={`₹${data?.todayMargin?.toLocaleString('en-IN') || '0'}`}
-            icon={<DollarSign className="h-5 w-5" />}
-            description="Total profit generated today"
-            variant="warning"
-          />
-          <StatsCard
-            title="Monthly Margin"
-            value={`₹${data?.monthlyMargin?.toLocaleString('en-IN') || '0'}`}
-            icon={<DollarSign className="h-5 w-5" />}
-            description="Total profit this month"
-            variant="primary"
-          />
+          <Card className="bg-emerald-50 border-emerald-100">
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-emerald-600">Total Profit (Range)</p>
+                  <h3 className="text-2xl font-bold text-emerald-900">₹{data?.totalSalesRange?.toLocaleString('en-IN') || '0'}</h3>
+                </div>
+                <div className="h-12 w-12 bg-emerald-100 rounded-full flex items-center justify-center">
+                  <TrendingUp className="h-6 w-6 text-emerald-600" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-amber-50 border-amber-100">
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-amber-600">Today's Profit</p>
+                  <h3 className="text-2xl font-bold text-amber-900">₹{data?.todaySales?.toLocaleString('en-IN') || '0'}</h3>
+                </div>
+                <div className="h-12 w-12 bg-amber-100 rounded-full flex items-center justify-center">
+                  <DollarSign className="h-6 w-6 text-amber-600" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-blue-50 border-blue-100">
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-blue-600">Monthly Profit</p>
+                  <h3 className="text-2xl font-bold text-blue-900">₹{data?.monthlySales?.toLocaleString('en-IN') || '0'}</h3>
+                </div>
+                <div className="h-12 w-12 bg-blue-100 rounded-full flex items-center justify-center">
+                  <DollarSign className="h-6 w-6 text-blue-600" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         <div className="grid gap-6 lg:grid-cols-3">
-          {/* Top Profitable Medicines */}
+          {/* Top Items */}
           <Card className="lg:col-span-1 glass">
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
                 <BarChart3 className="h-5 w-5 text-primary" />
-                Top 10 Profitable
+                Top 10 Items
               </CardTitle>
-              <CardDescription>Most profitable medicines in range</CardDescription>
+              <CardDescription>Highest revenue items in range</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
@@ -164,9 +174,11 @@ export default function MarginReports() {
                       <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary">
                         {i + 1}
                       </div>
-                      <span className="text-sm font-medium">{m.name}</span>
+                      <div className="flex flex-col">
+                        <span className="text-sm font-medium">{m.name}</span>
+                      </div>
                     </div>
-                    <span className="text-sm font-bold text-green-600">₹{m.profit.toLocaleString('en-IN')}</span>
+                    <span className="text-sm font-bold text-emerald-600">₹{m.sales.toLocaleString('en-IN')}</span>
                   </div>
                 ))}
                 {!data?.topMedicines?.length && (

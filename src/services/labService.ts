@@ -61,6 +61,12 @@ export const labService = {
         return await api.get<any>(`/lab/orders/${orderId}/parameters`);
     },
 
+    async updateLabResult(resultId: string, resultData: any): Promise<any> {
+        const response = await api.put(`/lab/results/${resultId}`, resultData);
+        apiCache.invalidate('/lab');
+        return response;
+    },
+
     async deleteLabResult(resultId: string): Promise<void> {
         await api.delete(`/lab/results/${resultId}`);
         apiCache.invalidate('/lab');

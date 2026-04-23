@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Search, RotateCcw, Save, Trash2, Printer, CheckCircle2, AlertCircle, Loader2, Calendar, Filter } from "lucide-react";
+import { Search, RotateCcw, Save, Trash2, Printer, CheckCircle2, AlertCircle, Loader2, Calendar, Filter, ChevronLeft, ChevronRight } from "lucide-react";
 import { pharmacyService } from "@/services/pharmacyService";
 import { useToast } from "@/components/ui/use-toast";
 import { Badge } from "@/components/ui/badge";
@@ -49,6 +49,8 @@ export default function MedicineReturns() {
         startDate: '',
         endDate: ''
     });
+    const [historyPage, setHistoryPage] = useState(1);
+    const itemsPerPage = 10;
 
     useEffect(() => {
         fetchHistory();
@@ -64,6 +66,34 @@ export default function MedicineReturns() {
         } finally {
             setHistoryLoading(false);
         }
+    };
+
+    // Reset page when filters change
+    useEffect(() => {
+        setHistoryPage(1);
+    }, [historyFilters.search, historyFilters.startDate, historyFilters.endDate]);
+
+    // Pagination calculations
+    const totalPages = Math.ceil(history.length / itemsPerPage);
+    const paginatedHistory = history.slice(
+        (historyPage - 1) * itemsPerPage,
+        historyPage * itemsPerPage
+    );
+
+    const getPageNumbers = () => {
+        const pages: (number | string)[] = [];
+        if (totalPages <= 7) {
+            for (let i = 1; i <= totalPages; i++) pages.push(i);
+        } else {
+            pages.push(1);
+            if (historyPage > 3) pages.push('...');
+            for (let i = Math.max(2, historyPage - 1); i <= Math.min(totalPages - 1, historyPage + 1); i++) {
+                pages.push(i);
+            }
+            if (historyPage < totalPages - 2) pages.push('...');
+            pages.push(totalPages);
+        }
+        return pages;
     };
 
     const handleSearch = async (e?: React.FormEvent) => {
@@ -465,7 +495,7 @@ export default function MedicineReturns() {
                                             </TableCell>
                                         </TableRow>
                                     ) : (
-                                        history.map((record) => (
+                                        paginatedHistory.map((record) => (
                                             <TableRow key={record.id} className="hover:bg-muted/30">
                                                 <TableCell className="font-medium">
                                                     {format(new Date(record.return_date || record.returnDate), 'dd MMM yyyy')}
@@ -500,8 +530,58 @@ export default function MedicineReturns() {
                                     )}
                                 </TableBody>
                             </Table>
-                        </CardContent>
-                    </Card>
+
+                        {/* Pagination Controls */}
+                        {!historyLoading && history.length > 0 && (
+                            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 py-4 px-2 mt-2">
+                                <div className="text-sm text-muted-foreground">
+                                    Showing <span className="font-semibold text-foreground">{Math.min(history.length, (historyPage - 1) * itemsPerPage + 1)}</span> to{" "}
+                                    <span className="font-semibold text-foreground">{Math.min(history.length, historyPage * itemsPerPage)}</span> of{" "}
+                                    <span className="font-semibold text-foreground">{history.length}</span> entries
+                                </div>
+                                <div className="flex items-center gap-1">
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => setHistoryPage(prev => Math.max(1, prev - 1))}
+                                        disabled={historyPage === 1}
+                                        className="h-8 w-8 p-0"
+                                    >
+                                        <ChevronLeft className="h-4 w-4" />
+                                    </Button>
+                                    
+                                    <div className="flex items-center gap-1 mx-2">
+                                        {getPageNumbers().map((page, index) => (
+                                            typeof page === 'number' ? (
+                                                <Button
+                                                    key={index}
+                                                    variant={historyPage === page ? "default" : "outline"}
+                                                    size="sm"
+                                                    onClick={() => setHistoryPage(page)}
+                                                    className={`h-8 w-8 p-0 ${historyPage === page ? 'bg-primary hover:bg-primary/90' : ''}`}
+                                                >
+                                                    {page}
+                                                </Button>
+                                            ) : (
+                                                <span key={index} className="px-1 text-muted-foreground">...</span>
+                                            )
+                                        ))}
+                                    </div>
+
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => setHistoryPage(prev => Math.min(totalPages, prev + 1))}
+                                        disabled={historyPage === totalPages}
+                                        className="h-8 w-8 p-0"
+                                    >
+                                        <ChevronRight className="h-4 w-4" />
+                                    </Button>
+                                </div>
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
                 </TabsContent>
             </Tabs>
         </div>

@@ -46,6 +46,7 @@ export function AddMedicineDialog({ children, onAdd }: AddMedicineDialogProps) {
         gst: "0",
         min_stock_level: "10",
         invoice_number: "",
+        purchase_date: new Date().toISOString().split('T')[0],
     });
     const [categories, setCategories] = useState<any[]>([]);
 
@@ -126,6 +127,7 @@ export function AddMedicineDialog({ children, onAdd }: AddMedicineDialogProps) {
                 total_amount: totalAmount,
                 reorder_level: formData.min_stock_level !== "" ? parseInt(formData.min_stock_level) : 10,
                 invoice_number: formData.invoice_number,
+                purchase_date: formData.purchase_date,
                 pts: formData.pts !== "" ? parseFloat(formData.pts) : 0,
                 overalldiscount:formData.discount !== "" ? parseFloat(formData.discount) : 0,
             };
@@ -162,6 +164,7 @@ export function AddMedicineDialog({ children, onAdd }: AddMedicineDialogProps) {
                 gst: "0",
                 min_stock_level: "10",
                 invoice_number: "",
+                purchase_date: new Date().toISOString().split('T')[0],
             });
             setOpen(false);
         } catch (error: any) {
@@ -273,6 +276,26 @@ export function AddMedicineDialog({ children, onAdd }: AddMedicineDialogProps) {
                                     className="h-9"
                                     value={formData.hsn_code}
                                     onChange={(e) => setFormData({ ...formData, hsn_code: e.target.value })}
+                                />
+                            </div>
+                            <div className="space-y-1.5">
+                                <Label htmlFor="invoice_number" className="text-xs text-gray-500">Invoice Number</Label>
+                                <Input
+                                    id="invoice_number"
+                                    placeholder="e.g. INV-2024-001"
+                                    className="h-9"
+                                    value={formData.invoice_number}
+                                    onChange={(e) => setFormData({ ...formData, invoice_number: e.target.value })}
+                                />
+                            </div>
+                            <div className="space-y-1.5">
+                                <Label htmlFor="purchase_date" className="text-xs text-gray-500 font-bold">Purchase Date *</Label>
+                                <Input
+                                    id="purchase_date"
+                                    type="date"
+                                    className="h-9 border-purple-200"
+                                    value={formData.purchase_date}
+                                    onChange={(e) => setFormData({ ...formData, purchase_date: e.target.value })}
                                 />
                             </div>
                         </div>

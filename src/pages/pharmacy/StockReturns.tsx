@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Search, RotateCcw, Save, Trash2, AlertTriangle, Loader2, Calendar, Filter, Truck } from "lucide-react";
+import { Search, RotateCcw, Save, Trash2, AlertTriangle, Loader2, Calendar, Filter, Truck, ChevronLeft, ChevronRight } from "lucide-react";
 import { pharmacyService } from "@/services/pharmacyService";
 import { useToast } from "@/components/ui/use-toast";
 import { Badge } from "@/components/ui/badge";
@@ -51,6 +51,8 @@ export default function StockReturns() {
         startDate: '',
         endDate: ''
     });
+    const [historyPage, setHistoryPage] = useState(1);
+    const itemsPerPage = 10;
 
     useEffect(() => {
         fetchExpiringSoon();
@@ -87,6 +89,34 @@ export default function StockReturns() {
         } finally {
             setHistoryLoading(false);
         }
+    };
+
+    // Reset page when filters change
+    useEffect(() => {
+        setHistoryPage(1);
+    }, [historyFilters.distributor, historyFilters.startDate, historyFilters.endDate]);
+
+    // Pagination calculations
+    const totalPages = Math.ceil(history.length / itemsPerPage);
+    const paginatedHistory = history.slice(
+        (historyPage - 1) * itemsPerPage,
+        historyPage * itemsPerPage
+    );
+
+    const getPageNumbers = () => {
+        const pages: (number | string)[] = [];
+        if (totalPages <= 7) {
+            for (let i = 1; i <= totalPages; i++) pages.push(i);
+        } else {
+            pages.push(1);
+            if (historyPage > 3) pages.push('...');
+            for (let i = Math.max(2, historyPage - 1); i <= Math.min(totalPages - 1, historyPage + 1); i++) {
+                pages.push(i);
+            }
+            if (historyPage < totalPages - 2) pages.push('...');
+            pages.push(totalPages);
+        }
+        return pages;
     };
 
     const fetchExpiringSoon = async () => {
@@ -136,22 +166,29 @@ export default function StockReturns() {
     }, [searchQuery]);
 
     const handleSelectBatch = (med: any, flatBatch?: any) => {
+        const getField = (obj: any, variants: string[]) => {
+            for (const v of variants) {
+                if (obj[v] !== undefined && obj[v] !== null) return obj[v];
+            }
+            return 0;
+        };
+
         const item = flatBatch ? {
             id: med.id,
             name: med.name,
-            batchNumber: flatBatch.batch_number,
-            distributor: flatBatch.distributor_name,
-            stock: flatBatch.stock_quantity,
-            expiry: flatBatch.expiry_date,
-            purchasePrice: flatBatch.purchase_price || 0
+            batchNumber: flatBatch.batch_number || flatBatch.batchNumber || flatBatch.batch || '-',
+            distributor: flatBatch.distributor_name || flatBatch.distributorName || flatBatch.distributor || 'Unknown',
+            stock: flatBatch.stock_quantity || flatBatch.stockQuantity || flatBatch.stock || 0,
+            expiry: flatBatch.expiry_date || flatBatch.expiryDate || flatBatch.expiry,
+            purchasePrice: getField(flatBatch, ['purchase_price', 'purchasePrice', 'purchaseprice'])
         } : {
             id: med.id,
             name: med.name,
-            batchNumber: med.batch,
-            distributor: med.distributor,
-            stock: med.stock,
-            expiry: med.expiry,
-            purchasePrice: med.purchasePrice || 0
+            batchNumber: med.batch_number || med.batchNumber || med.batch || '-',
+            distributor: med.distributor_name || med.distributorName || med.distributor || 'Unknown',
+            stock: med.stock_quantity || med.stockQuantity || med.stock || 0,
+            expiry: med.expiry_date || med.expiryDate || med.expiry,
+            purchasePrice: getField(med, ['purchase_price', 'purchasePrice', 'purchaseprice'])
         };
 
         const existing = returnItems.find(ri => ri.batchNumber === item.batchNumber && ri.medicineId === item.id);
@@ -578,7 +615,7 @@ export default function StockReturns() {
                                             </TableCell>
                                         </TableRow>
                                     ) : (
-                                        history.map((record) => (
+                                        paginatedHistory.map((record) => (
                                             <TableRow key={record.id} className="hover:bg-primary/5 transition-colors border-b last:border-0">
                                                 <TableCell className="font-medium">
                                                     <div className="font-bold">{format(new Date(record.return_date || record.returnDate), 'dd MMM yyyy')}</div>
@@ -611,6 +648,56 @@ export default function StockReturns() {
                                 </TableBody>
                             </Table>
                         </CardContent>
+
+                        {/* Pagination Controls */}
+                        {!historyLoading && history.length > 0 && (
+                            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 py-4 px-6 border-t bg-slate-50/50">
+                                <div className="text-sm text-muted-foreground">
+                                    Showing <span className="font-semibold text-slate-900">{Math.min(history.length, (historyPage - 1) * itemsPerPage + 1)}</span> to{" "}
+                                    <span className="font-semibold text-slate-900">{Math.min(history.length, historyPage * itemsPerPage)}</span> of{" "}
+                                    <span className="font-semibold text-slate-900">{history.length}</span> entries
+                                </div>
+                                <div className="flex items-center gap-1">
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => setHistoryPage(prev => Math.max(1, prev - 1))}
+                                        disabled={historyPage === 1}
+                                        className="h-8 w-8 p-0"
+                                    >
+                                        <ChevronLeft className="h-4 w-4" />
+                                    </Button>
+                                    
+                                    <div className="flex items-center gap-1 mx-2">
+                                        {getPageNumbers().map((page, index) => (
+                                            typeof page === 'number' ? (
+                                                <Button
+                                                    key={index}
+                                                    variant={historyPage === page ? "default" : "outline"}
+                                                    size="sm"
+                                                    onClick={() => setHistoryPage(page)}
+                                                    className={`h-8 w-8 p-0 ${historyPage === page ? 'bg-slate-900 hover:bg-slate-800 text-white' : ''}`}
+                                                >
+                                                    {page}
+                                                </Button>
+                                            ) : (
+                                                <span key={index} className="px-1 text-muted-foreground">...</span>
+                                            )
+                                        ))}
+                                    </div>
+
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => setHistoryPage(prev => Math.min(totalPages, prev + 1))}
+                                        disabled={historyPage === totalPages}
+                                        className="h-8 w-8 p-0"
+                                    >
+                                        <ChevronRight className="h-4 w-4" />
+                                    </Button>
+                                </div>
+                            </div>
+                        )}
                     </Card>
                 </TabsContent>
             </Tabs>

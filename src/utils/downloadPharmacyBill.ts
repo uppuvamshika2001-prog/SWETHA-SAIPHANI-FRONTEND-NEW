@@ -133,7 +133,6 @@ export const downloadPharmacyBillPDF = async (bill: Bill) => {
                 String(item.quantity || 0),
                 unitPrice.toFixed(2),
                 discountPercent ? `${discountPercent}%` : '-',
-                gstPercent ? `${gstPercent}%` : '-',
                 totalAmount.toFixed(2)
             ];
         });
@@ -145,14 +144,14 @@ export const downloadPharmacyBillPDF = async (bill: Bill) => {
 
         autoTable(doc, {
             startY: tableY,
-            head: [['Medicine', 'HSN', 'Batch', 'Expiry', 'Qty', 'Unit Price', 'Disc.', 'GST%', 'Total (Rs)']],
+            head: [['Medicine', 'HSN', 'Batch', 'Expiry', 'Qty', 'Unit Price', 'Disc.', 'Total (Rs)']],
             body: tableData,
             ...tableStyles,
             styles: { fontSize: 8, cellPadding: 2 },
             headStyles: { fillColor: [240, 240, 240], textColor: 20 },
             columnStyles: {
-                0: { cellWidth: 45 },
-                8: { halign: 'right' }
+                0: { cellWidth: 55 },
+                7: { halign: 'right' }
             }
         });
 
@@ -161,18 +160,6 @@ export const downloadPharmacyBillPDF = async (bill: Bill) => {
         const val1X = 80;
         const labelX = pageWidth - 70;
         const valueX = pageWidth - 14;
-
-        // --- TAX BREAKDOWN (Left Side) ---
-        doc.setFontSize(9);
-        doc.setFont('helvetica', 'bold');
-        doc.text("Tax Summary:", col1X, finalY);
-        doc.setFont('helvetica', 'normal');
-        doc.text("CGST:", col1X, finalY + 5);
-        doc.text(`Rs. ${computedTotalCGST.toFixed(2)}`, val1X, finalY + 5, { align: "right" });
-        doc.text("SGST:", col1X, finalY + 10);
-        doc.text(`Rs. ${computedTotalSGST.toFixed(2)}`, val1X, finalY + 10, { align: "right" });
-        doc.text("Total Tax Amount:", col1X, finalY + 15);
-        doc.text(`Rs. ${(computedTotalCGST + computedTotalSGST).toFixed(2)}`, val1X, finalY + 15, { align: "right" });
 
         // --- BILL TOTALS (Right Side) ---
         const totalDiscountAmt = Number(bill.discount || 0);
@@ -185,9 +172,6 @@ export const downloadPharmacyBillPDF = async (bill: Bill) => {
             doc.text("Discount:", labelX, finalY + 5, { align: "left" });
             doc.text(`- Rs. ${totalDiscountAmt.toFixed(2)}`, valueX, finalY + 5, { align: "right" });
         }
-
-        doc.text("Total GST:", labelX, finalY + 10, { align: "left" });
-        doc.text(`Rs. ${(computedTotalCGST + computedTotalSGST).toFixed(2)}`, valueX, finalY + 10, { align: "right" });
 
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(11);

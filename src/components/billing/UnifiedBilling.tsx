@@ -27,7 +27,7 @@ import {
 } from '@/utils/pdfUtils';
 
 interface UnifiedBillingProps {
-    portalRole: 'admin' | 'receptionist';
+    portalRole: 'admin' | 'receptionist' | 'lab_technician' | 'pharmacist' | 'doctor';
     billType?: 'CONSULTATION' | 'LAB' | 'PHARMACY';
 }
 

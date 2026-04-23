@@ -45,7 +45,7 @@ const LabResultsEntry = () => {
     const navigate = useNavigate();
     const orderId = searchParams.get('orderId');
 
-    const { labOrders, submitResult, uploadFile, fetchLabOrders, loading } = useLab();
+    const { labOrders, submitResult, updateResult, uploadFile, fetchLabOrders, loading } = useLab();
     const [submitting, setSubmitting] = useState(false);
     const [interpretation, setInterpretation] = useState("");
     const [selectedOrderId, setSelectedOrderId] = useState<string>(orderId || "");
@@ -59,8 +59,12 @@ const LabResultsEntry = () => {
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [uploadProgress, setUploadProgress] = useState(false);
 
-    // Filter orders that are in progress (ready for results)
-    const inProgressOrders = labOrders.filter(o => o.status === 'IN_PROGRESS' || o.status === 'SAMPLE_COLLECTED');
+    // Filter orders that are in progress (ready for results), OR the order we explicitly want to edit
+    const inProgressOrders = labOrders.filter(o => 
+        o.status === 'IN_PROGRESS' || 
+        o.status === 'SAMPLE_COLLECTED' ||
+        (orderId && o.id === orderId)
+    );
     const selectedOrder = labOrders.find(o => o.id === selectedOrderId);
 
     const inputRefs = useRef<Record<string, HTMLInputElement | null>>({});
@@ -70,6 +74,16 @@ const LabResultsEntry = () => {
             setSelectedOrderId(orderId);
         }
     }, [orderId]);
+
+    useEffect(() => {
+        if (selectedOrder) {
+            setInterpretation(selectedOrder.result?.interpretation || "");
+            setIsReportVisible(selectedOrder.isReportVisibleToPatient ?? true);
+        } else {
+            setInterpretation("");
+            setIsReportVisible(true);
+        }
+    }, [selectedOrderId, selectedOrder]);
 
     useEffect(() => {
         const fetchParameters = async () => {
@@ -100,32 +114,47 @@ const LabResultsEntry = () => {
                     data = [{ name: "General", parameters: [] }];
                 }
 
+                const existingParams = selectedOrder?.result?.result?.parameters || [];
+
                 if (data && data.length > 0) {
                     setCategories(data.map((cat: any) => ({
                         id: cat.id,
                         name: cat.name || "General",
-                        parameters: (cat.parameters || []).map((p: any) => ({
-                            id: p.id,
-                            name: p.name || "",
-                            unit: p.unit || "",
-                            referenceRange: p.referenceRange || "",
-                            normalMin: p.normalMin,
-                            normalMax: p.normalMax,
-                            inputType: p.inputType || 'number',
-                            options: p.options,
-                            value: "",
-                            flag: "NORMAL"
-                        }))
+                        parameters: (cat.parameters || []).map((p: any) => {
+                            const existing = existingParams.find((ep: any) => ep.parameterId === p.id || ep.name === p.name);
+                            return {
+                                id: p.id,
+                                name: p.name || "",
+                                unit: p.unit || "",
+                                referenceRange: p.referenceRange || "",
+                                normalMin: p.normalMin,
+                                normalMax: p.normalMax,
+                                inputType: p.inputType || 'number',
+                                options: p.options,
+                                value: existing ? existing.value : "",
+                                flag: existing ? (existing.flag || "NORMAL") : "NORMAL"
+                            };
+                        })
                     })));
                 } else if (response?.testType === 'REPORT') {
                     // Report types don't need structured parameters
                     setCategories([]);
                 } else {
                     // No structured parameters — initialize a blank editable category
-                    // so the technician can add manual parameters immediately
+                    // and try to populate from existing manual parameters if any
+                    const manualExist = existingParams.length > 0 ? existingParams : [{ name: '', value: '', unit: '', referenceRange: '', flag: 'NORMAL', isManual: true }];
+                    
                     setCategories([{
                         name: response?.testName || selectedOrder?.testName || 'General',
-                        parameters: [{ name: '', value: '', unit: '', referenceRange: '', flag: 'NORMAL', isManual: true }]
+                        parameters: manualExist.map((p: any) => ({
+                            name: p.name || '',
+                            value: p.value || '',
+                            unit: p.unit || '',
+                            referenceRange: p.referenceRange || '',
+                            flag: p.flag || 'NORMAL',
+                            isManual: true,
+                            id: p.parameterId
+                        }))
                     }]);
                 }
             } catch (error: any) {
@@ -291,23 +320,32 @@ const LabResultsEntry = () => {
                 setUploadProgress(false);
             }
 
-            await submitResult({
-                orderId: selectedOrderId,
-                result: {
-                    parameters: validParams.map(p => ({
-                        parameterId: p.id || undefined,
-                        name: p.name,
-                        value: p.value,
-                        unit: p.unit || undefined,
-                        referenceRange: p.referenceRange || undefined,
-                        flag: p.flag,
-                        isManual: p.isManual || !p.id
-                    })),
-                },
-                interpretation: interpretation || undefined,
-                attachments: attachments.length > 0 ? attachments : undefined,
-                isReportVisibleToPatient: isReportVisible
-            } as any);
+            const payloadParams = validParams.map(p => ({
+                parameterId: p.id || undefined,
+                name: p.name,
+                value: p.value,
+                unit: p.unit || undefined,
+                referenceRange: p.referenceRange || undefined,
+                flag: p.flag,
+                isManual: p.isManual || !p.id
+            }));
+
+            if (selectedOrder?.result?.id) {
+                await updateResult(selectedOrder.result.id, {
+                    result: { parameters: payloadParams },
+                    interpretation: interpretation || undefined,
+                    attachments: attachments.length > 0 ? (selectedOrder.result.attachments ? [...selectedOrder.result.attachments, ...attachments] : attachments) : undefined,
+                    isReportVisibleToPatient: isReportVisible
+                });
+            } else {
+                await submitResult({
+                    orderId: selectedOrderId,
+                    result: { parameters: payloadParams },
+                    interpretation: interpretation || undefined,
+                    attachments: attachments.length > 0 ? attachments : undefined,
+                    isReportVisibleToPatient: isReportVisible
+                } as any);
+            }
 
             toast.success("Lab result submitted successfully!");
             await fetchLabOrders();

@@ -61,11 +61,12 @@ export function BillGenerationDialog({
     const [showPatientResults, setShowPatientResults] = useState(false);
 
     // Item State
-    const [items, setItems] = useState<{ description: string, quantity: number, unitPrice: number, total: number, type?: 'consultation' | 'lab', lab_order_id?: string }[]>([]);
+    const [items, setItems] = useState<{ description: string, quantity: number, unitPrice: number, discount: number, total: number, type?: 'consultation' | 'lab', lab_order_id?: string }[]>([]);
     const [services, setServices] = useState<any[]>([]);
     const [selectedServiceId, setSelectedServiceId] = useState("");
     const [unitPrice, setUnitPrice] = useState("");
     const [quantity, setQuantity] = useState("1");
+    const [itemDiscount, setItemDiscount] = useState("0");
     const [discount, setDiscount] = useState("0");
     const [isCustomMode, setIsCustomMode] = useState(false);
     const [customDescription, setCustomDescription] = useState("");
@@ -245,9 +246,10 @@ export function BillGenerationDialog({
 
         const qty = parseInt(quantity);
         const price = parseFloat(unitPrice);
+        const itemDiscPercent = parseFloat(itemDiscount) || 0;
 
-        if (qty <= 0 || price < 0) {
-            toast.error("Invalid quantity or price");
+        if (qty <= 0 || price < 0 || itemDiscPercent < 0 || itemDiscPercent > 100) {
+            toast.error("Invalid quantity, price or discount");
             return;
         }
 
@@ -263,7 +265,9 @@ export function BillGenerationDialog({
             return;
         } */
 
-        const total = qty * price;
+        const baseTotal = qty * price;
+        const discAmount = (baseTotal * itemDiscPercent) / 100;
+        const total = baseTotal - discAmount;
         const isSpecialMode = selectedServiceId === CUSTOM_SERVICE_ID || selectedServiceId === LAB_CATALOG_ID;
         const description = isSpecialMode ? customDescription : opt.description;
 
@@ -271,6 +275,7 @@ export function BillGenerationDialog({
             description, 
             quantity: qty, 
             unitPrice: price, 
+            discount: itemDiscPercent,
             total,
             type: opt.type as any,
             lab_order_id: opt.lab_order_id
@@ -280,6 +285,7 @@ export function BillGenerationDialog({
         setSelectedServiceId("");
         setUnitPrice("");
         setQuantity("1");
+        setItemDiscount("0");
         setIsCustomMode(false);
         setCustomDescription("");
         setIsLabCatalogMode(false);
@@ -334,6 +340,7 @@ export function BillGenerationDialog({
                     description: item.description,
                     quantity: item.quantity,
                     unitPrice: item.unitPrice,
+                    discount: item.discount,
                     type: item.type,
                     lab_order_id: item.lab_order_id
                 })),
@@ -592,6 +599,19 @@ export function BillGenerationDialog({
                                     className="bg-white dark:bg-slate-950 h-9 text-right"
                                 />
                             </div>
+                            <div className="w-full md:w-24 space-y-1.5">
+                                <Label htmlFor="item-discount" className="text-xs text-slate-500">Disc (%)</Label>
+                                <Input
+                                    id="item-discount"
+                                    type="number"
+                                    min="0"
+                                    max="100"
+                                    value={itemDiscount}
+                                    onChange={(e) => setItemDiscount(e.target.value)}
+                                    placeholder="0"
+                                    className="bg-white dark:bg-slate-950 h-9 text-right"
+                                />
+                            </div>
                             <div className="w-full md:w-auto">
                                 <Button onClick={handleAddItem} size="sm" className="w-full md:w-auto bg-slate-800 hover:bg-slate-900 text-white dark:bg-slate-700 dark:hover:bg-slate-600 h-9 px-4">
                                     <Plus className="h-3.5 w-3.5 mr-1.5" /> Add
@@ -605,10 +625,11 @@ export function BillGenerationDialog({
                         <Table>
                             <TableHeader className="bg-slate-50 dark:bg-slate-900">
                                 <TableRow>
-                                    <TableHead className="w-[40%] pl-4">Description</TableHead>
+                                    <TableHead className="w-[35%] pl-4">Description</TableHead>
                                     <TableHead className="text-right w-[15%]">Qty</TableHead>
-                                    <TableHead className="text-right w-[20%]">Price</TableHead>
-                                    <TableHead className="text-right w-[20%]">Total</TableHead>
+                                    <TableHead className="text-right w-[15%]">Price</TableHead>
+                                    <TableHead className="text-right w-[15%]">Disc(%)</TableHead>
+                                    <TableHead className="text-right w-[15%]">Total</TableHead>
                                     <TableHead className="w-[5%]"></TableHead>
                                 </TableRow>
                             </TableHeader>
@@ -627,6 +648,7 @@ export function BillGenerationDialog({
                                             </TableCell>
                                             <TableCell className="text-right text-slate-600">{item.quantity}</TableCell>
                                             <TableCell className="text-right text-slate-600">₹{Number(item.unitPrice).toFixed(2)}</TableCell>
+                                            <TableCell className="text-right text-red-500">{item.discount}%</TableCell>
                                             <TableCell className="text-right font-medium text-slate-900 dark:text-white">₹{Number(item.total).toFixed(2)}</TableCell>
                                             <TableCell>
                                                 <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-red-500 hover:bg-red-50" onClick={() => handleRemoveItem(index)}>

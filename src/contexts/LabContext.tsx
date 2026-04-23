@@ -74,6 +74,13 @@ export interface CreateLabResultInput {
     isReportVisibleToPatient?: boolean;
 }
 
+export interface UpdateLabResultInput {
+    result?: any;
+    interpretation?: string;
+    attachments?: string[];
+    isReportVisibleToPatient?: boolean;
+}
+
 interface LabContextType {
     // State
     labOrders: LabOrder[];
@@ -89,6 +96,7 @@ interface LabContextType {
     confirmPayment: (orderId: string) => Promise<LabOrder>;
     deleteLabOrder: (orderId: string) => Promise<void>;
     submitResult: (input: CreateLabResultInput) => Promise<LabResult>;
+    updateResult: (resultId: string, input: UpdateLabResultInput) => Promise<LabResult>;
     uploadFile: (file: File) => Promise<{ url: string; filename: string }>;
     refreshOrders: () => Promise<void>;
 }
@@ -260,6 +268,17 @@ export const LabProvider: FC<{ children: ReactNode }> = ({ children }) => {
         return result;
     }, [fetchLabOrders, fetchMyLabOrders, user]);
 
+    // Update lab result
+    const updateResult = useCallback(async (resultId: string, input: UpdateLabResultInput): Promise<LabResult> => {
+        const result = await api.put<LabResult>(`/lab/results/${resultId}`, input);
+        // Refresh lists
+        fetchLabOrders();
+        if (user?.role === 'doctor' || user?.role === 'admin') {
+            fetchMyLabOrders();
+        }
+        return result;
+    }, [fetchLabOrders, fetchMyLabOrders, user]);
+
     // Upload result file
     const uploadFile = useCallback(async (file: File): Promise<{ url: string; filename: string }> => {
         const formData = new FormData();
@@ -321,6 +340,7 @@ export const LabProvider: FC<{ children: ReactNode }> = ({ children }) => {
             confirmPayment,
             deleteLabOrder,
             submitResult,
+            updateResult,
             uploadFile,
             refreshOrders,
         }}>

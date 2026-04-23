@@ -244,11 +244,7 @@ export const printInvoice = (bill: Bill, title: string = 'Invoice') => {
                                 <span>Discount</span>
                                 <span>- Rs. ${Number(bill.discount).toFixed(2)}</span>
                             </div>` : ''}
-                            ${bill.gstAmount > 0 ? `
-                            <div class="total-row">
-                                <span style="color: #6b7280;">GST (${bill.gstPercent || 18}%)</span>
-                                <span style="font-weight: 500;">+ Rs. ${Number(bill.gstAmount).toFixed(2)}</span>
-                            </div>` : ''}
+
                             <div class="total-row grand-total">
                                 <span>Grand Total</span>
                                 <span style="color: #0d9488;">Rs. ${Number(bill.grandTotal).toFixed(2)}</span>

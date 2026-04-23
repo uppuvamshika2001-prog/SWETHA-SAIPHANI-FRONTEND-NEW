@@ -17,6 +17,9 @@ import { format } from "date-fns";
 import { toast } from "sonner";
 import { useLab } from "@/contexts/LabContext";
 import { downloadLabReportPDF } from "@/utils/downloadLabReport";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
+import { Edit } from "lucide-react";
 
 interface LabResultDetailsDialogProps {
     children?: React.ReactNode;
@@ -35,6 +38,8 @@ export function LabResultDetailsDialog({
 }: LabResultDetailsDialogProps) {
     const [internalOpen, setInternalOpen] = useState(false);
     const { labOrders } = useLab();
+    const navigate = useNavigate();
+    const { user } = useAuth();
 
     // Use controlled state if provided, otherwise use internal state
     const isOpen = controlledOpen !== undefined ? controlledOpen : internalOpen;
@@ -210,10 +215,25 @@ export function LabResultDetailsDialog({
 
                 <DialogFooter className="flex-col sm:justify-between sm:flex-row gap-2">
                     <Button variant="outline" onClick={() => handleOpenChange(false)}>Close</Button>
-                    <Button onClick={handleDownload} className="gap-2">
-                        <Download className="h-4 w-4" />
-                        Download PDF
-                    </Button>
+                    <div className="flex items-center gap-2">
+                        {(user?.role === 'lab_technician' || user?.role === 'admin') && (
+                            <Button 
+                                variant="secondary" 
+                                className="bg-slate-100" 
+                                onClick={() => {
+                                    handleOpenChange(false);
+                                    navigate(`/lab/results-entry?orderId=${order.id}`);
+                                }}
+                            >
+                                <Edit className="h-4 w-4 mr-2" />
+                                Edit Results
+                            </Button>
+                        )}
+                        <Button onClick={handleDownload} className="gap-2 bg-blue-600 hover:bg-blue-700">
+                            <Download className="h-4 w-4" />
+                            Download PDF
+                        </Button>
+                    </div>
                 </DialogFooter>
             </DialogContent>
         </Dialog>

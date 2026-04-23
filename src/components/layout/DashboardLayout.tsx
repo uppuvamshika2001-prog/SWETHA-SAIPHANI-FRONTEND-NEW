@@ -88,6 +88,7 @@ const getNavItems = (role: AppRole, basePath: string): NavItem[] => {
                 { title: 'Appointments', href: `${basePath}/appointments`, icon: <Calendar className="h-5 w-5" /> },
                 { title: 'Departments', href: `${basePath}/departments`, icon: <Activity className="h-5 w-5" /> },
                 { title: 'Pharmacy', href: `${basePath}/pharmacy`, icon: <Pill className="h-5 w-5" /> },
+                { title: 'Distributor Payments', href: `${basePath}/pharmacy/distributor-payments`, icon: <IndianRupee className="h-5 w-5" /> },
                 { title: 'Billing', href: `${basePath}/billing`, icon: <IndianRupee className="h-5 w-5" /> },
                 { title: 'Analytics', href: `${basePath}/analytics`, icon: <Activity className="h-5 w-5" /> },
                 { title: 'Reports', href: `${basePath}/reports`, icon: <FileText className="h-5 w-5" /> },

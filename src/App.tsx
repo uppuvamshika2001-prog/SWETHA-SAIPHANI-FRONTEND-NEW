@@ -31,6 +31,7 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 // Eagerly loaded pages (landing, error, common)
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
+import LabTestCatalog from './pages/lab/LabTestCatalog';
 
 // --- Lazy-loaded pages ---
 // Public
@@ -107,7 +108,6 @@ const LabDashboard = lazy(() => import("./pages/lab/LabDashboard"));
 const LabPendingTests = lazy(() => import("./pages/lab/LabPendingTests"));
 const LabSampleCollection = lazy(() => import("./pages/lab/LabSampleCollection"));
 const LabResultsEntry = lazy(() => import("./pages/lab/LabResultsEntry"));
-const LabTestCatalog = lazy(() => import("./pages/lab/LabTestCatalog"));
 const LabBilling = lazy(() => import("./pages/lab/LabBilling"));
 const LabSettings = lazy(() => import("./pages/lab/LabSettings"));
 
@@ -174,6 +174,8 @@ const App = () => {
                         <Route path="/admin/settings" element={<Settings />} />
                         <Route path="/admin/profile" element={<Settings />} />
                         <Route path="/admin/pharmacy" element={<AdminPharmacy />} />
+                        <Route path="/admin/pharmacy/purchases" element={<AdminPharmacy />} />
+                        <Route path="/admin/pharmacy/distributor-payments" element={<DistributorPayments />} />
                         <Route path="/admin/analytics" element={<AdminAnalytics />} />
                         <Route path="/admin/lab-management" element={<AdminLabManagement />} />
 

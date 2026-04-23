@@ -36,6 +36,7 @@ interface PurchaseItem {
     mrp: string;
     gst: string;
     stockQuantity: string;
+    packQuantity: number;
 }
 
 export function AddPurchaseDialog({ open, onOpenChange, onSuccess, purchase }: AddPurchaseDialogProps) {
@@ -204,7 +205,8 @@ export function AddPurchaseDialog({ open, onOpenChange, onSuccess, purchase }: A
                 salePrice: "",
                 mrp: "",
                 gst: "",
-                stockQuantity: ""
+                stockQuantity: "",
+                packQuantity: 1
             }
         ]);
     };
@@ -289,8 +291,8 @@ formattedItems.push({
     mrp: item.mrp ? parseFloat(item.mrp) : undefined,
     gst_percent: gstPercent,
     stock_quantity: qty,
+    pack_quantity: item.packQuantity || 1,
     gst_amount: gstAmount
-    
 });
         }
 
@@ -451,7 +453,12 @@ formattedItems.push({
                                                         value={item.medicineId ? { id: item.medicineId, name: item.medicineName || "Unknown", genericName: "" } : null}
                                                         onSearch={searchMedicines}
                                                         onSelect={(medicine: any) => {
-                                                            const newItems = items.map((i) => i.id === item.id ? { ...i, medicineId: medicine.id, medicineName: medicine.name } : i);
+                                                            const newItems = items.map((i) => i.id === item.id ? { 
+                                                                ...i, 
+                                                                medicineId: medicine.id, 
+                                                                medicineName: medicine.name,
+                                                                packQuantity: medicine.pack_quantity || 1
+                                                            } : i);
                                                             setItems(newItems);
                                                         }}
                                                         getDisplayValue={(medicine: any) => medicine ? `${medicine.name}` : "Search medicine..."}

@@ -4,7 +4,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, Filter, Eye } from "lucide-react";
+import { Search, Filter, Eye, ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { useState, useEffect } from "react";
 import { formatCurrency } from "@/utils/format";
 import { AddMedicineDialog } from "@/components/pharmacy/AddMedicineDialog";
@@ -13,6 +13,7 @@ import { EditStockDialog } from "@/components/pharmacy/EditStockDialog";
 import { MedicineDetailsDialog } from "@/components/pharmacy/MedicineDetailsDialog";
 import { toast } from "sonner";
 import { pharmacyService } from "@/services/pharmacyService";
+import { AddPurchaseDialog } from "@/components/pharmacy/AddPurchaseDialog";
 import { Medicine } from "@/types";
 import { normalizeResponse } from "@/utils/api-helpers";
 
@@ -21,6 +22,8 @@ const PharmacyInventory = () => {
     const [medicineList, setMedicineList] = useState<Medicine[]>([]);
     const [loading, setLoading] = useState(true);
     const [filterStatus, setFilterStatus] = useState<string | null>(null);
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 10;
 
     useEffect(() => {
         fetchMedicines();
@@ -29,7 +32,7 @@ const PharmacyInventory = () => {
     const fetchMedicines = async () => {
         try {
             setLoading(true);
-            const data = await pharmacyService.getMedicines({ allBatches: true });
+            const data = await pharmacyService.getMedicines({ allBatches: true, limit: 100 });
             console.log("API Response (Medicines):", data);
             const items = normalizeResponse(data);
             setMedicineList(items);
@@ -44,7 +47,7 @@ const PharmacyInventory = () => {
     const filteredMedicines = medicineList.filter(med => {
     // 1. Safe extraction of names
     const name = med?.name?.toLowerCase() || '';
-    const generic = med?.generic_name?.toLowerCase() || '';
+    const generic = (med?.generic_name || med?.genericName || '').toLowerCase();
 
     // 2. FIXED: Safe Category Handling for the search
     // This handles if category is null, a string, or an object
@@ -65,6 +68,34 @@ const PharmacyInventory = () => {
 
     return matchesSearch && matchesFilter;
 });
+
+    // Reset to page 1 when search or filter changes
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm, filterStatus]);
+
+    // Pagination calculations
+    const totalPages = Math.ceil(filteredMedicines.length / itemsPerPage);
+    const paginatedMedicines = filteredMedicines.slice(
+        (currentPage - 1) * itemsPerPage,
+        currentPage * itemsPerPage
+    );
+
+    const getPageNumbers = () => {
+        const pages: (number | string)[] = [];
+        if (totalPages <= 7) {
+            for (let i = 1; i <= totalPages; i++) pages.push(i);
+        } else {
+            pages.push(1);
+            if (currentPage > 3) pages.push('...');
+            for (let i = Math.max(2, currentPage - 1); i <= Math.min(totalPages - 1, currentPage + 1); i++) {
+                pages.push(i);
+            }
+            if (currentPage < totalPages - 2) pages.push('...');
+            pages.push(totalPages);
+        }
+        return pages;
+    };
 
     const getStatusColor = (status: string) => {
         switch (status) {
@@ -98,6 +129,7 @@ const PharmacyInventory = () => {
     const [editingMedicine, setEditingMedicine] = useState<Medicine | null>(null);
     const [editingBatch, setEditingBatch] = useState<any | null>(null);
     const [viewingMedicine, setViewingMedicine] = useState<Medicine | null>(null);
+    const [isAddPurchaseOpen, setIsAddPurchaseOpen] = useState(false);
 
     const handleEditMedicine = (medicine: Medicine) => {
         // Find the medicine ID if it's a batch-wise row
@@ -139,7 +171,13 @@ const PharmacyInventory = () => {
                         <h1 className="text-3xl font-bold tracking-tight">Inventory Management</h1>
                         <p className="text-muted-foreground mt-1">Track medicine stock, expiry dates, and batches</p>
                     </div>
-                    <AddMedicineDialog onAdd={handleAddMedicine} />
+                    <div className="flex gap-2">
+                        <AddMedicineDialog onAdd={handleAddMedicine} />
+                        <Button onClick={() => setIsAddPurchaseOpen(true)} className="bg-purple-600 hover:bg-purple-700">
+                             <Plus className="mr-2 h-4 w-4" />
+                             Add Stock (Invoice)
+                        </Button>
+                    </div>
                 </div>
 
                 <div className="flex items-center gap-2">
@@ -197,12 +235,14 @@ const PharmacyInventory = () => {
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {filteredMedicines.map((med) => {
-                                        const genericName = med.generic_name || '-';
+                                    {paginatedMedicines.map((med) => {
+                                        const genericName = med.generic_name || med.genericName || '-';
                                         const batchNumber = med.batch?.batch_number || med.batch_number || '-';
-                                        const distributor = med.batch?.distributor || med.distributor || '-';
+                                        const distributor = med.batch?.distributor || med.distributor || med.distributor_name || '-';
                                         const stockQty = med.stock_quantity ?? 0;
-                                        const availableStock = med.pack_quantity ? stockQty / med.pack_quantity : stockQty;
+                                        const availableStock = (med.pack_quantity && med.pack_quantity > 0) 
+                                            ? stockQty / med.pack_quantity 
+                                            : stockQty;
                                         const sellingPrice = med.unit_price ?? med.selling_price ?? 0;
                                         const mrp = med.mrp;
                                         console.log("Rendering medicine:", med.mrp);
@@ -335,6 +375,54 @@ const PharmacyInventory = () => {
                                 </TableBody>
                             </Table>
                         )}
+                        
+                        {/* Pagination */}
+                        {!loading && filteredMedicines.length > 0 && (
+                            <div className="flex items-center justify-between border-t px-6 py-4">
+                                <p className="text-sm text-muted-foreground">
+                                    Showing {((currentPage - 1) * itemsPerPage) + 1}–{Math.min(currentPage * itemsPerPage, filteredMedicines.length)} of {filteredMedicines.length} medicines
+                                </p>
+                                <div className="flex items-center gap-1">
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                        disabled={currentPage === 1}
+                                        className="h-8 w-8 p-0"
+                                    >
+                                        <ChevronLeft className="h-4 w-4" />
+                                    </Button>
+                                    {getPageNumbers().map((page, idx) => (
+                                        typeof page === 'number' ? (
+                                            <Button
+                                                key={idx}
+                                                variant={currentPage === page ? "default" : "outline"}
+                                                size="sm"
+                                                onClick={() => setCurrentPage(page)}
+                                                className={`h-8 w-8 p-0 ${
+                                                    currentPage === page
+                                                        ? 'bg-teal-600 hover:bg-teal-700 text-white'
+                                                        : 'hover:bg-slate-100'
+                                                }`}
+                                            >
+                                                {page}
+                                            </Button>
+                                        ) : (
+                                            <span key={idx} className="px-1 text-muted-foreground">…</span>
+                                        )
+                                    ))}
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                                        disabled={currentPage === totalPages}
+                                        className="h-8 w-8 p-0"
+                                    >
+                                        <ChevronRight className="h-4 w-4" />
+                                    </Button>
+                                </div>
+                            </div>
+                        )}
                     </CardContent>
                 </Card>
                 
@@ -356,6 +444,12 @@ const PharmacyInventory = () => {
                     open={!!viewingMedicine} 
                     onOpenChange={(open) => !open && setViewingMedicine(null)}
                     medicine={viewingMedicine}
+                />
+
+                <AddPurchaseDialog
+                    open={isAddPurchaseOpen}
+                    onOpenChange={setIsAddPurchaseOpen}
+                    onSuccess={fetchMedicines}
                 />
             </div>
         </DashboardLayout>

@@ -1,6 +1,13 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Menu, X, Stethoscope, MapPin, Facebook, Instagram } from "lucide-react";
+import { Menu, X, Stethoscope, MapPin, Facebook, Instagram, LogIn, ChevronDown } from "lucide-react";
+import { Link } from "react-router-dom";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export const HomeNavbar = () => {
     const [isScrolled, setIsScrolled] = useState(false);
@@ -72,6 +79,40 @@ export const HomeNavbar = () => {
                             <div className="flex items-center gap-2 text-sm font-medium text-slate-600 dark:text-slate-300">
                                 <span>Karimnagar, Telangana</span>
                             </div>
+                            
+                            <div className="pl-4 border-l border-slate-200 dark:border-slate-800">
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button variant="default" size="sm" className="gap-2 bg-blue-600 hover:bg-blue-700 text-white rounded-full px-4">
+                                            <LogIn className="w-4 h-4" />
+                                            Login
+                                            <ChevronDown className="w-3 h-3 ml-1 opacity-70" />
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end" className="w-48 bg-white/95 backdrop-blur-sm border-slate-200 shadow-xl">
+                                        <DropdownMenuItem asChild>
+                                            <Link to="/patient/login" className="cursor-pointer w-full text-slate-700 hover:text-blue-600">Patient Portal</Link>
+                                        </DropdownMenuItem>
+                                        <div className="h-px bg-slate-100 my-1"></div>
+                                        <DropdownMenuItem asChild>
+                                            <Link to="/doctor/login" className="cursor-pointer w-full text-slate-700 hover:text-blue-600">Doctor</Link>
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem asChild>
+                                            <Link to="/reception/login" className="cursor-pointer w-full text-slate-700 hover:text-blue-600">Receptionist</Link>
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem asChild>
+                                            <Link to="/pharmacy/login" className="cursor-pointer w-full text-slate-700 hover:text-blue-600">Pharmacist</Link>
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem asChild>
+                                            <Link to="/lab/login" className="cursor-pointer w-full text-slate-700 hover:text-blue-600">Lab Technician</Link>
+                                        </DropdownMenuItem>
+                                        <div className="h-px bg-slate-100 my-1"></div>
+                                        <DropdownMenuItem asChild>
+                                            <Link to="/admin/login" className="cursor-pointer w-full text-blue-600 font-medium hover:text-blue-700">Administrator</Link>
+                                        </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                            </div>
                         </div>
                     </div>
 
@@ -102,6 +143,16 @@ export const HomeNavbar = () => {
                                 {link.name}
                             </button>
                         ))}
+                        
+                        <div className="border-t border-slate-100 dark:border-slate-800 pt-4 mt-2 flex flex-col gap-3">
+                           <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Logins</p>
+                           <Link to="/patient/login" className="text-sm font-medium text-slate-700 hover:text-blue-600">Patient Portal</Link>
+                           <Link to="/doctor/login" className="text-sm font-medium text-slate-700 hover:text-blue-600">Doctor</Link>
+                           <Link to="/reception/login" className="text-sm font-medium text-slate-700 hover:text-blue-600">Receptionist</Link>
+                           <Link to="/pharmacy/login" className="text-sm font-medium text-slate-700 hover:text-blue-600">Pharmacist</Link>
+                           <Link to="/lab/login" className="text-sm font-medium text-slate-700 hover:text-blue-600">Lab Technician</Link>
+                           <Link to="/admin/login" className="text-sm font-medium text-blue-600 hover:text-blue-700">Administrator</Link>
+                        </div>
                     </div>
                 </div>
             )}

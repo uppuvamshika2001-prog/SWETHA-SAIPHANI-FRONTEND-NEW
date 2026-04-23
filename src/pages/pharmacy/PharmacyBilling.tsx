@@ -13,7 +13,7 @@ import {
     TableRow,
 } from '@/components/ui/table';
 import { useToast } from '@/components/ui/use-toast';
-import { Plus, Trash2, Printer, Save, History, Search, User, Pill, CreditCard } from 'lucide-react';
+import { Plus, Trash2, Printer, Save, History, Search, User, Pill, CreditCard, ChevronLeft, ChevronRight } from 'lucide-react';
 import { patientService } from "@/services/patientService";
 import { pharmacyService } from "@/services/pharmacyService";
 import { billingService, Bill } from "@/services/billingService";
@@ -24,6 +24,8 @@ import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
+import { DatePicker } from '@/components/ui/date-picker';
+import { format } from 'date-fns';
 
 interface BillItem {
     id: string;
@@ -37,6 +39,7 @@ interface BillItem {
     expiry_date?: string;
     hsn_code?: string;
     available_stock: number;
+    pack_quantity: number;
     total: number;
 }
 
@@ -54,6 +57,9 @@ export default function PharmacyBilling() {
     // History State
     const [historyBills, setHistoryBills] = useState<Bill[]>([]);
     const [loadingHistory, setLoadingHistory] = useState(false);
+    const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 10;
 
     // Totals Calculation
     const parseNumericValue = (value: string | number, fallback = 0) => {
@@ -70,12 +76,12 @@ export default function PharmacyBilling() {
             const quantity = parseNumericValue(item.quantity, 0);
             const sellingPrice = parseNumericValue(item.selling_price, 0);
             const discount = parseNumericValue(item.discount, 0);
-            const gstPercent = parseNumericValue( 0);
+            const gstPercent = 0;
 
             const baseAmount = quantity * sellingPrice;
             const itemDiscount = baseAmount * (discount / 100);
             const taxableAmount = baseAmount - itemDiscount;
-            const itemGst = 0;//taxableAmount * (gstPercent / 100);
+            const itemGst = 0;
             
             subtotal += baseAmount;
             totalDiscount += itemDiscount;
@@ -94,7 +100,7 @@ export default function PharmacyBilling() {
 
     useEffect(() => {
         fetchBillHistory();
-    }, []);
+    }, [selectedDate]);
 
     const isPharmacyBill = (bill: any) => {
         const billType = String(
@@ -130,7 +136,12 @@ export default function PharmacyBilling() {
     const fetchBillHistory = async () => {
         setLoadingHistory(true);
         try {
-            const result = await billingService.getBills({ limit: 50, billType: 'PHARMACY' });
+            const params: any = { limit: 50, billType: 'PHARMACY' };
+            if (selectedDate) {
+                params.startDate = format(selectedDate, 'yyyy-MM-dd');
+                params.endDate = format(selectedDate, 'yyyy-MM-dd');
+            }
+            const result = await billingService.getBills(params);
             const items = Array.isArray(result) ? result : result.items || [];
             const pharmacyItems = items.filter(isPharmacyBill);
             setHistoryBills(pharmacyItems.sort((a: any, b: any) => new Date(b.createdAt || b.created_at).getTime() - new Date(a.createdAt || a.created_at).getTime()));
@@ -140,6 +151,29 @@ export default function PharmacyBilling() {
         } finally {
             setLoadingHistory(false);
         }
+    };
+
+    // Pagination calculations
+    const totalPages = Math.ceil(historyBills.length / itemsPerPage);
+    const paginatedBills = historyBills.slice(
+        (currentPage - 1) * itemsPerPage,
+        currentPage * itemsPerPage
+    );
+
+    const getPageNumbers = () => {
+        const pages: (number | string)[] = [];
+        if (totalPages <= 7) {
+            for (let i = 1; i <= totalPages; i++) pages.push(i);
+        } else {
+            pages.push(1);
+            if (currentPage > 3) pages.push('...');
+            for (let i = Math.max(2, currentPage - 1); i <= Math.min(totalPages - 1, currentPage + 1); i++) {
+                pages.push(i);
+            }
+            if (currentPage < totalPages - 2) pages.push('...');
+            pages.push(totalPages);
+        }
+        return pages;
     };
 
     const searchPatients = async (query: string) => {
@@ -181,13 +215,13 @@ export default function PharmacyBilling() {
             name: medicine.name,
             quantity: 1,
             selling_price: medicine.unit_price || 0,
-           // gst_percent: medicine.gst_percent || 0,
-           gst_percent: 0,
+            gst_percent: 0,
             discount: 0,
             batch_number: medicine.batch_number || '-',
             expiry_date: medicine.expiry_date || undefined,
             hsn_code: medicine.hsn_code || undefined,
             available_stock: medicine.stock_quantity,
+            pack_quantity: medicine.pack_quantity || 1,
             total: medicine.unit_price || 0
         };
 
@@ -227,9 +261,7 @@ export default function PharmacyBilling() {
             // Recalculate item total
             const baseAmount = updated.quantity * updated.selling_price;
             const discountAmount = baseAmount * (updated.discount / 100);
-            const taxableAmount = baseAmount - discountAmount;
-            const gstAmount = taxableAmount * (updated.gst_percent / 100);
-            updated.total = taxableAmount + gstAmount;
+            updated.total = baseAmount - discountAmount;
 
             return updated;
         }));
@@ -280,8 +312,8 @@ export default function PharmacyBilling() {
             items: printableItems,
             subtotal: totals.subtotal,
             discount: totals.totalDiscount,
-            gstAmount: totals.totalTax,
-            gstPercent: billItems.length > 0 ? billItems.reduce((acc, item) => acc + parseNumericValue(item.gst_percent, 0), 0) / billItems.length : 0,
+            gstAmount: 0,
+            gstPercent: 0,
             grandTotal: totals.grandTotal,
             status: 'PAID',
             createdAt: new Date().toISOString(),
@@ -537,10 +569,8 @@ export default function PharmacyBilling() {
                                                 <TableRow>
                                                     <TableHead className="pl-6">Medicine Name</TableHead>
                                                     <TableHead>Batch</TableHead>
-                                                    <TableHead className="w-[120px]">Quantity</TableHead>
+                                                    <TableHead className="w-[150px]">Quantity (Tablets)</TableHead>
                                                     <TableHead className="text-right">Price (₹)</TableHead>
-                                                    
-                                                    <TableHead className="w-[100px] text-right">GST %</TableHead>
                                                     <TableHead className="w-[100px] text-right">Disc %</TableHead>
                                                     <TableHead className="text-right pr-6">Total (₹)</TableHead>
                                                     <TableHead className="w-[50px]"></TableHead>
@@ -563,27 +593,26 @@ export default function PharmacyBilling() {
                                                             <TableCell><span className="text-xs font-mono">{item.batch_number}</span></TableCell>
                                                             <TableCell>
                                                                 <div className="space-y-1">
-                                                                    <Input
-                                                                        type="number"
-                                                                        value={item.quantity}
-                                                                        onChange={(e) => updateItem(item.id, 'quantity', e.target.value)}
-                                                                        className="h-8 text-center"
-                                                                    />
-                                                                    <p className="text-[10px] text-center text-muted-foreground">
-                                                                        Max: {item.available_stock}
+                                                                    <div className="flex items-center gap-1">
+                                                                        <Input
+                                                                            type="number"
+                                                                            value={item.quantity}
+                                                                            onChange={(e) => updateItem(item.id, 'quantity', e.target.value)}
+                                                                            className="h-8 text-center"
+                                                                        />
+                                                                        <span className="text-[10px] font-medium text-muted-foreground">Tablets</span>
+                                                                    </div>
+                                                                    <p className="text-[10px] text-center text-muted-foreground mt-1">
+                                                                        Max: {item.available_stock} Units
+                                                                        {item.pack_quantity > 1 && (
+                                                                            <span className="block italic">
+                                                                                ({Math.floor(item.available_stock / item.pack_quantity)} Strip{Math.floor(item.available_stock / item.pack_quantity) !== 1 ? 's' : ''}, {item.available_stock % item.pack_quantity} Units)
+                                                                            </span>
+                                                                        )}
                                                                     </p>
                                                                 </div>
                                                             </TableCell>
                                                             <TableCell className="text-right">₹{item.selling_price.toFixed(2)}</TableCell>
-                                                            
-                                                            <TableCell className="text-right">
-                                                                <Input
-                                                                    type="number"
-                                                                    value={item.gst_percent}
-                                                                    onChange={(e) => updateItem(item.id, 'gst_percent', e.target.value)}
-                                                                    className="h-8 text-right"
-                                                                />
-                                                            </TableCell>
                                                             <TableCell className="text-right">
                                                                 <Input
                                                                     type="number"
@@ -625,10 +654,6 @@ export default function PharmacyBilling() {
                                             <div className="flex justify-between text-sm">
                                                 <span className="text-muted-foreground">Discount</span>
                                                 <span className="text-green-600 font-medium">-₹{totals.totalDiscount.toFixed(2)}</span>
-                                            </div>
-                                            <div className="flex justify-between text-sm">
-                                                <span className="text-muted-foreground">GST (Tax)</span>
-                                                <span className="font-medium">+₹{totals.totalTax.toFixed(2)}</span>
                                             </div>
                                             <div className="pt-4 border-t">
                                                 <div className="flex justify-between items-center bg-primary/10 p-3 rounded-lg">
@@ -678,10 +703,18 @@ export default function PharmacyBilling() {
                             <CardHeader>
                                 <CardTitle className="flex justify-between items-center">
                                     <span>Bill History</span>
-                                    <Button variant="outline" size="sm" onClick={fetchBillHistory} disabled={loadingHistory}>
-                                        <History className={cn("h-4 w-4 mr-2", loadingHistory && "animate-spin")} />
-                                        Refresh
-                                    </Button>
+                                    <div className="flex items-center gap-3 text-sm font-normal">
+                                        <DatePicker date={selectedDate} setDate={setSelectedDate} />
+                                        {selectedDate && (
+                                            <Button variant="ghost" size="sm" onClick={() => setSelectedDate(undefined)}>
+                                                Clear Date
+                                            </Button>
+                                        )}
+                                        <Button variant="outline" size="sm" onClick={fetchBillHistory} disabled={loadingHistory}>
+                                            <History className={cn("h-4 w-4 mr-2", loadingHistory && "animate-spin")} />
+                                            Refresh
+                                        </Button>
+                                    </div>
                                 </CardTitle>
                             </CardHeader>
                             <CardContent>
@@ -705,7 +738,7 @@ export default function PharmacyBilling() {
                                                     </TableCell>
                                                 </TableRow>
                                             ) : (
-                                                historyBills.map((bill) => (
+                                                paginatedBills.map((bill) => (
                                                     <TableRow key={bill.id} className="hover:bg-primary/5 transition-colors">
                                                         <TableCell>{new Date(bill.created_at || bill.createdAt).toLocaleDateString()}</TableCell>
                                                         <TableCell className="font-mono text-xs">{bill.bill_number || bill.billNumber}</TableCell>
@@ -748,6 +781,56 @@ export default function PharmacyBilling() {
                                         </TableBody>
                                     </Table>
                                 </div>
+
+                                {/* Pagination Controls */}
+                                {!loadingHistory && historyBills.length > 0 && (
+                                    <div className="flex flex-col sm:flex-row items-center justify-between gap-4 py-4 px-2 mt-2">
+                                        <div className="text-sm text-muted-foreground">
+                                            Showing <span className="font-semibold text-foreground">{Math.min(historyBills.length, (currentPage - 1) * itemsPerPage + 1)}</span> to{" "}
+                                            <span className="font-semibold text-foreground">{Math.min(historyBills.length, currentPage * itemsPerPage)}</span> of{" "}
+                                            <span className="font-semibold text-foreground">{historyBills.length}</span> entries
+                                        </div>
+                                        <div className="flex items-center gap-1">
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                                                disabled={currentPage === 1}
+                                                className="h-8 w-8 p-0"
+                                            >
+                                                <ChevronLeft className="h-4 w-4" />
+                                            </Button>
+                                            
+                                            <div className="flex items-center gap-1 mx-2">
+                                                {getPageNumbers().map((page, index) => (
+                                                    typeof page === 'number' ? (
+                                                        <Button
+                                                            key={index}
+                                                            variant={currentPage === page ? "default" : "outline"}
+                                                            size="sm"
+                                                            onClick={() => setCurrentPage(page)}
+                                                            className={`h-8 w-8 p-0 ${currentPage === page ? 'bg-primary hover:bg-primary/90' : ''}`}
+                                                        >
+                                                            {page}
+                                                        </Button>
+                                                    ) : (
+                                                        <span key={index} className="px-1 text-muted-foreground">...</span>
+                                                    )
+                                                ))}
+                                            </div>
+
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                                                disabled={currentPage === totalPages}
+                                                className="h-8 w-8 p-0"
+                                            >
+                                                <ChevronRight className="h-4 w-4" />
+                                            </Button>
+                                        </div>
+                                    </div>
+                                )}
                             </CardContent>
                         </Card>
                     </TabsContent>
