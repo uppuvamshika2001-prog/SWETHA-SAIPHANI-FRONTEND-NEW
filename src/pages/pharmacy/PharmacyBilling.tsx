@@ -629,7 +629,7 @@ export default function PharmacyBilling() {
                                                     </div>
                                                 </div>
                                             </div>
-                                        )})}
+                                        )}
                                     </CardContent>
                                 </Card>
 
