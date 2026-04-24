@@ -332,7 +332,7 @@ const PharmacyInventory = () => {
                                                     </div>
                                                 </TableCell>
                                                  <TableCell className="text-right font-medium">{formatCurrency(mrp)}</TableCell>
-                                                <TableCell className="text-right font-medium">{formatCurrency(sellingPrice * stockQty)}</TableCell>
+                                                <TableCell className="text-right font-medium">{formatCurrency((mrp || 0) * stockQty)}</TableCell>
                                                 <TableCell className="text-right">
                                                     <div className="flex justify-end gap-1">
                                                         <Button 

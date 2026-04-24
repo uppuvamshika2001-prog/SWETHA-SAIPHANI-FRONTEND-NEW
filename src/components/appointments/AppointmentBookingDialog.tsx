@@ -111,7 +111,7 @@ export function AppointmentBookingDialog({
 
     // ... (rest of predefinedDepartments, predefinedDoctors, allDoctors logic same as original) ...
     // Predefined departments as requested
-    const predefinedDepartments = [
+    const defaultDepartments = [
         "Orthopaedics",
         "Neurosurgeon",
         "General Physician",
@@ -120,6 +120,26 @@ export function AppointmentBookingDialog({
         "Oncology",
         "Paediatric Hemato-Oncology"
     ];
+
+    const [allowedDepartments, setAllowedDepartments] = useState<string[]>(() => {
+        const saved = localStorage.getItem('hospital_departments');
+        const list = saved ? JSON.parse(saved) : defaultDepartments;
+        // Map "Neurosurgery" to "Neurosurgeon" if it comes from the other page for consistency in appointments
+        return list.map((d: string) => d === "Neurosurgery" ? "Neurosurgeon" : d);
+    });
+
+    useEffect(() => {
+        // Sync with localStorage periodically or on open to get latest from Admin page
+        const handleFocus = () => {
+            const saved = localStorage.getItem('hospital_departments');
+            if (saved) {
+                const list = JSON.parse(saved).map((d: string) => d === "Neurosurgery" ? "Neurosurgeon" : d);
+                setAllowedDepartments(list);
+            }
+        };
+        window.addEventListener('focus', handleFocus);
+        return () => window.removeEventListener('focus', handleFocus);
+    }, []);
 
     // Predefined doctors mapped to departments (with valid UUID format)
     // These are only shown as fallback if no doctors are fetched from the database
@@ -153,18 +173,30 @@ export function AppointmentBookingDialog({
         if (deptLower.includes("general physician") || deptLower === "general physician" || deptLower.includes("general medicine")) return "General Physician";
         if (deptLower.includes("paediatric ortho") || deptLower.includes("pediatric ortho")) return "Paediatric Orthopaedics";
         if (deptLower.includes("neuro")) return "Neurosurgeon";
+        
+        // Fallback: check for match in our dynamic list
+        const exactMatch = allowedDepartments.find(d => 
+            d.toLowerCase() === deptLower || 
+            deptLower.includes(d.toLowerCase()) ||
+            d.toLowerCase().includes(deptLower)
+        );
+        if (exactMatch) return exactMatch;
+        
         return null;
     };
 
     const departments = Array.from(new Set([
-        ...predefinedDepartments,
+        ...allowedDepartments,
         ...allDoctors.map(d => getDepartmentMapping(d.department)).filter(Boolean) as string[]
     ])).filter(dept =>
         dept &&
         !['Neurology', 'Neurosurgen', 'Neurosurgern', 'Orthopedics'].includes(dept)
     );
 
-    const availableDoctors = allDoctors.filter(d => !department || getDepartmentMapping(d.department) === department);
+    const availableDoctors = allDoctors.filter(d => 
+        !department || 
+        getDepartmentMapping(d.department)?.toLowerCase() === department.toLowerCase()
+    );
 
     // Filter patients based on search
     const filteredPatients = patients.filter(p =>

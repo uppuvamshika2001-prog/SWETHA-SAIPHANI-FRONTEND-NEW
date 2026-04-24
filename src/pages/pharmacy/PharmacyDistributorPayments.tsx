@@ -32,8 +32,7 @@ import { AddPurchaseDialog } from "@/components/pharmacy/AddPurchaseDialog";
 import { API_BASE_URL } from "@/config/api";
 
 export default function DistributorPayments() {
-    const { profile } = useAuth();
-    const currentRole = (profile?.role?.toLowerCase() as any) || "pharmacist";
+    const { role: currentRole } = useAuth();
     
     const [purchases, setPurchases] = useState<any[]>([]);
     const [isAddPurchaseOpen, setIsAddPurchaseOpen] = useState(false);
@@ -66,7 +65,8 @@ export default function DistributorPayments() {
             const [purchasesRes, reportRes] = await Promise.all([
                 pharmacyService.getPurchases({
                     distributor: filters.distributor || undefined,
-                    status: filters.status !== "ALL" ? filters.status : undefined
+                    status: filters.status !== "ALL" ? filters.status : undefined,
+                    limit: 1000
                 }),
                 pharmacyService.getDistributorReport()
             ]);
@@ -155,7 +155,7 @@ export default function DistributorPayments() {
     };
 
     return (
-        <DashboardLayout role={currentRole}>
+        <DashboardLayout role={currentRole || 'pharmacist'}>
             <div className="p-6 space-y-6">
                 <div className="flex justify-between items-center">
                     <div>
@@ -273,6 +273,7 @@ export default function DistributorPayments() {
                                             <TableRow className="bg-slate-50/50">
                                                 <TableHead>Invoice #</TableHead>
                                                 <TableHead>Distributor</TableHead>
+                                                <TableHead>Medicine</TableHead>
                                                 <TableHead>Date</TableHead>
                                                 <TableHead className="text-right">Total</TableHead>
                                                 <TableHead className="text-right">Balance</TableHead>
@@ -284,13 +285,13 @@ export default function DistributorPayments() {
                                         <TableBody>
                                             {isLoading ? (
                                                 <TableRow>
-                                                    <TableCell colSpan={8} className="h-24 text-center">
+                                                    <TableCell colSpan={9} className="h-24 text-center">
                                                         <Loader2 className="h-6 w-6 animate-spin mx-auto text-slate-400" />
                                                     </TableCell>
                                                 </TableRow>
                                             ) : filteredPurchases.length === 0 ? (
                                                 <TableRow>
-                                                    <TableCell colSpan={8} className="h-24 text-center text-slate-500">
+                                                    <TableCell colSpan={9} className="h-24 text-center text-slate-500">
                                                         No purchase records found
                                                     </TableCell>
                                                 </TableRow>
@@ -299,6 +300,11 @@ export default function DistributorPayments() {
                                                     <TableRow key={purchase.id}>
                                                         <TableCell className="font-medium text-purple-700">{purchase.invoice_number}</TableCell>
                                                         <TableCell>{purchase.distributor_name}</TableCell>
+                                                        <TableCell>
+                                                            <div className="max-w-[150px] truncate text-xs text-muted-foreground" title={purchase.batches?.map((b: any) => b.medicine_name).join(', ')}>
+                                                                {purchase.batches?.map((b: any) => b.medicine_name).join(', ') || '-'}
+                                                            </div>
+                                                        </TableCell>
                                                         <TableCell className="text-xs">{purchase.purchase_date ? format(new Date(purchase.purchase_date), "dd MMM yy") : '-'}</TableCell>
                                                         <TableCell className="text-right">₹{(purchase.total_amount || 0).toFixed(2)}</TableCell>
                                                         <TableCell className="text-right text-red-600 font-semibold">₹{(purchase.balance_amount || 0).toFixed(2)}</TableCell>

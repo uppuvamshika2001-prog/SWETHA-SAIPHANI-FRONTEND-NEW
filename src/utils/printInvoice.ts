@@ -249,10 +249,6 @@ export const printInvoice = (bill: Bill, title: string = 'Invoice') => {
                                 <span>Grand Total</span>
                                 <span style="color: #0d9488;">Rs. ${Number(bill.grandTotal).toFixed(2)}</span>
                             </div>
-                             <div class="total-row" style="margin-top: 5px;">
-                                <span style="color: #6b7280;">Paid Amount</span>
-                                <span style="font-weight: 500;">Rs. ${Number(bill.paidAmount || 0).toFixed(2)}</span>
-                            </div>
                         </div>
                     </div>
                     

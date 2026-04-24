@@ -4,9 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Search, CheckCircle2, AlertCircle, Package, ScanLine, ClipboardList, UserCheck, CheckCircle, ChevronDown, ChevronUp, Filter } from "lucide-react";
+import { Search, CheckCircle2, AlertCircle, Package, ScanLine, ClipboardList, UserCheck, CheckCircle, ChevronDown, ChevronUp, Filter, User, FileText } from "lucide-react";
 import { useState, useEffect } from "react";
 import { pharmacyService } from "@/services/pharmacyService";
+import { patientService } from "@/services/patientService";
 import { toast } from "sonner";
 import { formatCurrency } from "@/utils/format";
 
@@ -18,6 +19,7 @@ const PharmacyDispensing = () => {
     const [dispensedItems, setDispensedItems] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
     const [pendingQueue, setPendingQueue] = useState<any[]>([]);
+    const [lookupResults, setLookupResults] = useState<any[]>([]);
     const [expandedHistory, setExpandedHistory] = useState<Record<string, boolean>>({});
 
     const [dateRange, setDateRange] = useState({
@@ -107,12 +109,12 @@ const PharmacyDispensing = () => {
         }
     };
 
-    const handleSelectPending = (record: any) => {
-        // Map record to foundOrder format similar to handleLookup
+    const selectRecord = (record: any) => {
+        // Map Medical Record to Order View
         const orderData = {
             order_id: record.id,
             patient_id: record.patientId,
-            patient_name: `${record.patient.firstName} ${record.patient.lastName}`,
+            patient_name: `${record.patient?.firstName || ''} ${record.patient?.lastName || ''}`.trim() || 'Walk-in Patient',
             items: record.prescriptions.map((p: any) => ({
                 medicine_name: p.medicineName,
                 quantity: `${p.frequency} (${p.duration})`,
@@ -127,82 +129,70 @@ const PharmacyDispensing = () => {
         setFoundOrder(orderData);
         setFoundPatient({
             full_name: orderData.patient_name,
-            patient_id: record.patient?.uhid || record.patientId.slice(0, 8),
+            patient_id: record.patient?.uhid || record.patientId?.slice(0, 8),
             phone: record.patient?.phone || 'N/A'
         });
-        setOrderId(record.patient?.uhid || record.id); // Auto-fill search box
+        setOrderId(record.patient?.uhid || record.id);
+        setLookupResults([]);
+        setVerified(record.prescriptionStatus === 'DISPENSED');
+        
+        if (record.prescriptionStatus === 'DISPENSED') {
+            toast.info("This record has already been dispensed");
+        } else {
+            toast.success("Prescription Found");
+        }
+    };
+
+    const handleSelectPending = (record: any) => {
+        selectRecord(record);
         toast.info("Selected from Queue");
     };
 
     const handleLookup = async () => {
-        if (!orderId.trim()) {
+        const query = orderId.trim();
+        if (!query) {
             toast.error("Please enter a record ID or Patient Name");
             return;
         }
 
         setLoading(true);
+        setLookupResults([]);
         try {
-            let record = null;
-            // Simple heuristic: if it looks like a Name (has letters, no dashes/numbers mixed typical of UUID)
-            // Actually, backend ID is UUID.
-            if (orderId.includes('-') && orderId.length > 20) {
-                // Try ID lookup
-                try {
-                    record = await pharmacyService.getMedicalRecordById(orderId.trim());
-                } catch (e) {
-                    // Fallback to search if ID fails
+            // 1. Try to search for medical records directly (as we do now)
+            const results = await pharmacyService.searchMedicalRecords(query);
+            
+            // Filter to those with prescriptions
+            const validResults = results.filter((r: any) => r.prescriptions && r.prescriptions.length > 0);
+
+            if (validResults.length > 0) {
+                if (validResults.length === 1) {
+                    selectRecord(validResults[0]);
+                } else {
+                    setLookupResults(validResults);
+                    setFoundOrder(null);
+                    setFoundPatient(null);
+                    toast.info(`Found ${validResults.length} records with prescriptions.`);
                 }
+                return;
             }
 
-            if (!record) {
-                const results = await pharmacyService.searchMedicalRecords(orderId.trim());
-                // Find first record with prescriptions
-                record = results.find((r: any) => r.prescriptions && r.prescriptions.length > 0);
-            }
-
-            if (record) {
-                if (!record.prescriptions || record.prescriptions.length === 0) {
-                    toast.warning("Record found but has no prescriptions");
-                    return;
-                }
-
-                if (record.prescriptionStatus === 'DISPENSED') {
-                    toast.info("This prescription has already been dispensed");
-                    // Still show it but maybe mark it
-                }
-
-                // Map Medical Record to Order View
-                const orderData = {
-                    order_id: record.id,
-                    patient_id: record.patientId,
-                    patient_name: `${record.patient.firstName} ${record.patient.lastName}`,
-                    items: record.prescriptions.map((p: any) => ({
-                        medicine_name: p.medicineName,
-                        quantity: `${p.frequency} (${p.duration})`, // overload quantity for display
-                        unit_price: p.unitPrice || 0,
-                        total_amount: 0 
-                    })),
-                    total_amount: 0,
-                    status: record.prescriptionStatus, // Add status
-                    raw_patient: record.patient // Store full patient details for verification
-                };
-
-                setFoundOrder(orderData);
-                // Fetch full patient details if needed, or use what's in record
-                // The record.patient only has names. We might need phone from patient service?
-                // For now use what we have.
-                setFoundPatient({
-                    full_name: orderData.patient_name,
-                    patient_id: record.patient?.uhid || record.patientId.slice(0, 8), // fallback
-                    phone: 'N/A' // Record response simplified, might need patient profile fetch
+            // 2. Fallback: If no records with prescriptions, search for the PATIENT directly
+            // This helps distinguish between "No such person" and "Person exists but no prescription"
+            const patientResults = await patientService.getPatients({ search: query, limit: 5 });
+            
+            if (patientResults.items && patientResults.items.length > 0) {
+                const patient = patientResults.items[0];
+                toast.warning(`Patient "${patient.full_name}" found, but no active prescriptions were found for them.`, {
+                    description: "Please check if the doctor has finished their record or if you are looking for an older bill.",
+                    duration: 5000,
                 });
-
-                // If already dispensed, verify automatically or disable verify?
-                setVerified(record.prescriptionStatus === 'DISPENSED');
-                toast.success(record.prescriptionStatus === 'DISPENSED' ? "Record Found (Dispensed)" : "Prescriptions Found");
+                
+                // Show the patient details anyway to confirm we found the right person
+                setFoundPatient(patient);
+                setFoundOrder(null);
             } else {
-                toast.error("No records found", {
-                    description: "No medical records with prescriptions match your query",
+                toast.error("No record found", {
+                    description: `No patient or medical record matching "${query}" was found.`,
                 });
                 setFoundOrder(null);
                 setFoundPatient(null);
@@ -310,13 +300,12 @@ const PharmacyDispensing = () => {
                             </CardTitle>
                             <CardDescription>Enter Medical Record ID or Patient Name</CardDescription>
                         </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div className="space-y-2">
+                        <CardContent className="space-y-4">                                <div className="space-y-2">
                                 <Label htmlFor="order-lookup">Search</Label>
                                 <div className="flex gap-2">
                                     <Input
                                         id="order-lookup"
-                                        placeholder="Record UUID or First Name..."
+                                        placeholder="Enter UHID, Name or Phone..."
                                         value={orderId}
                                         onChange={(e) => setOrderId(e.target.value)}
                                         onKeyDown={(e) => e.key === 'Enter' && handleLookup()}
@@ -328,7 +317,47 @@ const PharmacyDispensing = () => {
                                 </div>
                             </div>
 
+                            {lookupResults.length > 0 && (
+                                <div className="border rounded-md max-h-[200px] overflow-y-auto animate-in fade-in slide-in-from-top-2">
+                                    <Table>
+                                        <TableHeader className="bg-muted/50 sticky top-0 z-10">
+                                            <TableRow>
+                                                <TableHead className="text-xs">Patient</TableHead>
+                                                <TableHead className="text-xs">UHID</TableHead>
+                                                <TableHead className="text-xs">Phone</TableHead>
+                                                <TableHead className="text-xs">Date</TableHead>
+                                                <TableHead className="text-xs text-right">Action</TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {lookupResults.map((record) => (
+                                                <TableRow key={record.id} className="hover:bg-purple-50">
+                                                    <TableCell className="py-2 text-sm font-medium">
+                                                        {record.patient?.firstName} {record.patient?.lastName}
+                                                    </TableCell>
+                                                    <TableCell className="py-2 text-xs font-mono text-muted-foreground">
+                                                        {record.patient?.uhid || record.id.slice(0, 8)}
+                                                    </TableCell>
+                                                    <TableCell className="py-2 text-xs">
+                                                        {record.patient?.phone || 'N/A'}
+                                                    </TableCell>
+                                                    <TableCell className="py-2 text-xs">
+                                                        {new Date(record.createdAt).toLocaleDateString()}
+                                                    </TableCell>
+                                                    <TableCell className="py-2 text-right">
+                                                        <Button variant="ghost" size="sm" className="h-7 text-purple-600 hover:text-purple-700 hover:bg-purple-100" onClick={() => selectRecord(record)}>
+                                                            Select
+                                                        </Button>
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))}
+                                        </TableBody>
+                                    </Table>
+                                </div>
+                            )}
+
                             {foundOrder && (
+
                                 <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
                                     <div className="flex items-center gap-2 text-green-700 font-medium mb-2">
                                         <Package className="h-4 w-4" />

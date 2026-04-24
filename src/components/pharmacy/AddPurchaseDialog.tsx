@@ -36,6 +36,7 @@ interface PurchaseItem {
     mrp: string;
     gst: string;
     stockQuantity: string;
+    freeQuantity: string;
     packQuantity: number;
 }
 
@@ -61,7 +62,7 @@ export function AddPurchaseDialog({ open, onOpenChange, onSuccess, purchase }: A
     const [hasInitialized, setHasInitialized] = useState(false);
 
     useEffect(() => {
-        if (open) {
+        if (open && !hasInitialized) {
             fetchMedicines();
             if (purchase) {
                 setDistributorName(purchase.distributorName || "");
@@ -77,6 +78,7 @@ export function AddPurchaseDialog({ open, onOpenChange, onSuccess, purchase }: A
                         medicineName: b.medicineName || "Unknown",
                         batchNumber: b.batchNumber || "",
                         stockQuantity: b.stockQuantity?.toString() || "0",
+                        freeQuantity: b.freeQuantity?.toString() || "0",
                         purchasePrice: b.purchasePrice?.toString() || "0",
                         salePrice: b.salePrice?.toString() || "0",
                         mrp: b.mrp?.toString() || "",
@@ -88,19 +90,32 @@ export function AddPurchaseDialog({ open, onOpenChange, onSuccess, purchase }: A
                 } else {
                     setItems([]);
                 }
-                setHasInitialized(true);
             } else {
                 setDistributorName("");
                 setInvoiceNumber("");
                 setPurchaseDate(new Date().toISOString().split('T')[0]);
                 setSelectedFile(null);
                 setFilePreview(null);
-                setItems([]);
-                addNewItem();
-                setHasInitialized(true);
+                setItems([{
+                    id: Math.random().toString(36).substring(7),
+                    medicineId: "",
+                    medicineName: "",
+                    batchNumber: "",
+                    manufacturingDate: "",
+                    expiryDate: "",
+                    purchasePrice: "",
+                    salePrice: "",
+                    mrp: "",
+                    gst: "",
+                    stockQuantity: "",
+                    freeQuantity: "0",
+                    packQuantity: 1
+                }]);
             }
-        } else {
+            setHasInitialized(true);
+        } else if (!open) {
             setHasInitialized(false);
+            setItems([]);
         }
     }, [open, purchase]);
 
@@ -109,7 +124,7 @@ export function AddPurchaseDialog({ open, onOpenChange, onSuccess, purchase }: A
     // 1. Calculate Subtotal
     const newSubtotal = items.reduce((sum, item) => {
         const qty = parseFloat(item.stockQuantity) || 0;
-        const price = parseFloat(item.purchasePrice) || 0;
+        const price = parseFloat(item.mrp) || 0;
         return sum + (qty * price);
     }, 0);
 
@@ -206,6 +221,7 @@ export function AddPurchaseDialog({ open, onOpenChange, onSuccess, purchase }: A
                 mrp: "",
                 gst: "",
                 stockQuantity: "",
+                freeQuantity: "0",
                 packQuantity: 1
             }
         ]);
@@ -275,10 +291,9 @@ export function AddPurchaseDialog({ open, onOpenChange, onSuccess, purchase }: A
             }
 
            const qty = parseInt(item.stockQuantity, 10) || 0;
-const price = parseFloat(item.purchasePrice) || 0;
 const gstPercent = parseFloat(item.gst) || 0;
-
-const base = qty * price;
+const mrpPrice = parseFloat(item.mrp) || 0;
+const base = qty * mrpPrice;
 const gstAmount = (base * gstPercent) / 100;
 
 formattedItems.push({
@@ -291,6 +306,7 @@ formattedItems.push({
     mrp: item.mrp ? parseFloat(item.mrp) : undefined,
     gst_percent: gstPercent,
     stock_quantity: qty,
+    free_quantity: parseInt(item.freeQuantity, 10) || 0,
     pack_quantity: item.packQuantity || 1,
     gst_amount: gstAmount
 });
@@ -433,6 +449,7 @@ formattedItems.push({
                                         <TableHead className="w-[120px]">Batch No *</TableHead>
                                         <TableHead className="w-[130px]">Expiry *</TableHead>
                                         <TableHead className="w-[100px]">Qty *</TableHead>
+                                        <TableHead className="w-[80px]">Free Qty</TableHead>
                                         <TableHead className="w-[110px]">Pur. Price *</TableHead>
                                         <TableHead className="w-[110px]">Sale Price *</TableHead>
                                         <TableHead className="w-[110px]">MRP</TableHead>
@@ -443,7 +460,7 @@ formattedItems.push({
                                 </TableHeader>
                                 <TableBody>
                                     {items.map((item) => {
-                                        const total = (parseFloat(item.stockQuantity) || 0) * (parseFloat(item.purchasePrice) || 0);
+                                        const total = (parseFloat(item.stockQuantity) || 0) * (parseFloat(item.mrp) || 0);
                                         return (
                                             <TableRow key={item.id} className={isEdit ? "bg-slate-50/30" : ""}>
                                                 <TableCell className="p-2 min-w-[200px]">
@@ -453,13 +470,14 @@ formattedItems.push({
                                                         value={item.medicineId ? { id: item.medicineId, name: item.medicineName || "Unknown", genericName: "" } : null}
                                                         onSearch={searchMedicines}
                                                         onSelect={(medicine: any) => {
-                                                            const newItems = items.map((i) => i.id === item.id ? { 
+                                                            if (!medicine || !medicine.id) return;
+                                                            toast.success(`Selected: ${medicine.name}`);
+                                                            setItems(prevItems => prevItems.map((i) => i.id === item.id ? { 
                                                                 ...i, 
                                                                 medicineId: medicine.id, 
-                                                                medicineName: medicine.name,
+                                                                medicineName: medicine.name || "Unknown",
                                                                 packQuantity: medicine.pack_quantity || 1
-                                                            } : i);
-                                                            setItems(newItems);
+                                                            } : i));
                                                         }}
                                                         getDisplayValue={(medicine: any) => medicine ? `${medicine.name}` : "Search medicine..."}
                                                         renderItem={(medicine: any) => (
@@ -475,6 +493,9 @@ formattedItems.push({
                                                 </TableCell>
                                                 <TableCell className="p-2">
                                                     <Input disabled={isEdit} type="number" min="1" value={item.stockQuantity} onChange={(e) => updateItem(item.id, "stockQuantity", e.target.value)} required />
+                                                </TableCell>
+                                                <TableCell className="p-2">
+                                                    <Input disabled={isEdit} type="number" min="0" value={item.freeQuantity} onChange={(e) => updateItem(item.id, "freeQuantity", e.target.value)} />
                                                 </TableCell>
                                                 <TableCell className="p-2">
                                                     <Input disabled={isEdit} type="number" step="0.01" min="0" value={item.purchasePrice} onChange={(e) => updateItem(item.id, "purchasePrice", e.target.value)} required />

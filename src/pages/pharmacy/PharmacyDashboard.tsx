@@ -32,6 +32,7 @@ export default function PharmacyDashboard() {
   const [medicines, setMedicines] = useState<Medicine[]>([]);
   const [pendingPrescriptions, setPendingPrescriptions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
 
   // Local state for actions
   const [reorderedItems, setReorderedItems] = useState<string[]>([]);
@@ -45,6 +46,19 @@ export default function PharmacyDashboard() {
     return m.stock_quantity <= threshold;
   });
   const outOfStock = medicines.filter((m) => m.stock_quantity === 0).length;
+
+  const filteredMedicines = medicines.filter((med) => {
+    if (!searchQuery) return true;
+    const search = searchQuery.toLowerCase();
+    
+    const name = med?.name?.toLowerCase() || '';
+    const category = (med?.category && typeof med.category === 'object')
+        ? ((med.category as any).name?.toLowerCase() || '')
+        : (typeof med?.category === 'string' ? med.category.toLowerCase() : '');
+    const batchNumber = (med as any)?.batch?.batch_number?.toLowerCase() || (med as any)?.batch_number?.toLowerCase() || '';
+    
+    return name.includes(search) || category.includes(search) || batchNumber.includes(search);
+  });
 
   // Pending orders count from fetched prescriptions
   const pendingOrders = pendingPrescriptions.length;
@@ -232,7 +246,42 @@ export default function PharmacyDashboard() {
                 <Input
                   placeholder="Search medicines by name, category, or batch number..."
                   className="pl-10"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
                 />
+                {searchQuery && (
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-background border rounded-md shadow-lg z-50 max-h-[300px] overflow-y-auto">
+                    {filteredMedicines.length > 0 ? (
+                      <ul className="py-2 flex flex-col">
+                        {filteredMedicines.map(med => (
+                          <li 
+                            key={med.id}
+                            className="px-4 py-2 hover:bg-muted cursor-pointer flex justify-between items-center border-b last:border-0"
+                            onClick={() => {
+                              setSearchQuery('');
+                              navigate('/pharmacy/inventory');
+                            }}
+                          >
+                            <div className="flex flex-col">
+                              <span className="font-medium">{med.name}</span>
+                              <span className="text-xs text-muted-foreground">
+                                Category: {med.category && typeof med.category === 'object' ? (med.category as any).name : (med.category || '-')} | Batch: {(med as any).batch?.batch_number || (med as any).batch_number || '-'}
+                              </span>
+                            </div>
+                            <div className="flex flex-col items-end">
+                              <span className="font-medium text-sm text-primary">Stock: {med.stock_quantity}</span>
+                              <span className="text-xs text-muted-foreground">₹{med.unit_price}</span>
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <div className="p-4 text-center text-sm text-muted-foreground">
+                        No medicines found matching "{searchQuery}"
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
               <AddMedicineDialog>
                 <Button variant="outline">
@@ -368,9 +417,9 @@ export default function PharmacyDashboard() {
             </CardHeader>
             <CardContent>
               <DataTable
-                data={medicines.slice(0, 5)}
+                data={searchQuery ? filteredMedicines.slice(0, 10) : medicines.slice(0, 5)}
                 columns={inventoryColumns}
-                emptyMessage="No medicines in inventory"
+                emptyMessage={searchQuery ? "No matching medicines found" : "No medicines in inventory"}
                 loading={loading}
               />
             </CardContent>

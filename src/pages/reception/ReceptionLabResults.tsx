@@ -123,7 +123,6 @@ export default function ReceptionLabResults() {
                         <Button variant="outline" size="icon" onClick={() => fetchLabOrders(undefined, selectedDate)}>
                             <RotateCcw className="h-4 w-4" />
                         </Button>
-                        <CreateLabOrderDialog />
                     </div>
                 </div>
 

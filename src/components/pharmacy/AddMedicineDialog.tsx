@@ -68,8 +68,8 @@ export function AddMedicineDialog({ children, onAdd }: AddMedicineDialogProps) {
     const rate_val = parseFloat(formData.sale_price) || 0;
     const gstPercent = parseFloat(formData.gst) || 0;
     const discount = parseFloat(formData.discount) || 0;
-    const purchasePrice = parseFloat(formData.purchase_price) || 0;
-    const taxableAmount = (purchasePrice * quantity);
+    const mrpPrice = parseFloat(formData.mrp) || 0;
+    const taxableAmount = (mrpPrice * quantity);
     const gstAmount2 = (taxableAmount-discount) * (gstPercent / 100);
     const gstAmount = Math.round((taxableAmount-discount) * (gstPercent / 100) * 100) / 100;
     const totalAmount = Math.round(taxableAmount + gstAmount - discount);

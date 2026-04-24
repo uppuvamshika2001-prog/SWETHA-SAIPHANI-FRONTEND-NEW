@@ -22,6 +22,11 @@ const LabPendingTests = () => {
     const navigate = useNavigate();
 
     const { labOrders, loading, fetchLabOrders, updateOrderStatus, deleteLabOrder } = useLab();
+    
+    // Pagination state
+    const [currentPage, setCurrentPage] = useState(1);
+    const [completedPage, setCompletedPage] = useState(1);
+    const ITEMS_PER_PAGE = 5;
 
     // Auto-refresh removed to prevent flickering. Manual refresh via the RotateCcw button is preferred.
     // Fetch whenever the selected date changes
@@ -46,6 +51,22 @@ const LabPendingTests = () => {
         order.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
         order.testName.toLowerCase().includes(searchTerm.toLowerCase())
     );
+
+    // Pagination calculations
+    const totalPages = Math.ceil(pendingOrders.length / ITEMS_PER_PAGE);
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    const paginatedOrders = pendingOrders.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+
+    // Pagination calculations for Completed Tests
+    const totalCompletedPages = Math.ceil(completedOrders.length / ITEMS_PER_PAGE);
+    const startCompletedIndex = (completedPage - 1) * ITEMS_PER_PAGE;
+    const paginatedCompletedOrders = completedOrders.slice(startCompletedIndex, startCompletedIndex + ITEMS_PER_PAGE);
+
+    // Reset to page 1 when search term or date changes
+    useEffect(() => {
+        setCurrentPage(1);
+        setCompletedPage(1);
+    }, [searchTerm, selectedDate]);
 
     const getPriorityColor = (priority: string) => {
         switch (priority) {
@@ -199,7 +220,7 @@ const LabPendingTests = () => {
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {pendingOrders.map((order) => (
+                                    {paginatedOrders.map((order) => (
                                         <TableRow key={order.id}>
                                             <TableCell className="font-medium">{order.orderNumber || order.id.slice(0, 8).toUpperCase()}</TableCell>
                                             <TableCell>{order.patient.firstName} {order.patient.lastName}</TableCell>
@@ -250,6 +271,45 @@ const LabPendingTests = () => {
                                 </TableBody>
                             </Table>
                         )}
+
+                        {!loading && totalPages > 1 && (
+                            <div className="flex items-center justify-between mt-4 px-2">
+                                <p className="text-sm text-muted-foreground">
+                                    Showing {startIndex + 1} to {Math.min(startIndex + ITEMS_PER_PAGE, pendingOrders.length)} of {pendingOrders.length} orders
+                                </p>
+                                <div className="flex items-center gap-2">
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                                        disabled={currentPage === 1}
+                                    >
+                                        Previous
+                                    </Button>
+                                    <div className="flex items-center gap-1">
+                                        {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                                            <Button
+                                                key={page}
+                                                variant={currentPage === page ? "default" : "outline"}
+                                                size="sm"
+                                                className="w-8 h-8 p-0"
+                                                onClick={() => setCurrentPage(page)}
+                                            >
+                                                {page}
+                                            </Button>
+                                        ))}
+                                    </div>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                                        disabled={currentPage === totalPages}
+                                    >
+                                        Next
+                                    </Button>
+                                </div>
+                            </div>
+                        )}
                     </CardContent>
                 </Card>
 
@@ -276,7 +336,7 @@ const LabPendingTests = () => {
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {completedOrders.map((order) => (
+                                {paginatedCompletedOrders.map((order) => (
                                     <TableRow key={order.id}>
                                         <TableCell className="font-medium">{order.orderNumber || order.id.slice(0, 8).toUpperCase()}</TableCell>
                                         <TableCell>{order.patient.firstName} {order.patient.lastName}</TableCell>
@@ -311,6 +371,45 @@ const LabPendingTests = () => {
                                 )}
                             </TableBody>
                         </Table>
+
+                        {!loading && totalCompletedPages > 1 && (
+                            <div className="flex items-center justify-between mt-4 px-2">
+                                <p className="text-sm text-muted-foreground">
+                                    Showing {startCompletedIndex + 1} to {Math.min(startCompletedIndex + ITEMS_PER_PAGE, completedOrders.length)} of {completedOrders.length} tests
+                                </p>
+                                <div className="flex items-center gap-2">
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => setCompletedPage(prev => Math.max(1, prev - 1))}
+                                        disabled={completedPage === 1}
+                                    >
+                                        Previous
+                                    </Button>
+                                    <div className="flex items-center gap-1">
+                                        {Array.from({ length: totalCompletedPages }, (_, i) => i + 1).map(page => (
+                                            <Button
+                                                key={page}
+                                                variant={completedPage === page ? "default" : "outline"}
+                                                size="sm"
+                                                className="w-8 h-8 p-0"
+                                                onClick={() => setCompletedPage(page)}
+                                            >
+                                                {page}
+                                            </Button>
+                                        ))}
+                                    </div>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => setCompletedPage(prev => Math.min(totalCompletedPages, prev + 1))}
+                                        disabled={completedPage === totalCompletedPages}
+                                    >
+                                        Next
+                                    </Button>
+                                </div>
+                            </div>
+                        )}
                     </CardContent>
                 </Card>
             </div>

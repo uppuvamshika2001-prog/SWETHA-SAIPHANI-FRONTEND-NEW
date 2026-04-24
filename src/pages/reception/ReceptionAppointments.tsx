@@ -3,7 +3,7 @@ import { DataTable } from '@/components/dashboard/DataTable';
 import { StatusBadge } from '@/components/dashboard/StatusBadge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Calendar, Search, RefreshCw } from 'lucide-react';
+import { Calendar, Search, RefreshCw, Printer } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { AppointmentBookingDialog } from '@/components/appointments/AppointmentBookingDialog';
 import { AppointmentDetailsDialog } from '@/components/appointments/AppointmentDetailsDialog';
@@ -11,6 +11,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useEffect, useState } from 'react';
 import { appointmentService } from '@/services/appointmentService';
 import { Appointment } from '@/types';
+import { downloadAppointmentSlipPDF } from '@/utils/downloadAppointmentSlip';
 
 export default function ReceptionAppointments() {
     const [appointments, setAppointments] = useState<Appointment[]>([]);
@@ -71,9 +72,20 @@ export default function ReceptionAppointments() {
             key: 'actions',
             header: 'Actions',
             render: (apt: Appointment) => (
-                <AppointmentDetailsDialog appointmentId={apt.id}>
-                    <Button variant="ghost" size="sm">View Details</Button>
-                </AppointmentDetailsDialog>
+                <div className="flex gap-2">
+                    <AppointmentDetailsDialog appointmentId={apt.id}>
+                        <Button variant="ghost" size="sm">View Details</Button>
+                    </AppointmentDetailsDialog>
+                    <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="flex items-center gap-1 text-primary border-primary/20 hover:bg-primary/5"
+                        onClick={() => downloadAppointmentSlipPDF(apt)}
+                    >
+                        <Printer className="h-3 w-3" />
+                        Print
+                    </Button>
+                </div>
             )
         }
     ];

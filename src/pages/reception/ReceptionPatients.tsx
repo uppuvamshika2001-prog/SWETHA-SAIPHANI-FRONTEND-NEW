@@ -41,23 +41,28 @@ export default function ReceptionPatients() {
 
     const PAGE_SIZE = 100;
 
-
-    const fetchPatients = useCallback(async () => {
+    // Direct fetch function (no debounce, no caching)
+    const doFetchPatients = useCallback(async (overrideDate?: Date | undefined) => {
         setLoading(true);
         try {
+            // Clear any stale cache before fetching
+            if ((window as any).__patientCache) {
+                (window as any).__patientCache.clear();
+            }
+
+            const dateToUse = overrideDate !== undefined ? overrideDate : selectedDate;
             const query: Record<string, string | number> = {
                 page,
                 pageSize: PAGE_SIZE,
                 sortBy: 'created_at',
                 sortDir: 'desc',
             };
-            if (selectedDate) {
-                query.date = format(selectedDate, 'yyyy-MM-dd');
+            if (dateToUse) {
+                query.date = format(dateToUse, 'yyyy-MM-dd');
             }
             if (searchQuery.trim()) {
                 query.search = searchQuery.trim();
             }
-
 
             const response = await patientService.getPatients(query);
             setPatients(response.items || []);
@@ -73,13 +78,24 @@ export default function ReceptionPatients() {
         }
     }, [page, searchQuery, selectedDate]);
 
-    // Debounce search, immediately fetch on page change
+    // Debounced fetch for search/filter/page changes
     useEffect(() => {
         const timer = setTimeout(() => {
-            fetchPatients();
+            doFetchPatients();
         }, 300);
         return () => clearTimeout(timer);
-    }, [fetchPatients]);
+    }, [doFetchPatients]);
+
+    // Immediate refresh after patient registration
+    const handlePatientRegistered = useCallback(() => {
+        setSearchQuery('');
+        setPage(1);
+        setSelectedDate(new Date());
+        // Immediately fetch with today's date (don't wait for state to propagate)
+        setTimeout(() => {
+            doFetchPatients(new Date());
+        }, 100);
+    }, [doFetchPatients]);
 
     const handlePageChange = (newPage: number) => {
         if (newPage < 1 || newPage > meta.totalPages) return;
@@ -148,7 +164,7 @@ export default function ReceptionPatients() {
                     <PatientDetailsDialog patientId={patient.uhid} patient={patient} showMedicalRecords={true}>
                         <Button variant="ghost" size="sm">View Details</Button>
                     </PatientDetailsDialog>
-                    <PatientRegistrationDialog patientToEdit={patient} onRegister={() => fetchPatients()}>
+                    <PatientRegistrationDialog patientToEdit={patient} onRegister={handlePatientRegistered}>
                         <Button variant="ghost" size="sm">
                             <Edit className="h-4 w-4" />
                         </Button>
@@ -188,7 +204,7 @@ export default function ReceptionPatients() {
                             setDate={handleDateChange}
                             placeholder="Filter by Date"
                         />
-                        <PatientRegistrationDialog onRegister={() => fetchPatients()}>
+                        <PatientRegistrationDialog onRegister={handlePatientRegistered}>
                             <Button>
                                 <UserPlus className="h-4 w-4 mr-2" />
                                 Register New Patient

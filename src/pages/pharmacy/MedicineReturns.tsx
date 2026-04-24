@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Search, RotateCcw, Save, Trash2, Printer, CheckCircle2, AlertCircle, Loader2, Calendar, Filter, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, RotateCcw, Save, Trash2, Printer, CheckCircle2, AlertCircle, Loader2, Calendar, Filter, ChevronLeft, ChevronRight, X, Package } from "lucide-react";
 import { pharmacyService } from "@/services/pharmacyService";
 import { useToast } from "@/components/ui/use-toast";
 import { Badge } from "@/components/ui/badge";
@@ -16,6 +16,7 @@ import { format } from "date-fns";
 import { api } from "@/services/api";
 import { normalizeResponse } from "@/utils/api-helpers";
 import { API_BASE_URL } from "@/config/api";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 const RETURN_REASONS = [
     "Wrong Medicine",
@@ -39,6 +40,7 @@ export default function MedicineReturns() {
     const [selectedBill, setSelectedBill] = useState<any>(null);
     const [returnItems, setReturnItems] = useState<any[]>([]);
     const [refundMethod, setRefundMethod] = useState('CASH');
+    const [searchResults, setSearchResults] = useState<any[]>([]);
     const [processing, setProcessing] = useState(false);
 
     // History state
@@ -51,6 +53,7 @@ export default function MedicineReturns() {
     });
     const [historyPage, setHistoryPage] = useState(1);
     const itemsPerPage = 10;
+    const [selectedReturn, setSelectedReturn] = useState<any>(null);
 
     useEffect(() => {
         fetchHistory();
@@ -67,6 +70,14 @@ export default function MedicineReturns() {
             setHistoryLoading(false);
         }
     };
+
+    // Auto-fetch history when filters change
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            fetchHistory();
+        }, 400); // 400ms debounce
+        return () => clearTimeout(timer);
+    }, [historyFilters.search, historyFilters.startDate, historyFilters.endDate]);
 
     // Reset page when filters change
     useEffect(() => {
@@ -96,18 +107,32 @@ export default function MedicineReturns() {
         return pages;
     };
 
+    const selectBill = (bill: any) => {
+        if (bill.items) {
+            // Filter out non-medicine items if any (legacy check)
+            bill.items = bill.items.filter((item: any) => 
+                (item.medicine_id !== null && item.medicine_id !== undefined) || 
+                (item.medicineId !== null && item.medicineId !== undefined)
+            );
+        }
+        setSelectedBill(bill);
+        setSearchResults([]);
+        setReturnItems([]);
+    };
+
     const handleSearch = async (e?: React.FormEvent) => {
         if (e) e.preventDefault();
         if (!searchQuery.trim()) return;
 
         setSearching(true);
+        setSearchResults([]);
         try {
-            const url = `${API_BASE_URL.replace(/\/+$/, '')}/api/pharmacy/bills?search=${encodeURIComponent(searchQuery)}&format=returns`;
-            const response = await api.getAxiosInstance().get(url) as any;
+            const data = await pharmacyService.getBills({ 
+                search: searchQuery, 
+                format: 'returns' 
+            });
 
-            // The interceptor already unwraps `{ status: 'success', data: ... }` OR returns the raw json if not wrapped.
-            // Since getBills format=returns sends raw JSON `{ items: [...] }`, `response` IS that object.
-            const items = response?.items || normalizeResponse(response);
+            const items = normalizeResponse(data);
             
             if (items.length === 0) {
                 toast({
@@ -116,15 +141,14 @@ export default function MedicineReturns() {
                     variant: "destructive"
                 });
                 setSelectedBill(null);
+            } else if (items.length === 1) {
+                selectBill(items[0]);
             } else {
-                const bill = items[0];
-                if (bill.items) {
-                    bill.items = bill.items.filter((item: any) => item.medicine_id !== null);
-                }
-                setSelectedBill(bill);
-                setReturnItems([]);
+                setSearchResults(items);
+                setSelectedBill(null);
             }
         } catch (error) {
+            console.error("Search failed:", error);
             toast({
                 title: "Search failed",
                 description: "There was an error searching for the bill.",
@@ -252,17 +276,64 @@ export default function MedicineReturns() {
                         </CardContent>
                     </Card>
 
+                    {searchResults.length > 0 && (
+                        <Card className="animate-in fade-in slide-in-from-top-2">
+                            <CardHeader>
+                                <CardTitle className="text-lg">Search Results ({searchResults.length})</CardTitle>
+                                <CardDescription>Multiple bills found. Please select one.</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="border rounded-lg overflow-hidden">
+                                    <Table>
+                                        <TableHeader className="bg-muted/50">
+                                            <TableRow>
+                                                <TableHead>Bill Date</TableHead>
+                                                <TableHead>Bill #</TableHead>
+                                                <TableHead>Patient</TableHead>
+                                                <TableHead>Amount</TableHead>
+                                                <TableHead className="text-right">Action</TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {searchResults.map((bill) => (
+                                                <TableRow key={bill.id}>
+                                                    <TableCell>{format(new Date(bill.created_at || bill.createdAt), 'dd MMM yyyy')}</TableCell>
+                                                    <TableCell className="font-mono text-xs font-bold">{bill.bill_number || bill.billNumber}</TableCell>
+                                                    <TableCell>
+                                                        {bill.patient ? (
+                                                            `${bill.patient.first_name || bill.patient.firstName} ${bill.patient.last_name || bill.patient.lastName}`
+                                                        ) : (
+                                                            bill.customer_name || bill.customerName || "Walk-in"
+                                                        )}
+                                                    </TableCell>
+                                                    <TableCell className="font-bold">₹{Number(bill.grand_total || bill.grandTotal || 0).toFixed(2)}</TableCell>
+                                                    <TableCell className="text-right">
+                                                        <Button size="sm" onClick={() => selectBill(bill)}>Select</Button>
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))}
+                                        </TableBody>
+                                    </Table>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    )}
+
                     {selectedBill && (
                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-in fade-in slide-in-from-top-4 duration-300">
                             <Card className="lg:col-span-2">
                                 <CardHeader className="flex flex-row items-center justify-between border-b pb-4 mb-4">
                                     <div>
-                                        <CardTitle className="text-xl">Bill Details: {selectedBill.billNumber}</CardTitle>
-                                        <CardDescription className="text-base text-primary font-medium">Patient: {selectedBill.patientName || "Bill Patient"}</CardDescription>
+                                        <CardTitle className="text-xl">Bill Details: {selectedBill.bill_number || selectedBill.billNumber}</CardTitle>
+                                        <CardDescription className="text-base text-primary font-medium">
+                                            Patient: {selectedBill.patient 
+                                                ? `${selectedBill.patient.first_name || selectedBill.patient.firstName} ${selectedBill.patient.last_name || selectedBill.patient.lastName}` 
+                                                : (selectedBill.customer_name || selectedBill.customerName || "Walk-in Patient")}
+                                        </CardDescription>
                                     </div>
                                     <Badge variant="outline" className={cn(
                                         "px-3 py-1",
-                                        selectedBill.status === 'PAID' ? "text-green-600 border-green-200 bg-green-50" : "text-primary border-primary bg-primary/5"
+                                        (selectedBill.status === 'PAID' || (selectedBill.status as any) === 'paid') ? "text-green-600 border-green-200 bg-green-50" : "text-primary border-primary bg-primary/5"
                                     )}>
                                         {selectedBill.status}
                                     </Badge>
@@ -285,13 +356,13 @@ export default function MedicineReturns() {
                                                     <TableRow key={item.id} className={cn(isReturning && "bg-muted/50")}>
                                                         <TableCell className="font-medium">
                                                             <div>{item.description}</div>
-                                                            {item.batchNumber && (
-                                                                <div className="text-[10px] text-muted-foreground font-mono">Batch: {item.batchNumber}</div>
+                                                            {(item.batch_number || item.batchNumber) && (
+                                                                <div className="text-[10px] text-muted-foreground font-mono">Batch: {item.batch_number || item.batchNumber}</div>
                                                             )}
                                                         </TableCell>
                                                         <TableCell>{item.quantity}</TableCell>
-                                                        <TableCell>₹{item.unit_price.toFixed(2)}</TableCell>
-                                                        <TableCell>₹{item.total.toFixed(2)}</TableCell>
+                                                        <TableCell>₹{Number(item.unit_price || item.unitPrice || 0).toFixed(2)}</TableCell>
+                                                        <TableCell>₹{Number(item.total || 0).toFixed(2)}</TableCell>
                                                         <TableCell className="text-right">
                                                             <Button 
                                                                 variant={isReturning ? "destructive" : "outline"}
@@ -386,7 +457,7 @@ export default function MedicineReturns() {
                                                     <div className="bg-primary/5 p-4 rounded-xl border border-primary/10">
                                                         <div className="flex justify-between items-center text-sm text-muted-foreground mb-1">
                                                             <span>Total Refund</span>
-                                                            <span className="line-through">₹ {selectedBill.grandTotal || 0}</span>
+                                                            <span className="line-through">₹ {Number(selectedBill.grand_total || selectedBill.grandTotal || 0).toFixed(2)}</span>
                                                         </div>
                                                         <div className="flex justify-between text-xl font-black text-primary">
                                                             <span>Refund Amt</span>
@@ -426,7 +497,7 @@ export default function MedicineReturns() {
                                     <div className="relative">
                                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                                         <Input 
-                                            placeholder="Bill # or Patient..." 
+                                            placeholder="Bill No or Patient Name..." 
                                             className="pl-10"
                                             value={historyFilters.search}
                                             onChange={(e) => setHistoryFilters({...historyFilters, search: e.target.value})}
@@ -504,7 +575,7 @@ export default function MedicineReturns() {
                                                 <TableCell className="font-mono text-xs">{record.bill?.bill_number || record.bill?.billNumber || "N/A"}</TableCell>
                                                 <TableCell>
                                                     <div className="font-medium">{record.patient?.firstName || record.patient?.first_name} {record.patient?.lastName || record.patient?.last_name}</div>
-                                                    <div className="text-[10px] text-muted-foreground">UHID: {record.patient_id || record.patientId}</div>
+                                                    <div className="text-[10px] text-muted-foreground">UHID: {record.patient?.uhid || record.patient_id || record.patientId}</div>
                                                 </TableCell>
                                                 <TableCell>
                                                     <Badge variant="secondary" className="font-bold">
@@ -518,10 +589,7 @@ export default function MedicineReturns() {
                                                     </Badge>
                                                 </TableCell>
                                                 <TableCell className="text-right">
-                                                    <Button variant="ghost" size="sm" onClick={() => {
-                                                        // Future: Show details dialog
-                                                        toast({ title: "Details Coming Soon", description: "Audit trail and medicine breakdown will be visible here." });
-                                                    }}>
+                                                    <Button variant="ghost" size="sm" onClick={() => setSelectedReturn(record)}>
                                                         View Details
                                                     </Button>
                                                 </TableCell>
@@ -585,6 +653,96 @@ export default function MedicineReturns() {
                 </TabsContent>
             </Tabs>
         </div>
+
+            {/* Return Details Dialog */}
+            <Dialog open={!!selectedReturn} onOpenChange={(open) => !open && setSelectedReturn(null)}>
+                <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2 text-xl">
+                            <Package className="h-5 w-5 text-primary" />
+                            Return Details
+                        </DialogTitle>
+                    </DialogHeader>
+                    {selectedReturn && (
+                        <div className="space-y-5">
+                            {/* Return Info */}
+                            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 bg-muted/50 p-4 rounded-lg">
+                                <div>
+                                    <p className="text-xs text-muted-foreground">Bill No</p>
+                                    <p className="font-mono font-bold text-sm">{selectedReturn.bill?.bill_number || selectedReturn.bill?.billNumber || 'N/A'}</p>
+                                </div>
+                                <div>
+                                    <p className="text-xs text-muted-foreground">Return Date</p>
+                                    <p className="font-semibold text-sm">{format(new Date(selectedReturn.return_date || selectedReturn.returnDate), 'dd MMM yyyy, hh:mm a')}</p>
+                                </div>
+                                <div>
+                                    <p className="text-xs text-muted-foreground">Patient</p>
+                                    <p className="font-semibold text-sm">
+                                        {selectedReturn.patient?.firstName || selectedReturn.patient?.first_name}{' '}
+                                        {selectedReturn.patient?.lastName || selectedReturn.patient?.last_name}
+                                    </p>
+                                    <p className="text-[10px] text-muted-foreground">UHID: {selectedReturn.patient?.uhid || selectedReturn.patient_id || selectedReturn.patientId}</p>
+                                </div>
+                            </div>
+
+                            {/* Returned Items Table */}
+                            <div>
+                                <h4 className="text-sm font-semibold mb-2">Returned Medicines</h4>
+                                <div className="border rounded-lg overflow-hidden">
+                                    <Table>
+                                        <TableHeader className="bg-muted/50">
+                                            <TableRow>
+                                                <TableHead>Medicine</TableHead>
+                                                <TableHead className="text-center">Qty</TableHead>
+                                                <TableHead className="text-right">Price</TableHead>
+                                                <TableHead className="text-right">Subtotal</TableHead>
+                                                <TableHead>Reason</TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {(selectedReturn.items || []).map((item: any, idx: number) => {
+                                                const qty = item.return_qty || item.returnQty || item.quantity || 0;
+                                                const price = Number(item.selling_price || item.sellingPrice || item.sale_price || item.salePrice || item.unit_price || item.unitPrice || 0);
+                                                return (
+                                                    <TableRow key={item.id || idx}>
+                                                        <TableCell className="font-medium">
+                                                            {item.medicine_name || item.medicine?.name || item.medicineName || item.description || 'Medicine'}
+                                                            {(item.batch_number || item.batchNumber) && (
+                                                                <div className="text-[10px] text-muted-foreground font-mono">Batch: {item.batch_number || item.batchNumber}</div>
+                                                            )}
+                                                        </TableCell>
+                                                        <TableCell className="text-center font-bold">{qty}</TableCell>
+                                                        <TableCell className="text-right">₹{price.toFixed(2)}</TableCell>
+                                                        <TableCell className="text-right font-bold text-primary">₹{(qty * price).toFixed(2)}</TableCell>
+                                                        <TableCell>
+                                                            <Badge variant="outline" className="text-[10px]">{item.reason || 'N/A'}</Badge>
+                                                        </TableCell>
+                                                    </TableRow>
+                                                );
+                                            })}
+                                            {(!selectedReturn.items || selectedReturn.items.length === 0) && (
+                                                <TableRow>
+                                                    <TableCell colSpan={5} className="text-center py-6 text-muted-foreground">No item details available</TableCell>
+                                                </TableRow>
+                                            )}
+                                        </TableBody>
+                                    </Table>
+                                </div>
+                            </div>
+
+                            {/* Refund Summary */}
+                            <div className="bg-primary/5 border border-primary/10 rounded-xl p-4 flex items-center justify-between">
+                                <div>
+                                    <p className="text-sm text-muted-foreground">Total Refund</p>
+                                    <p className="text-2xl font-black text-primary">₹{Number(selectedReturn.refund_amount || selectedReturn.refundAmount || 0).toFixed(2)}</p>
+                                </div>
+                                <Badge className="px-4 py-2 text-sm font-bold">{selectedReturn.refund_method || selectedReturn.refundMethod}</Badge>
+                            </div>
+                        </div>
+                    )}
+                </DialogContent>
+            </Dialog>
+
          </DashboardLayout>
     );
 }

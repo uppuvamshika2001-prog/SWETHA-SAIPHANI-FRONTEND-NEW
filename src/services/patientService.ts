@@ -54,6 +54,12 @@ const adaptPatient = (data: PatientResponse): Patient => {
     };
 };
 
+const clearPatientCache = () => {
+    if ((window as any).__patientCache) {
+        (window as any).__patientCache.clear();
+    }
+};
+
 export const patientService = {
     async getPatients(query?: any): Promise<any> {
         let endpoint = '/patients';
@@ -143,6 +149,7 @@ export const patientService = {
 
         try {
             const response = await api.post<PatientResponse>('/patients', payload);
+            clearPatientCache();
             return adaptPatient(response);
         } catch (error) {
             console.error('[PatientService] Failed to create patient:', error);
@@ -169,6 +176,7 @@ export const patientService = {
             uhid: data.uhid,
         };
         const response = await api.patch<PatientResponse>(`/patients/${uhid}`, payload);
+        clearPatientCache();
         return adaptPatient(response);
     },
 
@@ -210,7 +218,8 @@ export const patientService = {
     },
 
     async deletePatient(uhid: string): Promise<void> {
-        return api.delete(`/patients/${encodeURIComponent(uhid)}`);
+        await api.delete(`/patients/${encodeURIComponent(uhid)}`);
+        clearPatientCache();
     },
 
     async createWalkInPatient(data: {
@@ -240,6 +249,7 @@ export const patientService = {
 
         try {
             const response = await api.post<PatientResponse>('/patients', payload);
+            clearPatientCache();
             return adaptPatient(response);
         } catch (error) {
             console.error('[PatientService] Failed to create walk-in patient:', error);

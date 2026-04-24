@@ -59,6 +59,8 @@ export function BillGenerationDialog({
     const [submitting, setSubmitting] = useState(false);
     const [patientSearch, setPatientSearch] = useState("");
     const [showPatientResults, setShowPatientResults] = useState(false);
+    const [recentBills, setRecentBills] = useState<any[]>([]);
+    const [loadingRecent, setLoadingRecent] = useState(false);
 
     // Item State
     const [items, setItems] = useState<{ description: string, quantity: number, unitPrice: number, discount: number, total: number, type?: 'consultation' | 'lab', lab_order_id?: string }[]>([]);
@@ -116,7 +118,9 @@ export function BillGenerationDialog({
     useEffect(() => {
         if (patientId) {
             fetchPatientSummary();
+            fetchRecentBills(patientId);
         } else {
+            setRecentBills([]);
             setPatientSummary(null);
             setServices([
                 {
@@ -228,6 +232,18 @@ export function BillGenerationDialog({
     };
 
     const summaryOptions = services;
+
+    const fetchRecentBills = async (uhid: string) => {
+        setLoadingRecent(true);
+        try {
+            const result = await billingService.getBills({ patientId: uhid, limit: 5 });
+            setRecentBills(result.items || []);
+        } catch (error) {
+            console.error("Failed to fetch recent bills", error);
+        } finally {
+            setLoadingRecent(false);
+        }
+    };
 
 
 
@@ -419,7 +435,38 @@ export function BillGenerationDialog({
                                     setPatientSearch("");
                                     setItems([]);
                                     setSelectedServiceId("");
+                                    setRecentBills([]);
                                 }}>Change</Button>
+                            </div>
+
+                            {/* Recent Bills Preview */}
+                            <div className="mt-3 p-3 bg-slate-50 dark:bg-slate-900/30 rounded-md border border-slate-200 dark:border-slate-800">
+                                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2 flex items-center gap-2">
+                                    <FileText className="h-3 w-3" />
+                                    Recent Billing History
+                                </h4>
+                                <div className="space-y-1.5">
+                                    {loadingRecent ? (
+                                        <div className="text-xs text-slate-500 italic py-1">Loading history...</div>
+                                    ) : recentBills.length === 0 ? (
+                                        <div className="text-xs text-slate-500 italic py-1">No previous bills found for this patient.</div>
+                                    ) : (
+                                        recentBills.map(bill => (
+                                            <div key={bill.id} className="flex items-center justify-between text-xs py-1.5 border-b border-slate-100 dark:border-slate-800 last:border-0">
+                                                <div className="flex flex-col">
+                                                    <span className="font-mono text-[10px] text-slate-400">{bill.billNumber}</span>
+                                                    <span className="text-slate-600">{new Date(bill.createdAt).toLocaleDateString()} - {bill.billType}</span>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-medium ${bill.status === 'PAID' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                                                        {bill.status}
+                                                    </span>
+                                                    <span className="font-bold">₹{Number(bill.grandTotal).toFixed(2)}</span>
+                                                </div>
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
                             </div>
                         ) : (
                             <div className="relative">

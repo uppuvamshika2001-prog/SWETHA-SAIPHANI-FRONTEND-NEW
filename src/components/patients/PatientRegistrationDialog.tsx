@@ -323,16 +323,35 @@ export function PatientRegistrationDialog({ children, onRegister, patientToEdit 
     };
     const [doctorsList, setDoctorsList] = useState<any[]>([]);
 
-    // Dynamically derive departments from the staff list
+    // Dynamically derive departments from staff list and localStorage
+    const [localDepartments, setLocalDepartments] = useState<string[]>([]);
+
+    useEffect(() => {
+        const syncDepts = () => {
+            const saved = localStorage.getItem('hospital_departments');
+            if (saved) {
+                try {
+                    setLocalDepartments(JSON.parse(saved));
+                } catch (e) {
+                    console.error("Failed to parse departments", e);
+                }
+            }
+        };
+
+        syncDepts();
+        window.addEventListener('focus', syncDepts);
+        return () => window.removeEventListener('focus', syncDepts);
+    }, []);
+
     const availableDepartments = useMemo(() => {
-        const departments = new Set<string>();
+        const departments = new Set<string>(localDepartments);
         doctorsList.forEach(doctor => {
             if (doctor.department) {
                 departments.add(doctor.department);
             }
         });
         return Array.from(departments).sort();
-    }, [doctorsList]);
+    }, [doctorsList, localDepartments]);
 
     // Department mapping for staff/doctors that may have different department names
 
@@ -1209,13 +1228,20 @@ export function PatientRegistrationDialog({ children, onRegister, patientToEdit 
                                                 <SelectValue placeholder="Select Doctor" />
                                             </SelectTrigger>
                                             <SelectContent>
-                                                {doctorsList
-                                                    .filter(d => !formData.department || d.department === formData.department)
-                                                    .map((doctor) => (
+                                                {(() => {
+                                                    const deptMatched = formData.department
+                                                        ? doctorsList.filter(d => d.department?.toLowerCase() === formData.department?.toLowerCase())
+                                                        : [];
+                                                    const doctorsToShow = deptMatched.length > 0 ? deptMatched : doctorsList;
+                                                    return doctorsToShow.map((doctor) => (
                                                         <SelectItem key={doctor.id} value={doctor.full_name}>
                                                             {doctor.full_name} ({doctor.specialization || doctor.department})
                                                         </SelectItem>
-                                                    ))}
+                                                    ));
+                                                })()}
+                                                {doctorsList.length === 0 && (
+                                                    <SelectItem value="none" disabled>No doctors available</SelectItem>
+                                                )}
                                             </SelectContent>
                                         </Select>
                                     </div>

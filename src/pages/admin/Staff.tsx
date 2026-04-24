@@ -53,6 +53,21 @@ export default function Staff({ role = "admin" }: StaffProps) {
         status: 'active'
     });
     const { toast } = useToast();
+    
+    // Load departments from localStorage
+    const [allowedDepartments, setAllowedDepartments] = useState<string[]>(() => {
+        const saved = localStorage.getItem('hospital_departments');
+        return saved ? JSON.parse(saved) : ["Orthopaedics", "Neurosurgery", "General Physician", "Paediatric Orthopaedics", "Pulmonology", "Oncology", "Paediatric Hemato-Oncology"];
+    });
+
+    useEffect(() => {
+        const handleFocus = () => {
+            const saved = localStorage.getItem('hospital_departments');
+            if (saved) setAllowedDepartments(JSON.parse(saved));
+        };
+        window.addEventListener('focus', handleFocus);
+        return () => window.removeEventListener('focus', handleFocus);
+    }, []);
 
     // Fetch Staff Data
     useEffect(() => {
@@ -319,12 +334,29 @@ export default function Staff({ role = "admin" }: StaffProps) {
                                         <Label htmlFor="department" className="text-right">
                                             Dept
                                         </Label>
-                                        <Input
-                                            id="department"
-                                            value={editingStaff.department}
-                                            onChange={(e) => setEditingStaff({ ...editingStaff, department: e.target.value })}
-                                            className="col-span-3"
-                                        />
+                                        {editingStaff.role === 'doctor' ? (
+                                            <Select
+                                                value={editingStaff.department}
+                                                onValueChange={(value) => setEditingStaff({ ...editingStaff, department: value })}
+                                            >
+                                                <SelectTrigger className="col-span-3">
+                                                    <SelectValue placeholder="Select department" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {allowedDepartments.map(dept => (
+                                                        <SelectItem key={dept} value={dept}>{dept}</SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        ) : (
+                                            <Input
+                                                id="department"
+                                                value={editingStaff.department}
+                                                onChange={(e) => setEditingStaff({ ...editingStaff, department: e.target.value })}
+                                                className="col-span-3"
+                                                placeholder="Enter department manually"
+                                            />
+                                        )}
                                     </div>
                                     <div className="grid grid-cols-4 items-center gap-4">
                                         <Label htmlFor="status" className="text-right">
@@ -430,13 +462,30 @@ export default function Staff({ role = "admin" }: StaffProps) {
                                     <Label htmlFor="new-department" className="text-right">
                                         Dept
                                     </Label>
-                                    <Input
-                                        id="new-department"
-                                        value={newStaff.department}
-                                        onChange={(e) => setNewStaff({ ...newStaff, department: e.target.value })}
-                                        className="col-span-3"
-                                        required
-                                    />
+                                    {newStaff.role === 'doctor' ? (
+                                        <Select
+                                            value={newStaff.department}
+                                            onValueChange={(value) => setNewStaff({ ...newStaff, department: value })}
+                                        >
+                                            <SelectTrigger className="col-span-3">
+                                                <SelectValue placeholder="Select department" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {allowedDepartments.map(dept => (
+                                                    <SelectItem key={dept} value={dept}>{dept}</SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    ) : (
+                                        <Input
+                                            id="new-department"
+                                            value={newStaff.department}
+                                            onChange={(e) => setNewStaff({ ...newStaff, department: e.target.value })}
+                                            className="col-span-3"
+                                            placeholder="Enter department manually"
+                                            required
+                                        />
+                                    )}
                                 </div>
                                 <div className="grid grid-cols-4 items-center gap-4">
                                     <Label htmlFor="new-status" className="text-right">

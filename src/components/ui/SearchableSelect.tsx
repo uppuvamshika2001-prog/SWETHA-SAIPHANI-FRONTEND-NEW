@@ -1,15 +1,8 @@
 import * as React from "react";
-import { Check, ChevronsUpDown, Loader2 } from "lucide-react";
+import { Check, ChevronsUpDown, Loader2, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command";
+
 import {
   Popover,
   PopoverContent,
@@ -72,6 +65,7 @@ export function SearchableSelect<T extends { id: string | number }>({
       <PopoverTrigger asChild>
         <Button
           variant="outline"
+          type="button"
           role="combobox"
           aria-expanded={open}
           disabled={disabled}
@@ -84,32 +78,52 @@ export function SearchableSelect<T extends { id: string | number }>({
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
-        <Command shouldFilter={false}>
-          <CommandInput 
-            placeholder={placeholder} 
-            value={query}
-            onValueChange={setQuery}
-          />
-          <CommandList>
+        <div className="flex flex-col w-full bg-white rounded-md shadow-md border">
+          <div className="flex items-center px-3 border-b">
+            <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
+            <input
+              className="flex h-10 w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50"
+              placeholder={placeholder}
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              autoFocus
+            />
+          </div>
+          <div className="max-h-[300px] overflow-y-auto overflow-x-hidden">
             {loading && (
-              <div className="flex items-center justify-center py-4">
+              <div className="flex items-center justify-center py-6">
                 <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
               </div>
             )}
-            {!loading && debouncedQuery.length >= 2 && results.length === 0 && (
-              <CommandEmpty>{emptyMessage}</CommandEmpty>
-            )}
-            {!loading && debouncedQuery.length < 2 && (
+            {!loading && debouncedQuery.length > 0 && debouncedQuery.length < 2 && (
               <div className="py-6 text-center text-sm text-muted-foreground">
                 Type at least 2 characters to search...
               </div>
             )}
-            <CommandGroup>
+            {!loading && debouncedQuery.length >= 2 && results.length === 0 && (
+              <div className="py-6 text-center text-sm text-muted-foreground">
+                {emptyMessage}
+              </div>
+            )}
+            <div className="p-1">
               {results.map((item) => (
-                <CommandItem
+                <button
                   key={item.id}
-                  value={String(item.id)}
-                  onSelect={() => {
+                  type="button"
+                  className={cn(
+                    "relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-slate-100 hover:text-slate-900",
+                    value?.id === item.id && "bg-slate-100 text-slate-900"
+                  )}
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onSelect(item);
+                    setOpen(false);
+                    setQuery("");
+                  }}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
                     onSelect(item);
                     setOpen(false);
                     setQuery("");
@@ -117,16 +131,18 @@ export function SearchableSelect<T extends { id: string | number }>({
                 >
                   <Check
                     className={cn(
-                      "mr-2 h-4 w-4",
+                      "mr-2 h-4 w-4 shrink-0",
                       value?.id === item.id ? "opacity-100" : "opacity-0"
                     )}
                   />
-                  {renderItem(item)}
-                </CommandItem>
+                  <div className="flex-1 truncate text-left">
+                    {renderItem(item)}
+                  </div>
+                </button>
               ))}
-            </CommandGroup>
-          </CommandList>
-        </Command>
+            </div>
+          </div>
+        </div>
       </PopoverContent>
     </Popover>
   );

@@ -31,7 +31,8 @@ export function EditStockDialog({
                 selling_price: batch.unit_price || batch.selling_price || batch.salePrice || 0,
                 mrp: batch.mrp || 0,
                 gst_percent: batch.gst_percent || batch.gst || 0,
-                stock_quantity: batch.stock_quantity || batch.stockQuantity || 0
+                stock_quantity: batch.stock_quantity || batch.stockQuantity || 0,
+                free_quantity: batch.free_quantity || batch.freeQuantity || 0
             });
         }
     }, [batch, open]);
@@ -54,7 +55,8 @@ export function EditStockDialog({
                 selling_price: parseFloat(formData.selling_price),
                 mrp: parseFloat(formData.mrp),
                 gst_percent: parseFloat(formData.gst_percent),
-                stock_quantity: parseInt(formData.stock_quantity)
+                stock_quantity: parseInt(formData.stock_quantity),
+                free_quantity: parseInt(formData.free_quantity)
             };
 
             // Use the batch ID (which is batch.id in the new allBatches mode)
@@ -100,6 +102,10 @@ export function EditStockDialog({
                         <div className="space-y-2">
                             <Label htmlFor="stock_quantity">Stock Quantity *</Label>
                             <Input id="stock_quantity" name="stock_quantity" type="number" min="0" value={formData.stock_quantity} onChange={handleChange} required />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="free_quantity">Free Quantity</Label>
+                            <Input id="free_quantity" name="free_quantity" type="number" min="0" value={formData.free_quantity} onChange={handleChange} />
                         </div>
                     </div>
 

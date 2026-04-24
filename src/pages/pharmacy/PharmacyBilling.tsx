@@ -13,7 +13,7 @@ import {
     TableRow,
 } from '@/components/ui/table';
 import { useToast } from '@/components/ui/use-toast';
-import { Plus, Trash2, Printer, Save, History, Search, User, Pill, CreditCard, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, Trash2, Printer, Save, History, Search, User, Pill, CreditCard, ChevronLeft, ChevronRight, Eye } from 'lucide-react';
 import { patientService } from "@/services/patientService";
 import { pharmacyService } from "@/services/pharmacyService";
 import { billingService, Bill } from "@/services/billingService";
@@ -26,6 +26,7 @@ import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { DatePicker } from '@/components/ui/date-picker';
 import { format } from 'date-fns';
+import { BillDetailsDialog } from '@/components/billing/BillDetailsDialog';
 
 interface BillItem {
     id: string;
@@ -53,12 +54,18 @@ export default function PharmacyBilling() {
     const [phone, setPhone] = useState('');
     const [billItems, setBillItems] = useState<BillItem[]>([]);
     const [isSaving, setIsSaving] = useState(false);
+    const [paymentMethod, setPaymentMethod] = useState<string>('');
 
     // History State
     const [historyBills, setHistoryBills] = useState<Bill[]>([]);
     const [loadingHistory, setLoadingHistory] = useState(false);
     const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
+    const [billDate, setBillDate] = useState<Date | undefined>(new Date());
     const [currentPage, setCurrentPage] = useState(1);
+    const [viewingBillId, setViewingBillId] = useState<string | null>(null);
+    const [historySearch, setHistorySearch] = useState('');
+    const [patientRecentBills, setPatientRecentBills] = useState<Bill[]>([]);
+    const [loadingPatientRecent, setLoadingPatientRecent] = useState(false);
     const itemsPerPage = 10;
 
     // Totals Calculation
@@ -100,7 +107,15 @@ export default function PharmacyBilling() {
 
     useEffect(() => {
         fetchBillHistory();
-    }, [selectedDate]);
+    }, [selectedDate, historySearch]);
+
+    useEffect(() => {
+        if (selectedPatient) {
+            fetchPatientRecentBills(selectedPatient.uhid);
+        } else {
+            setPatientRecentBills([]);
+        }
+    }, [selectedPatient]);
 
     const isPharmacyBill = (bill: any) => {
         const billType = String(
@@ -136,10 +151,13 @@ export default function PharmacyBilling() {
     const fetchBillHistory = async () => {
         setLoadingHistory(true);
         try {
-            const params: any = { limit: 50, billType: 'PHARMACY' };
+            const params: any = { limit: 100, billType: 'PHARMACY' };
             if (selectedDate) {
                 params.startDate = format(selectedDate, 'yyyy-MM-dd');
                 params.endDate = format(selectedDate, 'yyyy-MM-dd');
+            }
+            if (historySearch) {
+                params.search = historySearch;
             }
             const result = await billingService.getBills(params);
             const items = Array.isArray(result) ? result : result.items || [];
@@ -150,6 +168,23 @@ export default function PharmacyBilling() {
             toast({ title: "Error", description: "Could not load billing history", variant: "destructive" });
         } finally {
             setLoadingHistory(false);
+        }
+    };
+
+    const fetchPatientRecentBills = async (uhid: string) => {
+        setLoadingPatientRecent(true);
+        try {
+            const result = await billingService.getBills({ 
+                patientId: uhid, 
+                limit: 5, 
+                billType: 'PHARMACY' 
+            });
+            const items = Array.isArray(result) ? result : result.items || [];
+            setPatientRecentBills(items.filter(isPharmacyBill));
+        } catch (error) {
+            console.error("Failed to fetch patient recent bills", error);
+        } finally {
+            setLoadingPatientRecent(false);
         }
     };
 
@@ -316,8 +351,8 @@ export default function PharmacyBilling() {
             gstPercent: 0,
             grandTotal: totals.grandTotal,
             status: 'PAID',
-            createdAt: new Date().toISOString(),
-            created_at: new Date().toISOString(),
+            createdAt: billDate ? billDate.toISOString() : new Date().toISOString(),
+            created_at: billDate ? billDate.toISOString() : new Date().toISOString(),
             notes: 'Draft Pharmacy Invoice'
         } as Bill;
     };
@@ -375,6 +410,9 @@ export default function PharmacyBilling() {
                 gstPercent: totalBillGstPercent,
                 grandTotal,
                 status: 'PAID',
+                bill_date: billDate ? format(billDate, 'yyyy-MM-dd') : undefined,
+                created_at: billDate ? billDate.toISOString() : undefined,
+                payment_method: paymentMethod,
                 notes: 'Pharmacy Bill'
             };
 
@@ -395,7 +433,8 @@ export default function PharmacyBilling() {
                     batchNumber: item.batchNumber ?? item.batch_number,
                     expiryDate: item.expiryDate ?? item.expiry_date,
                     hsnCode: item.hsnCode ?? item.hsn_code,
-                }))
+                })),
+                paymentMode: paymentMethod || 'CASH'
             };
             await downloadPharmacyBillPDF(normalizedBill);
             toast({ title: "Success", description: "Bill generated and stock updated successfully." });
@@ -405,6 +444,7 @@ export default function PharmacyBilling() {
             setSelectedPatient(null);
             setCustomerName('');
             setPhone('');
+            setPaymentMethod('');
             fetchBillHistory();
         } catch (error: any) {
             toast({ 
@@ -418,7 +458,11 @@ export default function PharmacyBilling() {
     };
 
     const handleDownloadHistory = async (bill: Bill) => {
-        await downloadPharmacyBillPDF(bill);
+        const normalized = {
+            ...bill,
+            paymentMode: (bill as any).payment_method || (bill as any).paymentMode || 'CASH'
+        };
+        await downloadPharmacyBillPDF(normalized as any);
     };
 
     const handlePrintHistory = (bill: Bill) => {
@@ -534,34 +578,69 @@ export default function PharmacyBilling() {
                                                 />
                                             </div>
                                         </div>
-
                                         {selectedPatient && (
-                                            <div className="mt-4 p-4 rounded-lg bg-primary/5 border border-primary/10 grid grid-cols-2 md:grid-cols-4 gap-4 text-sm animate-in fade-in slide-in-from-top-2">
-                                                <div>
-                                                    <p className="text-muted-foreground text-xs uppercase font-bold tracking-wider">Patient Name</p>
-                                                    <p className="font-semibold">{selectedPatient.full_name}</p>
+                                            <div className="mt-4 space-y-4 animate-in fade-in slide-in-from-top-2">
+                                                <div className="p-4 rounded-lg bg-primary/5 border border-primary/10 grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                                                    <div>
+                                                        <p className="text-muted-foreground text-xs uppercase font-bold tracking-wider">Patient Name</p>
+                                                        <p className="font-semibold">{selectedPatient.full_name}</p>
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-muted-foreground text-xs uppercase font-bold tracking-wider">UHID</p>
+                                                        <p className="font-semibold">{selectedPatient.uhid}</p>
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-muted-foreground text-xs uppercase font-bold tracking-wider">Contact</p>
+                                                        <p className="font-semibold">{selectedPatient.phone}</p>
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-muted-foreground text-xs uppercase font-bold tracking-wider">Age/Gender</p>
+                                                        <p className="font-semibold">{selectedPatient.age} / {selectedPatient.gender}</p>
+                                                    </div>
                                                 </div>
-                                                <div>
-                                                    <p className="text-muted-foreground text-xs uppercase font-bold tracking-wider">UHID</p>
-                                                    <p className="font-semibold">{selectedPatient.uhid}</p>
-                                                </div>
-                                                <div>
-                                                    <p className="text-muted-foreground text-xs uppercase font-bold tracking-wider">Contact</p>
-                                                    <p className="font-semibold">{selectedPatient.phone}</p>
-                                                </div>
-                                                <div>
-                                                    <p className="text-muted-foreground text-xs uppercase font-bold tracking-wider">Age/Gender</p>
-                                                    <p className="font-semibold">{selectedPatient.age} / {selectedPatient.gender}</p>
+
+                                                {/* Recent Bills List */}
+                                                <div className="space-y-2">
+                                                    <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                                                        <History className="h-3 w-3" />
+                                                        Recent Pharmacy Bills
+                                                    </h4>
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+                                                        {loadingPatientRecent ? (
+                                                            <div className="col-span-full py-2 text-xs text-center text-muted-foreground italic">Loading history...</div>
+                                                        ) : patientRecentBills.length === 0 ? (
+                                                            <div className="col-span-full py-2 text-xs text-center text-muted-foreground italic">No previous bills found.</div>
+                                                        ) : (
+                                                            patientRecentBills.map(bill => (
+                                                                <div key={bill.id} className="flex items-center justify-between p-2 rounded border bg-card/50 hover:bg-accent/50 transition-colors cursor-pointer group" onClick={() => setViewingBillId(bill.id)}>
+                                                                    <div className="flex flex-col">
+                                                                        <span className="text-[10px] font-mono text-muted-foreground">{bill.billNumber || bill.bill_number}</span>
+                                                                        <span className="text-xs font-medium">{new Date(bill.createdAt || bill.created_at).toLocaleDateString()}</span>
+                                                                    </div>
+                                                                    <div className="text-right">
+                                                                        <div className="text-xs font-bold">₹{Number(bill.grandTotal || bill.grand_total).toFixed(2)}</div>
+                                                                        <Button variant="ghost" size="icon" className="h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                                            <Eye className="h-3 w-3" />
+                                                                        </Button>
+                                                                    </div>
+                                                                </div>
+                                                            ))
+                                                        )}
+                                                    </div>
                                                 </div>
                                             </div>
-                                        )}
+                                        )})}
                                     </CardContent>
                                 </Card>
 
                                 {/* Bill Table */}
                                 <Card className="glass overflow-hidden">
-                                    <CardHeader className="pb-2 border-b">
+                                    <CardHeader className="pb-2 border-b flex flex-row items-center justify-between">
                                         <CardTitle className="text-lg">Bill Items</CardTitle>
+                                        <div className="flex items-center gap-2 font-normal">
+                                            <span className="text-sm text-muted-foreground">Date:</span>
+                                            <DatePicker date={billDate} setDate={setBillDate} />
+                                        </div>
                                     </CardHeader>
                                     <CardContent className="p-0">
                                         <Table>
@@ -664,20 +743,52 @@ export default function PharmacyBilling() {
                                         </div>
 
                                         <div className="pt-4 space-y-3">
-                                            <Button 
-                                                className="w-full h-12 text-lg font-bold shadow-lg" 
-                                                onClick={handleSaveBill} 
-                                                disabled={billItems.length === 0 || isSaving}
-                                            >
-                                                {isSaving ? (
-                                                    "Processing..."
-                                                ) : (
-                                                    <>
-                                                        <Save className="mr-2 h-5 w-5" />
-                                                        Confirm & Print
-                                                    </>
-                                                )}
-                                            </Button>
+                                            <div className="space-y-2 mb-4">
+                                                <Label className="text-sm font-medium">Select Payment Method</Label>
+                                                <div className="grid grid-cols-3 gap-2">
+                                                    <Button 
+                                                        type="button" 
+                                                        variant={paymentMethod === 'CASH' ? 'default' : 'outline'} 
+                                                        onClick={() => setPaymentMethod('CASH')}
+                                                        className={paymentMethod === 'CASH' ? 'bg-primary text-primary-foreground' : ''}
+                                                    >
+                                                        Cash
+                                                    </Button>
+                                                    <Button 
+                                                        type="button" 
+                                                        variant={paymentMethod === 'UPI' ? 'default' : 'outline'} 
+                                                        onClick={() => setPaymentMethod('UPI')}
+                                                        className={paymentMethod === 'UPI' ? 'bg-primary text-primary-foreground' : ''}
+                                                    >
+                                                        UPI
+                                                    </Button>
+                                                    <Button 
+                                                        type="button" 
+                                                        variant={paymentMethod === 'CREDIT' ? 'default' : 'outline'} 
+                                                        onClick={() => setPaymentMethod('CREDIT')}
+                                                        className={paymentMethod === 'CREDIT' ? 'bg-primary text-primary-foreground' : ''}
+                                                    >
+                                                        Credit
+                                                    </Button>
+                                                </div>
+                                            </div>
+
+                                            {paymentMethod && (
+                                                <Button 
+                                                    className="w-full h-12 text-lg font-bold shadow-lg" 
+                                                    onClick={handleSaveBill} 
+                                                    disabled={billItems.length === 0 || isSaving}
+                                                >
+                                                    {isSaving ? (
+                                                        "Processing..."
+                                                    ) : (
+                                                        <>
+                                                            <Save className="mr-2 h-5 w-5" />
+                                                            Confirm & Print
+                                                        </>
+                                                    )}
+                                                </Button>
+                                            )}
                                             <Button 
                                                 variant="outline" 
                                                 className="w-full" 
@@ -704,6 +815,16 @@ export default function PharmacyBilling() {
                                 <CardTitle className="flex justify-between items-center">
                                     <span>Bill History</span>
                                     <div className="flex items-center gap-3 text-sm font-normal">
+                                        <div className="relative w-[200px]">
+                                            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                                            <Input
+                                                type="search"
+                                                placeholder="Search Patient/Bill..."
+                                                className="pl-9 h-9"
+                                                value={historySearch}
+                                                onChange={(e) => setHistorySearch(e.target.value)}
+                                            />
+                                        </div>
                                         <DatePicker date={selectedDate} setDate={setSelectedDate} />
                                         {selectedDate && (
                                             <Button variant="ghost" size="sm" onClick={() => setSelectedDate(undefined)}>
@@ -725,6 +846,8 @@ export default function PharmacyBilling() {
                                                 <TableHead>Date</TableHead>
                                                 <TableHead>Bill #</TableHead>
                                                 <TableHead>Patient</TableHead>
+                                                <TableHead>Medicines</TableHead>
+                                                <TableHead className="text-center">Qty</TableHead>
                                                 <TableHead className="text-right">Amount</TableHead>
                                                 <TableHead className="text-center">Status</TableHead>
                                                 <TableHead className="text-right pr-6">Actions</TableHead>
@@ -733,7 +856,7 @@ export default function PharmacyBilling() {
                                         <TableBody>
                                             {historyBills.length === 0 ? (
                                                 <TableRow>
-                                                    <TableCell colSpan={6} className="text-center py-12 text-muted-foreground">
+                                                    <TableCell colSpan={8} className="text-center py-12 text-muted-foreground">
                                                         {loadingHistory ? "Loading history..." : "No pharmacy bills found."}
                                                     </TableCell>
                                                 </TableRow>
@@ -759,6 +882,16 @@ export default function PharmacyBilling() {
                                                                 {bill.phone || bill.patient?.phone || ''}
                                                             </div>
                                                         </TableCell>
+                                                        <TableCell>
+                                                            <div className="max-w-[200px] truncate text-xs text-muted-foreground" title={bill.items?.map((i: any) => i.description || i.name || i.medicine?.name || 'Unknown Medicine').join(', ')}>
+                                                                {bill.items?.map((i: any) => i.description || i.name || i.medicine?.name || 'Unknown Medicine').join(', ') || 'No items'}
+                                                            </div>
+                                                        </TableCell>
+                                                        <TableCell className="text-center">
+                                                            <div className="text-xs text-muted-foreground">
+                                                                {bill.items?.map((i: any) => i.quantity).join(', ') || '-'}
+                                                            </div>
+                                                        </TableCell>
                                                         <TableCell className="text-right font-bold">₹{Number(bill.grand_total || bill.grandTotal || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</TableCell>
                                                         <TableCell className="text-center">
                                                             <Badge variant={bill.status === 'PAID' ? 'secondary' : 'destructive'}>
@@ -767,6 +900,9 @@ export default function PharmacyBilling() {
                                                         </TableCell>
                                                         <TableCell className="text-right pr-4">
                                                             <div className="flex justify-end gap-1">
+                                                                <Button variant="ghost" size="icon" onClick={() => setViewingBillId(bill.id)} title="View Details">
+                                                                    <Eye className="h-4 w-4" />
+                                                                </Button>
                                                                 <Button variant="ghost" size="icon" onClick={() => handleDownloadHistory(bill)} title="Download PDF">
                                                                     <Save className="h-4 w-4" />
                                                                 </Button>
@@ -835,6 +971,14 @@ export default function PharmacyBilling() {
                         </Card>
                     </TabsContent>
                 </Tabs>
+
+                {viewingBillId && (
+                    <BillDetailsDialog 
+                        open={!!viewingBillId} 
+                        onOpenChange={(open) => !open && setViewingBillId(null)}
+                        billId={viewingBillId}
+                    />
+                )}
             </div>
         </DashboardLayout>
     );

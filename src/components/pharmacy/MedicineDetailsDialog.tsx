@@ -141,6 +141,12 @@ export function MedicineDetailsDialog({ children, medicine, onEdit, onDelete, op
                             </span>
                             <p className="font-mono font-medium">{medicine.stock_quantity}</p>
                         </div>
+                        <div className="space-y-1 p-3 bg-muted/40 rounded-lg">
+                            <span className="text-xs text-muted-foreground flex items-center gap-1">
+                                <Plus className="h-3 w-3" /> Free Quantity
+                            </span>
+                            <p className="font-mono font-medium">{medicine.free_quantity ?? 0}</p>
+                        </div>
 
                         
                         <div className="space-y-1 p-3 bg-muted/40 rounded-lg text-center">
