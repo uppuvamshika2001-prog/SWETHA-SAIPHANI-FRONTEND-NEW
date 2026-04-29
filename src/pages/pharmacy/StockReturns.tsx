@@ -16,6 +16,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { normalizeResponse } from "@/utils/api-helpers";
 import { API_BASE_URL } from "@/config/api";
 import { api } from "@/services/api";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 const RETURN_REASONS = [
     "Expired",
@@ -52,6 +54,8 @@ export default function StockReturns() {
         endDate: ''
     });
     const [historyPage, setHistoryPage] = useState(1);
+    const [selectedRecord, setSelectedRecord] = useState<any>(null);
+    const [isViewOpen, setIsViewOpen] = useState(false);
     const itemsPerPage = 10;
 
     useEffect(() => {
@@ -591,7 +595,7 @@ export default function StockReturns() {
                                         <TableHead className="font-bold">Return Date</TableHead>
                                         <TableHead className="font-bold">Distributor</TableHead>
                                         <TableHead className="font-bold">Return Type</TableHead>
-                                        <TableHead className="font-bold">Total Items</TableHead>
+                                        <TableHead className="font-bold">Total Quantity</TableHead>
                                         <TableHead className="font-bold">Total Value</TableHead>
                                         <TableHead className="text-right font-bold">Action</TableHead>
                                     </TableRow>
@@ -631,13 +635,14 @@ export default function StockReturns() {
                                                 </TableCell>
                                                 <TableCell>
                                                     <Badge variant="secondary" className="font-black px-3 py-1">
-                                                        {record.items?.length || 0} Batches
+                                                        {record.items?.reduce((sum: number, item: any) => sum + (item.return_qty || item.returnQty || 0), 0)}
                                                     </Badge>
                                                 </TableCell>
                                                 <TableCell className="text-primary font-black text-lg">₹{Number(record.total_amount || record.totalAmount || 0).toFixed(2)}</TableCell>
                                                 <TableCell className="text-right">
-                                                    <Button variant="ghost" size="sm" className="font-bold" onClick={() => {
-                                                        toast({ title: "Details View", description: "Expanded bill details and item distribution history is being generated." });
+                                                    <Button variant="ghost" size="sm" className="font-bold text-primary hover:text-primary hover:bg-primary/10" onClick={() => {
+                                                        setSelectedRecord(record);
+                                                        setIsViewOpen(true);
                                                     }}>
                                                         View Items
                                                     </Button>
@@ -701,6 +706,66 @@ export default function StockReturns() {
                     </Card>
                 </TabsContent>
             </Tabs>
+            <Dialog open={isViewOpen} onOpenChange={setIsViewOpen}>
+                <DialogContent className="max-w-3xl">
+                    <DialogHeader>
+                        <DialogTitle className="text-2xl font-black flex items-center gap-2">
+                            <RotateCcw className="h-6 w-6 text-primary" />
+                            Return Details
+                        </DialogTitle>
+                        <DialogDescription className="font-bold text-muted-foreground uppercase text-xs tracking-wider">
+                            Ref: {selectedRecord?.id?.split('-')[0]} | {selectedRecord?.distributor}
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <div className="grid grid-cols-3 gap-4 py-4 border-y border-dashed my-4">
+                        <div className="space-y-1">
+                            <p className="text-[10px] uppercase font-bold text-muted-foreground">Return Date</p>
+                            <p className="font-black">{selectedRecord && format(new Date(selectedRecord.return_date || selectedRecord.returnDate), 'dd MMM yyyy, hh:mm a')}</p>
+                        </div>
+                        <div className="space-y-1">
+                            <p className="text-[10px] uppercase font-bold text-muted-foreground">Return Type</p>
+                            <Badge variant="outline" className="font-black bg-slate-50 uppercase text-[10px]">
+                                {selectedRecord?.return_type?.replace('_', ' ')}
+                            </Badge>
+                        </div>
+                        <div className="space-y-1">
+                            <p className="text-[10px] uppercase font-bold text-muted-foreground">Total Value</p>
+                            <p className="font-black text-primary text-xl">₹{Number(selectedRecord?.total_amount || 0).toFixed(2)}</p>
+                        </div>
+                    </div>
+
+                    <ScrollArea className="max-h-[400px] pr-4">
+                        <Table>
+                            <TableHeader>
+                                <TableRow className="bg-muted/50">
+                                    <TableHead className="font-bold">Medicine</TableHead>
+                                    <TableHead className="font-bold">Batch</TableHead>
+                                    <TableHead className="font-bold text-center">Qty</TableHead>
+                                    <TableHead className="font-bold text-right">Price</TableHead>
+                                    <TableHead className="font-bold text-right">Total</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {selectedRecord?.items?.map((item: any, idx: number) => (
+                                    <TableRow key={idx}>
+                                        <TableCell>
+                                            <div className="font-bold text-slate-900">{item.medicine_name || 'Unknown Medicine'}</div>
+                                            <div className="text-[10px] text-muted-foreground font-medium italic">{item.return_reason}</div>
+                                        </TableCell>
+                                        <TableCell className="font-mono text-xs">{item.batch_number}</TableCell>
+                                        <TableCell className="text-center">
+                                            <Badge variant="secondary" className="font-black px-3">{item.return_qty}</Badge>
+                                        </TableCell>
+                                        <TableCell className="text-right font-medium">₹{Number(item.unit_price).toFixed(2)}</TableCell>
+                                        <TableCell className="text-right font-black">₹{(item.return_qty * item.unit_price).toFixed(2)}</TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </ScrollArea>
+                </DialogContent>
+            </Dialog>
         </div>
         </DashboardLayout>
     );

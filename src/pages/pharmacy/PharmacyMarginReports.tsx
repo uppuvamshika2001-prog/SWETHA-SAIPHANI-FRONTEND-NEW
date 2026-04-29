@@ -16,6 +16,7 @@ import {
   AlertTriangle
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
 import { pharmacyService } from '@/services/pharmacyService';
 import { format, startOfMonth, endOfDay } from 'date-fns';
 import { toast } from 'sonner';
@@ -51,6 +52,7 @@ const PatientNamesList = ({ namesString }: { namesString: string }) => {
 };
 
 export default function MarginReports() {
+  const { role } = useAuth();
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [dateRange, setDateRange] = useState({
@@ -77,11 +79,6 @@ export default function MarginReports() {
 
   const columns = [
     { key: 'name', header: 'Medicine Name' },
-    { 
-      key: 'patientNames', 
-      header: 'Patient Name', 
-      render: (row: any) => <PatientNamesList namesString={row.patientNames} /> 
-    },
     { key: 'quantity', header: 'Quantity Sold' },
     { 
       key: 'profit', 
@@ -95,7 +92,7 @@ export default function MarginReports() {
   ];
 
   return (
-    <DashboardLayout role="pharmacist">
+    <DashboardLayout role={(role as any) || "admin"}>
       <div className="space-y-6">
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>

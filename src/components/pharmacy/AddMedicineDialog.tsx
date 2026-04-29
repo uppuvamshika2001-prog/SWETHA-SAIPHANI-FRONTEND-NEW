@@ -280,13 +280,14 @@ export function AddMedicineDialog({ children, onAdd }: AddMedicineDialogProps) {
                                 />
                             </div>
                             <div className="space-y-1.5">
-                                <Label htmlFor="invoice_number" className="text-xs text-gray-500">Invoice Number</Label>
+                                <Label htmlFor="invoice_number" className="text-xs text-gray-500">Invoice Number *</Label>
                                 <Input
                                     id="invoice_number"
                                     placeholder="e.g. INV-2024-001"
                                     className="h-9"
                                     value={formData.invoice_number}
                                     onChange={(e) => setFormData({ ...formData, invoice_number: e.target.value })}
+                                    required
                                 />
                             </div>
                             <div className="space-y-1.5">

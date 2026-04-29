@@ -176,6 +176,7 @@ const App = () => {
                         <Route path="/admin/pharmacy" element={<AdminPharmacy />} />
                         <Route path="/admin/pharmacy/purchases" element={<AdminPharmacy />} />
                         <Route path="/admin/pharmacy/distributor-payments" element={<DistributorPayments />} />
+                        <Route path="/admin/pharmacy/margin-reports" element={<MarginReports />} />
                         <Route path="/admin/analytics" element={<AdminAnalytics />} />
                         <Route path="/admin/lab-management" element={<AdminLabManagement />} />
 
@@ -234,7 +235,6 @@ const App = () => {
                         <Route path="/pharmacy/billing" element={<PharmacyBilling />} />
                         <Route path="/pharmacy/returns" element={<PharmacyReturns />} />
                         <Route path="/pharmacy/stock-returns" element={<PharmacyStockReturns />} />
-                        <Route path="/pharmacy/margin-reports" element={<MarginReports />} />
                         <Route path="/pharmacy/reports" element={<PharmacyReports />} />
                         <Route path="/pharmacy/purchases" element={<DistributorPayments />} />
                         <Route path="/pharmacy/categories" element={<PharmacyCategories />} />

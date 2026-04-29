@@ -57,7 +57,7 @@ export default function DistributorPayments() {
 
     useEffect(() => {
         fetchData();
-    }, [filters.status, filters.distributor]);
+    }, [filters.status, filters.distributor, filters.searchTerm]);
 
     const fetchData = async () => {
         try {
@@ -66,6 +66,7 @@ export default function DistributorPayments() {
                 pharmacyService.getPurchases({
                     distributor: filters.distributor || undefined,
                     status: filters.status !== "ALL" ? filters.status : undefined,
+                    search: filters.searchTerm || undefined,
                     limit: 1000
                 }),
                 pharmacyService.getDistributorReport()
@@ -99,12 +100,15 @@ export default function DistributorPayments() {
         if (!window.confirm("Are you sure you want to delete this purchase? This will soft-delete the record but won't undo stock changes if they were already processed. Only purchases with NO payments can be deleted.")) return;
         
         try {
+            setIsLoading(true);
             await pharmacyService.deletePurchase(id);
             toast.success("Purchase deleted successfully");
-            fetchData();
+            await fetchData();
         } catch (error: any) {
             console.error("Delete failed:", error);
             toast.error(error.response?.data?.message || "Failed to delete purchase. Ensure there are no payments linked.");
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -121,10 +125,17 @@ export default function DistributorPayments() {
         }
     };
 
-    const filteredPurchases = purchases.filter(p => 
-        p.invoice_number?.toLowerCase().includes(filters.searchTerm.toLowerCase()) ||
-        p.distributor_name?.toLowerCase().includes(filters.searchTerm.toLowerCase())
-    );
+    const filteredPurchases = purchases.filter(p => {
+        const search = filters.searchTerm.toLowerCase();
+        return (
+            p.invoice_number?.toLowerCase().includes(search) ||
+            p.distributor_name?.toLowerCase().includes(search) ||
+            p.batches?.some((b: any) => 
+                b.medicine_name?.toLowerCase().includes(search) || 
+                b.batch_number?.toLowerCase().includes(search)
+            )
+        );
+    });
 
     // Reset to page 1 when filters change
     useEffect(() => {
@@ -240,7 +251,7 @@ export default function DistributorPayments() {
                                         <div className="relative">
                                             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-slate-400" />
                                             <Input
-                                                placeholder="Search invoice or distributor..."
+                                                placeholder="Search invoice, distributor, medicine..."
                                                 className="pl-9 w-[250px]"
                                                 value={filters.searchTerm}
                                                 onChange={(e) => setFilters({ ...filters, searchTerm: e.target.value })}
@@ -338,11 +349,17 @@ export default function DistributorPayments() {
                                                                             onSuccess={fetchData} 
                                                                         />
                                                                     )}
-                                                                    <DropdownMenuItem onClick={() => { setSelectedPurchase(purchase); setIsAddPurchaseOpen(true); }}>
+                                                                    <DropdownMenuItem onSelect={() => { setSelectedPurchase(purchase); setIsAddPurchaseOpen(true); }}>
                                                                         <Edit className="h-4 w-4 mr-2" />
                                                                         Edit Basic Info
                                                                     </DropdownMenuItem>
-                                                                    <DropdownMenuItem className="text-red-600 focus:text-red-600" onClick={() => handleDeletePurchase(purchase.id)}>
+                                                                    <DropdownMenuItem 
+                                                                        className="text-red-600 focus:text-red-600" 
+                                                                        onSelect={(e) => {
+                                                                            e.preventDefault();
+                                                                            handleDeletePurchase(purchase.id);
+                                                                        }}
+                                                                    >
                                                                         <Trash2 className="h-4 w-4 mr-2" />
                                                                         Delete Record
                                                                     </DropdownMenuItem>

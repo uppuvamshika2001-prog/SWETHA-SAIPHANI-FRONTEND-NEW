@@ -68,7 +68,7 @@ export default function PharmacyDashboard() {
     const fetchDashboardData = async () => {
       try {
         const [fetchedMedicines, fetchedPrescriptions, fetchedBills] = await Promise.all([
-          pharmacyService.getMedicines(),
+          pharmacyService.getMedicines({ limit: 1000 }),
           pharmacyService.getPendingPrescriptions(),
           pharmacyService.getBills()
         ]);
