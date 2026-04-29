@@ -319,7 +319,14 @@ export default function DistributorPayments() {
                                                         <TableCell className="text-xs">{purchase.purchase_date ? format(new Date(purchase.purchase_date), "dd MMM yy") : '-'}</TableCell>
                                                         <TableCell className="text-right">₹{(purchase.total_amount || 0).toFixed(2)}</TableCell>
                                                         <TableCell className="text-right text-red-600 font-semibold">₹{(purchase.balance_amount || 0).toFixed(2)}</TableCell>
-                                                        <TableCell className="text-center">{getStatusBadge(purchase.payment_status)}</TableCell>
+                                                        <TableCell className="text-center">
+                                                            <div className="flex flex-col items-center gap-1">
+                                                                {getStatusBadge(purchase.payment_status)}
+                                                                {(purchase as any).is_deleted && (
+                                                                    <Badge variant="destructive" className="text-[10px] py-0 h-4">DELETED</Badge>
+                                                                )}
+                                                            </div>
+                                                        </TableCell>
                                                         <TableCell className="text-center">
                                                             {purchase.file_url ? (
                                                                 <a 
