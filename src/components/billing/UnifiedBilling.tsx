@@ -107,9 +107,11 @@ export function UnifiedBilling({ portalRole, billType }: UnifiedBillingProps) {
             await billingService.deleteBill(id);
             toast.success('Bill deleted successfully');
             fetchBills();
-        } catch (error) {
+        } catch (error: any) {
             console.error('Failed to delete bill:', error);
-            // toast.error is already handled by ApiService for majority of cases, but we can add more if needed
+            toast.error(error.message || 'Failed to delete bill. Please try again.');
+        } finally {
+            setLoading(false);
         }
     };
 
