@@ -526,7 +526,7 @@ function RecordPaymentMenuItem({ purchase, onSuccess }: { purchase: any, onSucce
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DropdownMenuItem onSelect={(e) => { e.preventDefault(); setOpen(true); }}>
-                <Receipt className="h-4 w-4 mr-2" />
+                <IndianRupee className="h-4 w-4 mr-2" />
                 Record Payment
             </DropdownMenuItem>
             <DialogContent className="sm:max-w-[425px]">

@@ -35,7 +35,7 @@ export default function ReceptionPatients() {
     const [meta, setMeta] = useState({ page: 1, totalPages: 1, total: 0 });
 
     // Date Filtering State (Default: Today)
-    const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
+    const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
 
 
 

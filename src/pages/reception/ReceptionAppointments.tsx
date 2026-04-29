@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Calendar, Search, RefreshCw, Printer } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AppointmentBookingDialog } from '@/components/appointments/AppointmentBookingDialog';
 import { AppointmentDetailsDialog } from '@/components/appointments/AppointmentDetailsDialog';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -17,6 +18,8 @@ export default function ReceptionAppointments() {
     const [appointments, setAppointments] = useState<Appointment[]>([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
+
+    const [selectedDoctor, setSelectedDoctor] = useState<string>('all');
 
     const fetchAppointments = async () => {
         try {
@@ -34,11 +37,15 @@ export default function ReceptionAppointments() {
         fetchAppointments();
     }, []);
 
-    const filteredAppointments = appointments.filter(apt =>
-        apt.patient_name.toLowerCase().includes(search.toLowerCase()) ||
-        apt.doctor_name.toLowerCase().includes(search.toLowerCase()) ||
-        apt.appointment_id.toLowerCase().includes(search.toLowerCase())
-    );
+    const uniqueDoctors = Array.from(new Set(appointments.map(a => a.doctor_name))).filter(Boolean).sort();
+
+    const filteredAppointments = appointments.filter(apt => {
+        const matchesSearch = apt.patient_name.toLowerCase().includes(search.toLowerCase()) ||
+            apt.doctor_name.toLowerCase().includes(search.toLowerCase()) ||
+            apt.appointment_id.toLowerCase().includes(search.toLowerCase());
+        const matchesDoctor = selectedDoctor === 'all' || apt.doctor_name === selectedDoctor;
+        return matchesSearch && matchesDoctor;
+    });
 
     const columns = [
         {
@@ -120,6 +127,17 @@ export default function ReceptionAppointments() {
                                 <Button variant="outline" size="icon" onClick={fetchAppointments} title="Refresh">
                                     <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
                                 </Button>
+                                <Select value={selectedDoctor} onValueChange={setSelectedDoctor}>
+                                    <SelectTrigger className="w-[200px]">
+                                        <SelectValue placeholder="All Doctors" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">All Doctors</SelectItem>
+                                        {uniqueDoctors.map(doc => (
+                                            <SelectItem key={doc as string} value={doc as string}>{doc}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
                                 <div className="relative w-64">
                                     <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                                     <Input

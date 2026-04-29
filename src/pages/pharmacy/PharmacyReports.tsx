@@ -6,7 +6,7 @@ import {
   FileText, 
   ChevronRight,
   BarChart3,
-  DollarSign,
+  IndianRupee,
   Package
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -32,7 +32,7 @@ export default function PharmacyReports() {
     {
       title: "Sales Summary",
       description: "Daily and monthly sales breakdowns with billing details.",
-      icon: <DollarSign className="h-6 w-6 text-purple-500" />,
+      icon: <IndianRupee className="h-6 w-6 text-purple-500" />,
       path: "/pharmacy/billing",
       color: "border-purple-100 bg-purple-50/50"
     },

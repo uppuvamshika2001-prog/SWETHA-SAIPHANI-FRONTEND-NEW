@@ -12,13 +12,43 @@ import {
   Download, 
   Filter,
   BarChart3,
-  DollarSign,
+  IndianRupee,
   AlertTriangle
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { pharmacyService } from '@/services/pharmacyService';
 import { format, startOfMonth, endOfDay } from 'date-fns';
 import { toast } from 'sonner';
+
+const PatientNamesList = ({ namesString }: { namesString: string }) => {
+  const [expanded, setExpanded] = useState(false);
+  
+  if (!namesString) return <span className="text-muted-foreground">N/A</span>;
+  
+  const names = namesString.split(',').map(n => n.trim()).filter(Boolean);
+  
+  if (names.length === 0) return <span className="text-muted-foreground">N/A</span>;
+  
+  if (names.length <= 1) {
+    return <span className="text-sm">{names[0]}</span>;
+  }
+  
+  const displayNames = expanded ? names : [names[0]];
+  
+  return (
+    <div className="flex flex-col gap-1">
+      {displayNames.map((name, i) => (
+        <span key={i} className="text-sm">{name}</span>
+      ))}
+      <button 
+        onClick={() => setExpanded(!expanded)} 
+        className="text-xs text-primary hover:underline text-left mt-0.5 font-medium"
+      >
+        {expanded ? 'View Less' : `View More (+${names.length - 1})`}
+      </button>
+    </div>
+  );
+};
 
 export default function MarginReports() {
   const [data, setData] = useState<any>(null);
@@ -47,13 +77,18 @@ export default function MarginReports() {
 
   const columns = [
     { key: 'name', header: 'Medicine Name' },
+    { 
+      key: 'patientNames', 
+      header: 'Patient Name', 
+      render: (row: any) => <PatientNamesList namesString={row.patientNames} /> 
+    },
     { key: 'quantity', header: 'Quantity Sold' },
     { 
-      key: 'sales', 
+      key: 'profit', 
       header: 'Total Profit',
       render: (row: any) => (
         <span className="font-medium text-slate-700">
-          ₹{Number(row.sales).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+          ₹{Number(row.profit).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
         </span>
       )
     },
@@ -135,7 +170,7 @@ export default function MarginReports() {
                   <h3 className="text-2xl font-bold text-amber-900">₹{data?.todaySales?.toLocaleString('en-IN') || '0'}</h3>
                 </div>
                 <div className="h-12 w-12 bg-amber-100 rounded-full flex items-center justify-center">
-                  <DollarSign className="h-6 w-6 text-amber-600" />
+                  <IndianRupee className="h-6 w-6 text-amber-600" />
                 </div>
               </div>
             </CardContent>
@@ -149,7 +184,7 @@ export default function MarginReports() {
                   <h3 className="text-2xl font-bold text-blue-900">₹{data?.monthlySales?.toLocaleString('en-IN') || '0'}</h3>
                 </div>
                 <div className="h-12 w-12 bg-blue-100 rounded-full flex items-center justify-center">
-                  <DollarSign className="h-6 w-6 text-blue-600" />
+                  <IndianRupee className="h-6 w-6 text-blue-600" />
                 </div>
               </div>
             </CardContent>

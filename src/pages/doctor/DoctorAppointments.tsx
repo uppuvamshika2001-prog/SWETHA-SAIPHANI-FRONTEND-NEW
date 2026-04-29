@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useAuth } from "@/contexts/AuthContext";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { DataTable } from "@/components/dashboard/DataTable";
 import { appointmentService } from "@/services/appointmentService";
@@ -10,13 +11,15 @@ import { StatusBadge } from "@/components/dashboard/StatusBadge";
 import { toast } from "sonner";
 
 export default function DoctorAppointments() {
+    const { user } = useAuth();
     const [appointments, setAppointments] = useState<Appointment[]>([]);
     const [loading, setLoading] = useState(true);
     const [updatingId, setUpdatingId] = useState<string | null>(null);
 
     const fetchAppointments = async () => {
+        if (!user?.id) return;
         try {
-            const data = await appointmentService.getAppointments();
+            const data = await appointmentService.getAppointments({ doctorId: user.id });
             setAppointments(data);
         } catch (error) {
             console.error("Failed to fetch appointments", error);
@@ -27,8 +30,10 @@ export default function DoctorAppointments() {
     };
 
     useEffect(() => {
-        fetchAppointments();
-    }, []);
+        if (user?.id) {
+            fetchAppointments();
+        }
+    }, [user?.id]);
 
     const handleMarkComplete = async (appointmentId: string) => {
         setUpdatingId(appointmentId);

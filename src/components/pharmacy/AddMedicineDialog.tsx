@@ -344,7 +344,7 @@ export function AddMedicineDialog({ children, onAdd }: AddMedicineDialogProps) {
                                 <Input
                                     id="stock_quantity"
                                     type="number"
-                                    className="h-9 text-right font-bold border-green-200"
+                                    className="h-9 text-right font-bold border-green-200 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                     placeholder="0"
                                     value={formData.stock_quantity}
                                     onChange={(e) => setFormData({ ...formData, stock_quantity: e.target.value })}
@@ -355,7 +355,7 @@ export function AddMedicineDialog({ children, onAdd }: AddMedicineDialogProps) {
                                 <Input
                                     id="pack_quantity"
                                     type="number"
-                                    className="h-9 text-right"
+                                    className="h-9 text-right [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                     placeholder="0"
                                     value={formData.pack_quantity}
                                     onChange={(e) => setFormData({ ...formData, pack_quantity: e.target.value })}
@@ -367,7 +367,7 @@ export function AddMedicineDialog({ children, onAdd }: AddMedicineDialogProps) {
                                 <Input
                                     id="free_quantity"
                                     type="number"
-                                    className="h-9 text-right"
+                                    className="h-9 text-right [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                     placeholder="0"
                                     value={formData.free_quantity}
                                     onChange={(e) => setFormData({ ...formData, free_quantity: e.target.value })}
@@ -378,7 +378,7 @@ export function AddMedicineDialog({ children, onAdd }: AddMedicineDialogProps) {
                                 <Input
                                     id="min_stock_level"
                                     type="number"
-                                    className="h-9 text-right"
+                                    className="h-9 text-right [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                     placeholder="10"
                                     value={formData.min_stock_level}
                                     onChange={(e) => setFormData({ ...formData, min_stock_level: e.target.value })}
@@ -400,7 +400,7 @@ export function AddMedicineDialog({ children, onAdd }: AddMedicineDialogProps) {
                                     id="ptr"
                                     type="number"
                                     step="0.01"
-                                    className="h-9 text-right"
+                                    className="h-9 text-right [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                     placeholder="0.00"
                                     value={formData.ptr}
                                     onChange={(e) => setFormData({ ...formData, ptr: e.target.value })}
@@ -412,7 +412,7 @@ export function AddMedicineDialog({ children, onAdd }: AddMedicineDialogProps) {
                                     id="pts"
                                     type="number"
                                     step="0.01"
-                                    className="h-9 text-right"
+                                    className="h-9 text-right [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                     placeholder="0.00"
                                     value={formData.pts}
                                     onChange={(e) => setFormData({ ...formData, pts: e.target.value })}
@@ -424,7 +424,7 @@ export function AddMedicineDialog({ children, onAdd }: AddMedicineDialogProps) {
                                     id="purchase_price"
                                     type="number"
                                     step="0.01"
-                                    className="h-9 text-right border-amber-200"
+                                    className="h-9 text-right border-amber-200 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                     placeholder="0.00"
                                     value={formData.purchase_price}
                                     onChange={(e) => setFormData({ ...formData, purchase_price: e.target.value })}
@@ -436,7 +436,7 @@ export function AddMedicineDialog({ children, onAdd }: AddMedicineDialogProps) {
                                     id="mrp"
                                     type="number"
                                     step="0.01"
-                                    className="h-9 text-right"
+                                    className="h-9 text-right [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                     placeholder="0.00"
                                     value={formData.mrp}
                                     onChange={(e) => setFormData({ ...formData, mrp: e.target.value })}
@@ -455,7 +455,7 @@ export function AddMedicineDialog({ children, onAdd }: AddMedicineDialogProps) {
                                     id="sale_price"
                                     type="number"
                                     step="0.01"
-                                    className="h-9 text-right font-bold border-purple-300 bg-purple-50/30"
+                                    className="h-9 text-right font-bold border-purple-300 bg-purple-50/30 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                     placeholder="0.00"
                                     value={formData.sale_price}
                                     onChange={(e) => setFormData({ ...formData, sale_price: e.target.value })}
@@ -467,7 +467,7 @@ export function AddMedicineDialog({ children, onAdd }: AddMedicineDialogProps) {
                                     id="discount"
                                     type="number"
                                     step="0.1"
-                                    className="h-9 text-right"
+                                    className="h-9 text-right [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                     placeholder="0"
                                     value={formData.discount}
                                     onChange={(e) => setFormData({ ...formData, discount: e.target.value })}
@@ -480,7 +480,7 @@ export function AddMedicineDialog({ children, onAdd }: AddMedicineDialogProps) {
                                     id="gst"
                                     type="number"
                                     step="0.1"
-                                    className="h-9 text-right"
+                                    className="h-9 text-right [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                     placeholder="0"
                                     value={formData.gst}
                                     onChange={(e) => setFormData({ ...formData, gst: e.target.value })}

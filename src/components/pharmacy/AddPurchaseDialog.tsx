@@ -124,7 +124,7 @@ export function AddPurchaseDialog({ open, onOpenChange, onSuccess, purchase }: A
     // 1. Calculate Subtotal
     const newSubtotal = items.reduce((sum, item) => {
         const qty = parseFloat(item.stockQuantity) || 0;
-        const price = parseFloat(item.mrp) || 0;
+        const price = parseFloat(item.purchasePrice) || 0;
         return sum + (qty * price);
     }, 0);
 
@@ -290,26 +290,26 @@ export function AddPurchaseDialog({ open, onOpenChange, onSuccess, purchase }: A
                 return;
             }
 
-           const qty = parseInt(item.stockQuantity, 10) || 0;
-const gstPercent = parseFloat(item.gst) || 0;
-const mrpPrice = parseFloat(item.mrp) || 0;
-const base = qty * mrpPrice;
-const gstAmount = (base * gstPercent) / 100;
+            const qty = parseInt(item.stockQuantity, 10) || 0;
+            const gstPercent = parseFloat(item.gst) || 0;
+            const purchasePriceVal = parseFloat(item.purchasePrice) || 0;
+            const base = qty * purchasePriceVal;
+            const gstAmount = (base * gstPercent) / 100;
 
-formattedItems.push({
-    medicine_id: item.medicineId,
-    batch_number: item.batchNumber,
-    manufacturing_date: item.manufacturingDate || undefined,
-    expiry_date: item.expiryDate,
-    purchase_price: price,
-    selling_price: parseFloat(item.salePrice) || 0,
-    mrp: item.mrp ? parseFloat(item.mrp) : undefined,
-    gst_percent: gstPercent,
-    stock_quantity: qty,
-    free_quantity: parseInt(item.freeQuantity, 10) || 0,
-    pack_quantity: item.packQuantity || 1,
-    gst_amount: gstAmount
-});
+            formattedItems.push({
+                medicine_id: item.medicineId,
+                batch_number: item.batchNumber,
+                manufacturing_date: item.manufacturingDate || undefined,
+                expiry_date: item.expiryDate,
+                purchase_price: purchasePriceVal,
+                selling_price: parseFloat(item.salePrice) || 0,
+                mrp: item.mrp ? parseFloat(item.mrp) : undefined,
+                gst_percent: gstPercent,
+                stock_quantity: qty,
+                free_quantity: parseInt(item.freeQuantity, 10) || 0,
+                pack_quantity: item.packQuantity || 1,
+                gst_amount: gstAmount
+            });
         }
 
         try {
@@ -442,7 +442,7 @@ formattedItems.push({
                         </div>
                         
                         <div className="border rounded-lg overflow-x-auto">
-                            <Table className="min-w-[1000px]">
+                            <Table className="min-w-[1400px]">
                                 <TableHeader className="bg-slate-50">
                                     <TableRow>
                                         <TableHead className="w-[200px]">Medicine *</TableHead>
@@ -450,8 +450,8 @@ formattedItems.push({
                                         <TableHead className="w-[130px]">Expiry *</TableHead>
                                         <TableHead className="w-[100px]">Qty *</TableHead>
                                         <TableHead className="w-[80px]">Free Qty</TableHead>
-                                        <TableHead className="w-[110px]">Pur. Price *</TableHead>
-                                        <TableHead className="w-[110px]">Sale Price *</TableHead>
+                                        <TableHead className="w-[160px]">Pur. Price *</TableHead>
+                                        <TableHead className="w-[160px]">Sale Price *</TableHead>
                                         <TableHead className="w-[110px]">MRP</TableHead>
                                         <TableHead className="w-[110px]">GST</TableHead>
                                         <TableHead className="w-[110px]">Total</TableHead>
@@ -460,7 +460,7 @@ formattedItems.push({
                                 </TableHeader>
                                 <TableBody>
                                     {items.map((item) => {
-                                        const total = (parseFloat(item.stockQuantity) || 0) * (parseFloat(item.mrp) || 0);
+                                        const total = (parseFloat(item.stockQuantity) || 0) * (parseFloat(item.purchasePrice) || 0);
                                         return (
                                             <TableRow key={item.id} className={isEdit ? "bg-slate-50/30" : ""}>
                                                 <TableCell className="p-2 min-w-[200px]">
@@ -492,22 +492,22 @@ formattedItems.push({
                                                     <Input disabled={isEdit} type="date" value={item.expiryDate} onChange={(e) => updateItem(item.id, "expiryDate", e.target.value)} required />
                                                 </TableCell>
                                                 <TableCell className="p-2">
-                                                    <Input disabled={isEdit} type="number" min="1" value={item.stockQuantity} onChange={(e) => updateItem(item.id, "stockQuantity", e.target.value)} required />
+                                                    <Input disabled={isEdit} type="number" className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" min="1" value={item.stockQuantity} onChange={(e) => updateItem(item.id, "stockQuantity", e.target.value)} required />
                                                 </TableCell>
                                                 <TableCell className="p-2">
-                                                    <Input disabled={isEdit} type="number" min="0" value={item.freeQuantity} onChange={(e) => updateItem(item.id, "freeQuantity", e.target.value)} />
+                                                    <Input disabled={isEdit} type="number" className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" min="0" value={item.freeQuantity} onChange={(e) => updateItem(item.id, "freeQuantity", e.target.value)} />
                                                 </TableCell>
                                                 <TableCell className="p-2">
-                                                    <Input disabled={isEdit} type="number" step="0.01" min="0" value={item.purchasePrice} onChange={(e) => updateItem(item.id, "purchasePrice", e.target.value)} required />
+                                                    <Input disabled={isEdit} type="number" className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" step="0.01" min="0" value={item.purchasePrice} onChange={(e) => updateItem(item.id, "purchasePrice", e.target.value)} required />
                                                 </TableCell>
                                                 <TableCell className="p-2">
-                                                    <Input disabled={isEdit} type="number" step="0.01" min="0" value={item.salePrice} onChange={(e) => updateItem(item.id, "salePrice", e.target.value)} required />
+                                                    <Input disabled={isEdit} type="number" className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" step="0.01" min="0" value={item.salePrice} onChange={(e) => updateItem(item.id, "salePrice", e.target.value)} required />
                                                 </TableCell>
                                                 <TableCell className="p-2">
-                                                    <Input disabled={isEdit} type="number" step="0.01" min="0" value={item.mrp} onChange={(e) => updateItem(item.id, "mrp", e.target.value)} />
+                                                    <Input disabled={isEdit} type="number" className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" step="0.01" min="0" value={item.mrp} onChange={(e) => updateItem(item.id, "mrp", e.target.value)} />
                                                 </TableCell>
                                                 <TableCell className="p-2">
-                                                    <Input disabled={isEdit} type="number" step="0.01" min="0" value={item.gst} onChange={(e) => updateItem(item.id, "gst", e.target.value)} />
+                                                    <Input disabled={isEdit} type="number" className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" step="0.01" min="0" value={item.gst} onChange={(e) => updateItem(item.id, "gst", e.target.value)} />
                                                 </TableCell>
                                                 <TableCell className="p-2 font-medium">
                                                     ₹{total.toFixed(2)}
@@ -560,7 +560,7 @@ formattedItems.push({
                             <div className="flex flex-col">
                                 <span className="text-[10px] text-gray-500 uppercase tracking-tight">OverAll Discount</span>
                                 <div className="p-2">
-                                <Input disabled={isEdit} type="number" step="0.01" min="0" value={overalldiscount} onChange={(e) => setOverallDiscount(e.target.value)} />
+                                <Input disabled={isEdit} type="number" className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" step="0.01" min="0" value={overalldiscount} onChange={(e) => setOverallDiscount(e.target.value)} />
                                 </div>
                             </div>
 
