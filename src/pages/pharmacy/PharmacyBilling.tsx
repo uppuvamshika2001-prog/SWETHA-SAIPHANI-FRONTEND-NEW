@@ -32,7 +32,9 @@ interface BillItem {
     id: string;
     medicine_id: string;
     name: string;
-    quantity: number;
+    quantity: number; // Total units
+    strips?: number;
+    tablets?: number;
     selling_price: number;
     gst_percent: number;
     discount: number;
@@ -249,6 +251,8 @@ export default function PharmacyBilling() {
             medicine_id: medicine.id,
             name: medicine.name,
             quantity: 1,
+            strips: 0,
+            tablets: 1,
             selling_price: medicine.unit_price || 0,
             gst_percent: 0,
             discount: 0,
@@ -269,20 +273,40 @@ export default function PharmacyBilling() {
             
             const updated = { ...item, [field]: value };
             
-            if (field === 'quantity') {
-                const qty = parseNumericValue(value, 0);
-                if (qty > item.available_stock) {
+            // Handle dual-input synchronization
+            if (field === 'strips' || field === 'tablets' || field === 'quantity') {
+                let totalUnits = 0;
+                
+                if (field === 'strips' || field === 'tablets') {
+                    const strips = field === 'strips' ? parseNumericValue(value, 0) : (item.strips || 0);
+                    const tablets = field === 'tablets' ? parseNumericValue(value, 0) : (item.tablets || 0);
+                    totalUnits = (strips * item.pack_quantity) + tablets;
+                    
+                    updated.strips = strips;
+                    updated.tablets = tablets;
+                } else {
+                    // Direct quantity update
+                    totalUnits = parseNumericValue(value, 0);
+                    updated.strips = Math.floor(totalUnits / item.pack_quantity);
+                    updated.tablets = totalUnits % item.pack_quantity;
+                }
+
+                if (totalUnits > item.available_stock) {
                     toast({
                         title: "Insufficient Stock",
                         description: `Only ${item.available_stock} available for ${item.name}`,
                         variant: "destructive"
                     });
-                    updated.quantity = item.available_stock;
-                } else if (qty < 1) {
-                    updated.quantity = 1;
-                } else {
-                    updated.quantity = qty;
+                    totalUnits = item.available_stock;
+                    updated.strips = Math.floor(totalUnits / item.pack_quantity);
+                    updated.tablets = totalUnits % item.pack_quantity;
+                } else if (totalUnits < 0) {
+                    totalUnits = 0;
+                    updated.strips = 0;
+                    updated.tablets = 0;
                 }
+                
+                updated.quantity = totalUnits;
             }
 
             if (field === 'discount') {
@@ -648,9 +672,11 @@ export default function PharmacyBilling() {
                                                 <TableRow>
                                                     <TableHead className="pl-6">Medicine Name</TableHead>
                                                     <TableHead>Batch</TableHead>
-                                                    <TableHead className="w-[150px]">Quantity (Tablets)</TableHead>
+                                                    <TableHead className="w-[120px]">Qty (Strips)</TableHead>
+                                                    <TableHead className="w-[120px]">Qty (Tablets)</TableHead>
+                                                    <TableHead className="w-[110px]">Total Qty</TableHead>
                                                     <TableHead className="text-right">Price (₹)</TableHead>
-                                                    <TableHead className="w-[100px] text-right">Disc %</TableHead>
+                                                    <TableHead className="w-[90px] text-right">Disc %</TableHead>
                                                     <TableHead className="text-right pr-6">Total (₹)</TableHead>
                                                     <TableHead className="w-[50px]"></TableHead>
                                                 </TableRow>
@@ -671,27 +697,45 @@ export default function PharmacyBilling() {
                                                             <TableCell className="pl-6 font-medium">{item.name}</TableCell>
                                                             <TableCell><span className="text-xs font-mono">{item.batch_number}</span></TableCell>
                                                             <TableCell>
+                                                                <div className="flex items-center gap-1">
+                                                                    <Input
+                                                                        type="number"
+                                                                        value={item.strips || 0}
+                                                                        onChange={(e) => updateItem(item.id, 'strips', e.target.value)}
+                                                                        className="h-8 text-center"
+                                                                    />
+                                                                </div>
+                                                            </TableCell>
+                                                            <TableCell>
+                                                                <div className="flex items-center gap-1">
+                                                                    <Input
+                                                                        type="number"
+                                                                        value={item.tablets || 0}
+                                                                        onChange={(e) => updateItem(item.id, 'tablets', e.target.value)}
+                                                                        className="h-8 text-center"
+                                                                    />
+                                                                </div>
+                                                            </TableCell>
+                                                            <TableCell>
                                                                 <div className="space-y-1">
-                                                                    <div className="flex items-center gap-1">
-                                                                        <Input
-                                                                            type="number"
-                                                                            value={item.quantity}
-                                                                            onChange={(e) => updateItem(item.id, 'quantity', e.target.value)}
-                                                                            className="h-8 text-center"
-                                                                        />
-                                                                        <span className="text-[10px] font-medium text-muted-foreground">Tablets</span>
+                                                                    <div className="flex items-center justify-center gap-1 px-2 py-1 rounded bg-muted/30 text-xs font-bold">
+                                                                        {item.quantity}
                                                                     </div>
-                                                                    <p className="text-[10px] text-center text-muted-foreground mt-1">
-                                                                        Max: {item.available_stock} Units
-                                                                        {item.pack_quantity > 1 && (
-                                                                            <span className="block italic">
-                                                                                ({Math.floor(item.available_stock / item.pack_quantity)} Strip{Math.floor(item.available_stock / item.pack_quantity) !== 1 ? 's' : ''}, {item.available_stock % item.pack_quantity} Units)
-                                                                            </span>
-                                                                        )}
+                                                                    <p className="text-[9px] text-center text-muted-foreground">
+                                                                        Stock: {item.available_stock}
                                                                     </p>
                                                                 </div>
                                                             </TableCell>
-                                                            <TableCell className="text-right">₹{item.selling_price.toFixed(2)}</TableCell>
+                                                            <TableCell className="text-right">
+                                                                <div className="flex flex-col">
+                                                                    <span>₹{item.selling_price.toFixed(2)}</span>
+                                                                    {item.pack_quantity > 1 && (
+                                                                        <span className="text-[10px] text-muted-foreground italic">
+                                                                            (₹{(item.selling_price * item.pack_quantity).toFixed(2)}/Strip)
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                            </TableCell>
                                                             <TableCell className="text-right">
                                                                 <Input
                                                                     type="number"
