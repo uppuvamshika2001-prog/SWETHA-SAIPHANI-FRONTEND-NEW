@@ -33,7 +33,7 @@ import { API_BASE_URL } from "@/config/api";
 
 export default function DistributorPayments() {
     const { role: currentRole } = useAuth();
-    
+
     const [purchases, setPurchases] = useState<any[]>([]);
     const [isAddPurchaseOpen, setIsAddPurchaseOpen] = useState(false);
     const [selectedPurchase, setSelectedPurchase] = useState<any>(null);
@@ -71,14 +71,14 @@ export default function DistributorPayments() {
                 }),
                 pharmacyService.getDistributorReport()
             ]);
-            
+
             console.log("Purchases Response:", purchasesRes.items);
             if (purchasesRes && purchasesRes.items) {
                 setPurchases(purchasesRes.items);
             } else {
                 setPurchases([]);
             }
-          
+
             if (reportRes && reportRes.stats) {
                 setReport(reportRes);
             } else {
@@ -97,16 +97,16 @@ export default function DistributorPayments() {
     };
 
     const handleDeletePurchase = async (id: string) => {
-        if (!window.confirm("Are you sure you want to delete this purchase? This will soft-delete the record but won't undo stock changes if they were already processed. Only purchases with NO payments can be deleted.")) return;
-        
+        if (!window.confirm("Are you sure you want to delete this purchase? This will soft-delete the record, clear all associated payments, and remove the remaining stock from inventory. This action cannot be undone.")) return;
+
         try {
             setIsLoading(true);
             await pharmacyService.deletePurchase(id);
-            toast.success("Purchase deleted successfully");
+            toast.success("Purchase and associated payments deleted successfully");
             await fetchData();
         } catch (error: any) {
             console.error("Delete failed:", error);
-            toast.error(error.response?.data?.message || "Failed to delete purchase. Ensure there are no payments linked.");
+            toast.error(error.response?.data?.message || "Failed to delete purchase.");
         } finally {
             setIsLoading(false);
         }
@@ -130,8 +130,8 @@ export default function DistributorPayments() {
         return (
             p.invoice_number?.toLowerCase().includes(search) ||
             p.distributor_name?.toLowerCase().includes(search) ||
-            p.batches?.some((b: any) => 
-                b.medicine_name?.toLowerCase().includes(search) || 
+            p.batches?.some((b: any) =>
+                b.medicine_name?.toLowerCase().includes(search) ||
                 b.batch_number?.toLowerCase().includes(search)
             )
         );
@@ -257,8 +257,8 @@ export default function DistributorPayments() {
                                                 onChange={(e) => setFilters({ ...filters, searchTerm: e.target.value })}
                                             />
                                         </div>
-                                        <Select 
-                                            value={filters.status} 
+                                        <Select
+                                            value={filters.status}
                                             onValueChange={(v) => setFilters({ ...filters, status: v })}
                                         >
                                             <SelectTrigger className="w-[150px]">
@@ -322,9 +322,9 @@ export default function DistributorPayments() {
                                                         <TableCell className="text-center">{getStatusBadge(purchase.payment_status)}</TableCell>
                                                         <TableCell className="text-center">
                                                             {purchase.file_url ? (
-                                                                <a 
-                                                                    href={`${API_BASE_URL.replace(/\/+$/, '')}/${purchase.file_url}`} 
-                                                                    target="_blank" 
+                                                                <a
+                                                                    href={`${API_BASE_URL.replace(/\/+$/, '')}/${purchase.file_url}`}
+                                                                    target="_blank"
                                                                     rel="noopener noreferrer"
                                                                     className="inline-flex items-center justify-center h-8 w-8 rounded-full bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors"
                                                                     title="View Invoice"
@@ -344,17 +344,17 @@ export default function DistributorPayments() {
                                                                 </DropdownMenuTrigger>
                                                                 <DropdownMenuContent align="end">
                                                                     {purchase.payment_status !== "PAID" && (
-                                                                        <RecordPaymentMenuItem 
-                                                                            purchase={purchase} 
-                                                                            onSuccess={fetchData} 
+                                                                        <RecordPaymentMenuItem
+                                                                            purchase={purchase}
+                                                                            onSuccess={fetchData}
                                                                         />
                                                                     )}
                                                                     <DropdownMenuItem onSelect={() => { setSelectedPurchase(purchase); setIsAddPurchaseOpen(true); }}>
                                                                         <Edit className="h-4 w-4 mr-2" />
                                                                         Edit Basic Info
                                                                     </DropdownMenuItem>
-                                                                    <DropdownMenuItem 
-                                                                        className="text-red-600 focus:text-red-600" 
+                                                                    <DropdownMenuItem
+                                                                        className="text-red-600 focus:text-red-600"
                                                                         onSelect={(e) => {
                                                                             e.preventDefault();
                                                                             handleDeletePurchase(purchase.id);
@@ -391,7 +391,7 @@ export default function DistributorPayments() {
                                             >
                                                 <ChevronLeft className="h-4 w-4" />
                                             </Button>
-                                            
+
                                             <div className="flex items-center gap-1 mx-2">
                                                 {getPageNumbers().map((page, index) => (
                                                     typeof page === 'number' ? (
