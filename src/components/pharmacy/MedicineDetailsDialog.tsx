@@ -139,7 +139,12 @@ export function MedicineDetailsDialog({ children, medicine, onEdit, onDelete, op
                             <span className="text-xs text-muted-foreground flex items-center gap-1">
                                 <Package className="h-3 w-3" /> Current Stock
                             </span>
-                            <p className="font-mono font-medium">{medicine.stock_quantity}</p>
+                            <div className="flex flex-col">
+                                <p className="font-mono font-medium text-lg text-green-600">{medicine.stock_quantity} Units</p>
+                                <p className="text-[10px] text-muted-foreground">
+                                    ≈ {Math.floor(medicine.stock_quantity / (medicine.pack_quantity || 1))} Strips, {medicine.stock_quantity % (medicine.pack_quantity || 1)} Units
+                                </p>
+                            </div>
                         </div>
                         <div className="space-y-1 p-3 bg-muted/40 rounded-lg">
                             <span className="text-xs text-muted-foreground flex items-center gap-1">
@@ -167,9 +172,9 @@ export function MedicineDetailsDialog({ children, medicine, onEdit, onDelete, op
                             <span className="text-xs text-muted-foreground">Unit Price</span>
                             <p className="font-bold text-lg text-purple-600">{formatCurrency(medicine.unit_price)}</p>
                         </div>
-                        <div className="space-y-1 p-3 bg-muted/40 rounded-lg text-center">
-                            <span className="text-xs text-muted-foreground">Available Pack</span>
-                            <p className="font-bold text-lg text-purple-600">{formatCurrency(medicine.pack_quantity)}</p>
+                        <div className="space-y-1 p-3 bg-muted/40 rounded-lg text-center border border-purple-100">
+                            <span className="text-xs text-muted-foreground">Units per Strip</span>
+                            <p className="font-bold text-lg text-purple-600">{medicine.pack_quantity || 1}</p>
                         </div>
                     
 
@@ -199,7 +204,7 @@ export function MedicineDetailsDialog({ children, medicine, onEdit, onDelete, op
                             <p className="font-bold text-lg text-purple-600">{formatCurrency(medicine.overalldiscount)}</p>
                         </div><div className="space-y-1 p-3 bg-muted/40 rounded-lg text-center">
                             <span className="text-xs text-muted-foreground">GST %</span>
-                            <p className="font-bold text-lg text-purple-600">{formatCurrency(medicine.gst_percent)}</p>
+                            <p className="font-bold text-lg text-purple-600">{medicine.gst_percent}%</p>
                         </div><div className="space-y-1 p-3 bg-muted/40 rounded-lg text-center">
                             <span className="text-xs text-muted-foreground">GST (₹)</span>
                             <p className="font-bold text-lg text-purple-600">{formatCurrency(medicine.gst_amount)}</p>
