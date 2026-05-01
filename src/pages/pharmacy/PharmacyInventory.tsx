@@ -315,9 +315,15 @@ const PharmacyInventory = () => {
                                                     </div>
                                                 </TableCell>
                                                 <TableCell>
-                                                    <div className="flex items-center gap-2">
-                                                        <span className="font-medium text-purple-700">{availableStock}</span>
-                                                       {/* <span className="text-[10px] text-muted-foreground uppercase">{med.unit || 'units'}</span> */}
+                                                    <div className="flex flex-col gap-0.5">
+                                                        <span className="font-medium text-purple-700">
+                                                            {Math.floor(stockQty / (med.pack_quantity || 1))} Strip{Math.floor(stockQty / (med.pack_quantity || 1)) !== 1 ? 's' : ''}
+                                                        </span>
+                                                        {stockQty % (med.pack_quantity || 1) > 0 && (
+                                                            <span className="text-[10px] text-muted-foreground italic">
+                                                                + {stockQty % (med.pack_quantity || 1)} Unit{stockQty % (med.pack_quantity || 1) !== 1 ? 's' : ''}
+                                                            </span>
+                                                        )}
                                                     </div>
                                                 </TableCell>
                                                 <TableCell>
