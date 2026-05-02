@@ -721,10 +721,9 @@ export default function PharmacyBilling() {
                                                                     <div className="flex items-center justify-center gap-1 px-2 py-1 rounded bg-muted/30 text-xs font-bold">
                                                                         {item.quantity}
                                                                     </div>
-                                                                    <div className="text-[9px] text-center text-muted-foreground space-y-0.5">
-                                                                        <p>Stock: {item.available_stock}</p>
-                                                                        <p className="italic">(1 Strip = {item.pack_quantity} Units)</p>
-                                                                    </div>
+                                                                    <p className="text-[9px] text-center text-muted-foreground">
+                                                                        Stock: {item.available_stock}
+                                                                    </p>
                                                                 </div>
                                                             </TableCell>
                                                             <TableCell className="text-right">

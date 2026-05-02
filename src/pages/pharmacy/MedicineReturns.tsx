@@ -42,6 +42,7 @@ export default function MedicineReturns() {
     const [refundMethod, setRefundMethod] = useState('CASH');
     const [searchResults, setSearchResults] = useState<any[]>([]);
     const [processing, setProcessing] = useState(false);
+    const [gstPercent, setGstPercent] = useState<number>(0);
 
     // History state
     const [history, setHistory] = useState<any[]>([]);
@@ -187,7 +188,16 @@ export default function MedicineReturns() {
     };
 
     const calculateRefund = () => {
-        return returnItems.reduce((sum, item) => sum + (item.returnQty * item.unit_price), 0);
+        const subtotal = returnItems.reduce((sum, item) => sum + (item.returnQty * item.unit_price), 0);
+        const gstAmount = (subtotal * gstPercent) / 100;
+        return subtotal + gstAmount;
+    };
+
+    const getRefundDetails = () => {
+        const subtotal = returnItems.reduce((sum, item) => sum + (item.returnQty * item.unit_price), 0);
+        const gstAmount = (subtotal * gstPercent) / 100;
+        const total = subtotal + gstAmount;
+        return { subtotal, gstAmount, total };
     };
 
     const handleProcessReturn = async () => {
@@ -199,6 +209,7 @@ export default function MedicineReturns() {
                 bill_id: selectedBill.id,
                 patient_id: selectedBill.patient_id,
                 refund_method: refundMethod,
+                gst_percent: gstPercent,
                 items: returnItems.map(item => ({
                     medicine_id: item.medicine_id,
                     batch_number: item.batch_number || null,
@@ -454,14 +465,41 @@ export default function MedicineReturns() {
                                                         </Select>
                                                     </div>
                                                     
+                                                    <div className="grid grid-cols-2 gap-4 pb-2">
+                                                        <div className="space-y-2">
+                                                            <Label className="text-sm text-muted-foreground">GST (%)</Label>
+                                                            <Input 
+                                                                type="number" 
+                                                                value={gstPercent} 
+                                                                onChange={(e) => setGstPercent(parseFloat(e.target.value) || 0)}
+                                                                placeholder="GST %"
+                                                                className="h-10"
+                                                            />
+                                                        </div>
+                                                        <div className="space-y-2">
+                                                            <Label className="text-sm text-muted-foreground">GST Amount</Label>
+                                                            <div className="h-10 flex items-center px-3 border rounded-md bg-muted/30 font-medium">
+                                                                ₹{getRefundDetails().gstAmount.toFixed(2)}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
                                                     <div className="bg-primary/5 p-4 rounded-xl border border-primary/10">
                                                         <div className="flex justify-between items-center text-sm text-muted-foreground mb-1">
-                                                            <span>Total Refund</span>
+                                                            <span>Subtotal (Base)</span>
+                                                            <span>₹{getRefundDetails().subtotal.toFixed(2)}</span>
+                                                        </div>
+                                                        <div className="flex justify-between items-center text-sm text-muted-foreground mb-1">
+                                                            <span>GST ({gstPercent}%)</span>
+                                                            <span>₹{getRefundDetails().gstAmount.toFixed(2)}</span>
+                                                        </div>
+                                                        <div className="flex justify-between items-center text-sm text-muted-foreground mb-3 border-t pt-2">
+                                                            <span>Original Bill Total</span>
                                                             <span className="line-through">₹ {Number(selectedBill.grand_total || selectedBill.grandTotal || 0).toFixed(2)}</span>
                                                         </div>
                                                         <div className="flex justify-between text-xl font-black text-primary">
                                                             <span>Refund Amt</span>
-                                                            <span>₹{calculateRefund().toFixed(2)}</span>
+                                                            <span>₹{getRefundDetails().total.toFixed(2)}</span>
                                                         </div>
                                                     </div>
 
@@ -731,12 +769,22 @@ export default function MedicineReturns() {
                             </div>
 
                             {/* Refund Summary */}
-                            <div className="bg-primary/5 border border-primary/10 rounded-xl p-4 flex items-center justify-between">
-                                <div>
-                                    <p className="text-sm text-muted-foreground">Total Refund</p>
-                                    <p className="text-2xl font-black text-primary">₹{Number(selectedReturn.refund_amount || selectedReturn.refundAmount || 0).toFixed(2)}</p>
+                            <div className="bg-primary/5 border border-primary/10 rounded-xl p-5 space-y-3">
+                                <div className="flex justify-between items-center text-sm">
+                                    <span className="text-muted-foreground">Subtotal (Base)</span>
+                                    <span className="font-semibold">₹{(Number(selectedReturn.refund_amount || selectedReturn.refundAmount || 0) - Number(selectedReturn.gst_amount || selectedReturn.gstAmount || 0)).toFixed(2)}</span>
                                 </div>
-                                <Badge className="px-4 py-2 text-sm font-bold">{selectedReturn.refund_method || selectedReturn.refundMethod}</Badge>
+                                <div className="flex justify-between items-center text-sm">
+                                    <span className="text-muted-foreground">GST ({Number(selectedReturn.gst_percent || selectedReturn.gstPercent || 0)}%)</span>
+                                    <span className="font-semibold">₹{Number(selectedReturn.gst_amount || selectedReturn.gstAmount || 0).toFixed(2)}</span>
+                                </div>
+                                <div className="flex justify-between items-center pt-2 border-t border-primary/10">
+                                    <div>
+                                        <p className="text-sm text-muted-foreground">Total Refund</p>
+                                        <p className="text-2xl font-black text-primary">₹{Number(selectedReturn.refund_amount || selectedReturn.refundAmount || 0).toFixed(2)}</p>
+                                    </div>
+                                    <Badge className="px-4 py-2 text-sm font-bold">{selectedReturn.refund_method || selectedReturn.refundMethod}</Badge>
+                                </div>
                             </div>
                         </div>
                     )}
