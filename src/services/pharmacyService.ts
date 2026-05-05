@@ -164,6 +164,10 @@ export const pharmacyService = {
     async getStockReturns(params: any) {
         return api.get('/pharmacy/stock-returns', { params });
     },
+
+    async deleteStockReturn(id: string): Promise<any> {
+        return api.delete(`/pharmacy/stock-returns/${id}`);
+    },
     
     async getMarginReport(params: { startDate?: string; endDate?: string }): Promise<any> {
         return api.get('/pharmacy/margin-reports', { params });

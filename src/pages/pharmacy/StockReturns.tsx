@@ -100,6 +100,25 @@ export default function StockReturns() {
         setHistoryPage(1);
     }, [historyFilters.distributor, historyFilters.startDate, historyFilters.endDate]);
 
+    const handleDeleteHistory = async (id: string) => {
+        if (!window.confirm("Are you sure you want to delete this return record? This will reverse the stock adjustment (add stock back to inventory).")) return;
+        
+        try {
+            await pharmacyService.deleteStockReturn(id);
+            toast({
+                title: "Success",
+                description: "Return record deleted and stock reversed successfully"
+            });
+            fetchHistory();
+        } catch (error: any) {
+            toast({
+                title: "Error",
+                description: error.message || "Failed to delete return record",
+                variant: "destructive"
+            });
+        }
+    };
+
     // Pagination calculations
     const totalPages = Math.ceil(history.length / itemsPerPage);
     const paginatedHistory = history.slice(
@@ -661,12 +680,17 @@ export default function StockReturns() {
                                                 </TableCell>
                                                 <TableCell className="text-primary font-black text-lg">₹{Number(record.total_amount || record.totalAmount || 0).toFixed(2)}</TableCell>
                                                 <TableCell className="text-right">
-                                                    <Button variant="ghost" size="sm" className="font-bold text-primary hover:text-primary hover:bg-primary/10" onClick={() => {
-                                                        setSelectedRecord(record);
-                                                        setIsViewOpen(true);
-                                                    }}>
-                                                        View Items
-                                                    </Button>
+                                                    <div className="flex justify-end gap-2">
+                                                        <Button variant="ghost" size="sm" className="font-bold text-primary hover:text-primary hover:bg-primary/10" onClick={() => {
+                                                            setSelectedRecord(record);
+                                                            setIsViewOpen(true);
+                                                        }}>
+                                                            View Items
+                                                        </Button>
+                                                        <Button variant="ghost" size="sm" className="font-bold text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => handleDeleteHistory(record.id)}>
+                                                            <Trash2 className="h-4 w-4 mr-1" /> Delete
+                                                        </Button>
+                                                    </div>
                                                 </TableCell>
                                             </TableRow>
                                         ))
