@@ -32,7 +32,7 @@ const PharmacyInventory = () => {
     const fetchMedicines = async () => {
         try {
             setLoading(true);
-            const data = await pharmacyService.getMedicines({ allBatches: true, limit: 100 });
+            const data = await pharmacyService.getMedicines({ all_batches: true, limit: 100 });
             console.log("API Response (Medicines):", data);
             const items = normalizeResponse(data);
             setMedicineList(items);

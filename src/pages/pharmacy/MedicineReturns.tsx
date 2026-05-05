@@ -42,7 +42,6 @@ export default function MedicineReturns() {
     const [refundMethod, setRefundMethod] = useState('CASH');
     const [searchResults, setSearchResults] = useState<any[]>([]);
     const [processing, setProcessing] = useState(false);
-    const [gstPercent, setGstPercent] = useState<number>(0);
 
     // History state
     const [history, setHistory] = useState<any[]>([]);
@@ -188,16 +187,12 @@ export default function MedicineReturns() {
     };
 
     const calculateRefund = () => {
-        const subtotal = returnItems.reduce((sum, item) => sum + (item.returnQty * item.unit_price), 0);
-        const gstAmount = (subtotal * gstPercent) / 100;
-        return subtotal + gstAmount;
+        return returnItems.reduce((sum, item) => sum + (item.returnQty * item.unit_price), 0);
     };
 
     const getRefundDetails = () => {
         const subtotal = returnItems.reduce((sum, item) => sum + (item.returnQty * item.unit_price), 0);
-        const gstAmount = (subtotal * gstPercent) / 100;
-        const total = subtotal + gstAmount;
-        return { subtotal, gstAmount, total };
+        return { subtotal, gstAmount: 0, total: subtotal };
     };
 
     const handleProcessReturn = async () => {
@@ -209,7 +204,7 @@ export default function MedicineReturns() {
                 bill_id: selectedBill.id,
                 patient_id: selectedBill.patient_id,
                 refund_method: refundMethod,
-                gst_percent: gstPercent,
+                gst_percent: 0,
                 items: returnItems.map(item => ({
                     medicine_id: item.medicine_id,
                     batch_number: item.batch_number || null,
@@ -239,6 +234,25 @@ export default function MedicineReturns() {
             });
         } finally {
             setProcessing(false);
+        }
+    };
+
+    const handleDeleteReturn = async (id: string) => {
+        if (!window.confirm("Are you sure you want to delete this return? This will reverse the stock changes.")) return;
+
+        try {
+            await pharmacyService.deleteReturn(id);
+            toast({
+                title: "Return deleted",
+                description: "Successfully deleted return and reversed stock."
+            });
+            fetchHistory();
+        } catch (error: any) {
+            toast({
+                title: "Failed to delete return",
+                description: error.response?.data?.message || "There was an error deleting the return.",
+                variant: "destructive"
+            });
         }
     };
 
@@ -464,34 +478,11 @@ export default function MedicineReturns() {
                                                             </SelectContent>
                                                         </Select>
                                                     </div>
-                                                    
-                                                    <div className="grid grid-cols-2 gap-4 pb-2">
-                                                        <div className="space-y-2">
-                                                            <Label className="text-sm text-muted-foreground">GST (%)</Label>
-                                                            <Input 
-                                                                type="number" 
-                                                                value={gstPercent} 
-                                                                onChange={(e) => setGstPercent(parseFloat(e.target.value) || 0)}
-                                                                placeholder="GST %"
-                                                                className="h-10"
-                                                            />
-                                                        </div>
-                                                        <div className="space-y-2">
-                                                            <Label className="text-sm text-muted-foreground">GST Amount</Label>
-                                                            <div className="h-10 flex items-center px-3 border rounded-md bg-muted/30 font-medium">
-                                                                ₹{getRefundDetails().gstAmount.toFixed(2)}
-                                                            </div>
-                                                        </div>
-                                                    </div>
 
                                                     <div className="bg-primary/5 p-4 rounded-xl border border-primary/10">
                                                         <div className="flex justify-between items-center text-sm text-muted-foreground mb-1">
                                                             <span>Subtotal (Base)</span>
                                                             <span>₹{getRefundDetails().subtotal.toFixed(2)}</span>
-                                                        </div>
-                                                        <div className="flex justify-between items-center text-sm text-muted-foreground mb-1">
-                                                            <span>GST ({gstPercent}%)</span>
-                                                            <span>₹{getRefundDetails().gstAmount.toFixed(2)}</span>
                                                         </div>
                                                         <div className="flex justify-between items-center text-sm text-muted-foreground mb-3 border-t pt-2">
                                                             <span>Original Bill Total</span>
@@ -626,9 +617,12 @@ export default function MedicineReturns() {
                                                         {record.refund_method || record.refundMethod}
                                                     </Badge>
                                                 </TableCell>
-                                                <TableCell className="text-right">
+                                                <TableCell className="text-right space-x-2">
                                                     <Button variant="ghost" size="sm" onClick={() => setSelectedReturn(record)}>
                                                         View Details
+                                                    </Button>
+                                                    <Button variant="destructive" size="icon" className="h-8 w-8" onClick={() => handleDeleteReturn(record.id)}>
+                                                        <Trash2 className="h-4 w-4" />
                                                     </Button>
                                                 </TableCell>
                                             </TableRow>
@@ -773,10 +767,6 @@ export default function MedicineReturns() {
                                 <div className="flex justify-between items-center text-sm">
                                     <span className="text-muted-foreground">Subtotal (Base)</span>
                                     <span className="font-semibold">₹{(Number(selectedReturn.refund_amount || selectedReturn.refundAmount || 0) - Number(selectedReturn.gst_amount || selectedReturn.gstAmount || 0)).toFixed(2)}</span>
-                                </div>
-                                <div className="flex justify-between items-center text-sm">
-                                    <span className="text-muted-foreground">GST ({Number(selectedReturn.gst_percent || selectedReturn.gstPercent || 0)}%)</span>
-                                    <span className="font-semibold">₹{Number(selectedReturn.gst_amount || selectedReturn.gstAmount || 0).toFixed(2)}</span>
                                 </div>
                                 <div className="flex justify-between items-center pt-2 border-t border-primary/10">
                                     <div>

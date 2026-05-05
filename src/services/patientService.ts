@@ -23,14 +23,13 @@ export interface PatientResponse {
     department: string | null;
 }
 
-// Adapter to transform backend PatientResponse to frontend Patient type
 const adaptPatient = (data: PatientResponse): Patient => {
     const birthDate = new Date(data.dateOfBirth);
     const age = new Date().getFullYear() - birthDate.getFullYear();
 
     return {
-        id: data.uhid || data.id, // Added based on instruction, assuming frontend Patient type has an 'id' field
-        uhid: data.uhid || data.id, // Use uhid if available, otherwise fallback to id
+        id: data.uhid || data.id, 
+        uhid: data.uhid || data.id, 
         full_name: `${data.firstName} ${data.lastName}`,
         patient_type: (data as any).patientType || 'REGISTERED',
         referred_by: (data as any).referredBy || undefined,
@@ -42,8 +41,20 @@ const adaptPatient = (data: PatientResponse): Patient => {
         phone: data.phone,
         email: data.email || undefined,
         address: data.address || '',
-        emergency_contact_name: 'Not Provided',
+        state: (data as any).state || undefined,
+        district: (data as any).district || undefined,
+        mandal: (data as any).mandal || undefined,
+        village: (data as any).village || undefined,
+        pincode: (data as any).pincode || undefined,
+        idType: (data as any).idType || undefined,
+        idNumber: (data as any).idNumber || undefined,
+        referredBy: (data as any).referredBy || undefined,
+        referredPerson: (data as any).referredPerson || undefined,
+        emergency_contact_name: (data as any).emergencyName || 'Not Provided',
         emergency_contact_phone: data.emergencyContact || '',
+        emergencyRelation: (data as any).emergencyRelation || undefined,
+        paymentMode: (data as any).paymentMode || undefined,
+        registrationFee: (data as any).registrationFee || undefined,
         allergies: data.allergies ? data.allergies.split(',') : [],
         status: 'active',
         registration_date: new Date(data.registrationDate).toISOString(),
@@ -125,21 +136,28 @@ export const patientService = {
         const payload = {
             firstName: data.firstName || (data.full_name ? data.full_name.split(' ')[0] : ''),
             lastName: data.lastName || (data.full_name ? data.full_name.split(' ').slice(1).join(' ') : '') || '',
-            dateOfBirth: data.date_of_birth,
+            dateOfBirth: data.date_of_birth || data.dateOfBirth,
             gender: data.gender?.toUpperCase(),
             phone: data.phone,
             email: data.email || undefined,
             address: fullAddress,
+            state: data.state || undefined,
+            district: data.district || undefined,
+            mandal: data.mandal || undefined,
+            village: data.village || undefined,
+            pincode: data.pincode || undefined,
             emergencyContact: (data.emergency_contact_phone || data.emergencyPhone) || undefined,
+            emergencyName: data.emergencyName || undefined,
+            emergencyRelation: data.relation || data.emergencyRelation || undefined,
             bloodGroup: (data.blood_group || data.bloodGroup) || undefined,
             allergies: data.allergies ? (Array.isArray(data.allergies) ? data.allergies.join(',') : data.allergies) : undefined,
             uhid: data.uhid,
-            // Include ID fields only if both are provided (optional fields)
-            ...(data.idType && data.idNumber ? { idType: data.idType, idNumber: data.idNumber } : {}),
-            // Referral fields (handle if backend supports them later, currently undefined to avoid issues)
+            idType: data.idType || undefined,
+            idNumber: data.idNumber || undefined,
             referredBy: data.referredBy || undefined,
             referredPerson: data.referredPerson || undefined,
             consultingDoctor: data.consultingDoctor || undefined,
+            department: data.department || undefined,
             registrationFee: data.registrationFee || undefined,
             paymentMode: data.paymentMode || undefined,
             registrationDate: data.registrationDate || data.registration_date || undefined
@@ -165,15 +183,30 @@ export const patientService = {
         const payload = {
             firstName: data.firstName || data.full_name.split(' ')[0],
             lastName: data.lastName || data.full_name.split(' ').slice(1).join(' ') || '',
-            dateOfBirth: data.date_of_birth,
+            dateOfBirth: data.date_of_birth || data.dateOfBirth,
             gender: data.gender ? data.gender.toUpperCase() : undefined,
             phone: data.phone,
             email: data.email,
             address: fullAddress,
+            state: data.state || undefined,
+            district: data.district || undefined,
+            mandal: data.mandal || undefined,
+            village: data.village || undefined,
+            pincode: data.pincode || undefined,
             emergencyContact: data.emergency_contact_phone || data.emergencyPhone,
+            emergencyName: data.emergencyName || undefined,
+            emergencyRelation: data.relation || data.emergencyRelation || undefined,
             bloodGroup: data.blood_group || data.bloodGroup,
             allergies: data.allergies ? (Array.isArray(data.allergies) ? data.allergies.join(',') : data.allergies) : undefined,
             uhid: data.uhid,
+            idType: data.idType || undefined,
+            idNumber: data.idNumber || undefined,
+            referredBy: data.referredBy || undefined,
+            referredPerson: data.referredPerson || undefined,
+            consultingDoctor: data.consultingDoctor || undefined,
+            department: data.department || undefined,
+            registrationFee: data.registrationFee || undefined,
+            paymentMode: data.paymentMode || undefined,
         };
         const response = await api.patch<PatientResponse>(`/patients/${uhid}`, payload);
         clearPatientCache();

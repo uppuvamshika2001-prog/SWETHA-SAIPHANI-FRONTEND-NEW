@@ -221,5 +221,9 @@ export const pharmacyService = {
     async updateBatch(id: string, data: any): Promise<any> {
         apiCache.invalidate('/pharmacy/medicines');
         return api.patch(`/pharmacy/batches/${id}`, data);
+    },
+
+    async deleteReturn(id: string): Promise<any> {
+        return api.delete(`/pharmacy/returns/${id}`);
     }
 };

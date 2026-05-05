@@ -40,11 +40,11 @@ export function EditMedicineDialog({
             setFormData({
                 name: medicine.name || "",
                 generic_name: medicine.generic_name || medicine.genericName || "",
-                category: typeof medicine.category === 'object' ? medicine.category.name : (medicine.category || ""),
+                category_id: medicine.category_id || medicine.categoryId || (typeof medicine.category === 'object' ? medicine.category.id : ""),
                 manufacturer: medicine.manufacturer || "",
                 unit: medicine.unit || "tablet",
-                min_stock_level: medicine.min_stock_level || medicine.reorderLevel || 10,
-                isActive: medicine.status !== 'out_of_stock'
+                reorder_level: medicine.min_stock_level || medicine.reorderLevel || 10,
+                is_active: medicine.status !== 'out_of_stock'
             });
         }
     }, [medicine, open]);
@@ -62,10 +62,11 @@ export function EditMedicineDialog({
             // Convert types
             const payload = {
                 ...formData,
-                min_stock_level: parseInt(formData.min_stock_level) || 10
+                reorder_level: parseInt(formData.reorder_level) || 10,
+                category_id: formData.category_id ? parseInt(formData.category_id) : undefined
             };
 
-            await api.put(`/pharmacy/medicines/${medicine.id}`, payload);
+            await api.patch(`/pharmacy/medicines/${medicine.id}`, payload);
             
             toast.success("Medicine updated successfully");
             onOpenChange(false);
@@ -94,12 +95,16 @@ export function EditMedicineDialog({
                             <Input id="name" name="name" value={formData.name} onChange={handleChange} required />
                         </div>
                         
+                        <div className="space-y-2">
+                            <Label htmlFor="generic_name">Generic Name</Label>
+                            <Input id="generic_name" name="generic_name" value={formData.generic_name} onChange={handleChange} />
+                        </div>
                     
                         <div className="space-y-2">
-                            <Label htmlFor="category">Category</Label>
+                            <Label htmlFor="category_id">Category</Label>
                             <Select 
-                                value={formData.category} 
-                                onValueChange={(v) => setFormData((prev: any) => ({ ...prev, category: v }))}
+                                value={formData.category_id?.toString()} 
+                                onValueChange={(v) => setFormData((prev: any) => ({ ...prev, category_id: v }))}
                             >
                                 <SelectTrigger>
                                     <SelectValue placeholder="Select Category" />
@@ -107,14 +112,14 @@ export function EditMedicineDialog({
                                 <SelectContent>
                                     {categories.length > 0 ? (
                                         categories.map(cat => (
-                                            <SelectItem key={cat.id} value={cat.name}>{cat.name}</SelectItem>
+                                            <SelectItem key={cat.id} value={cat.id.toString()}>{cat.name}</SelectItem>
                                         ))
                                     ) : (
                                         <>
-                                            <SelectItem value="Antibiotics">Antibiotics</SelectItem>
-                                            <SelectItem value="Painkillers">Painkillers</SelectItem>
-                                            <SelectItem value="Vitamins">Vitamins</SelectItem>
-                                            <SelectItem value="Other">Other</SelectItem>
+                                            <SelectItem value="1">Antibiotics</SelectItem>
+                                            <SelectItem value="2">Painkillers</SelectItem>
+                                            <SelectItem value="3">Vitamins</SelectItem>
+                                            <SelectItem value="4">Other</SelectItem>
                                         </>
                                     )}
                                 </SelectContent>
@@ -146,8 +151,8 @@ export function EditMedicineDialog({
                             </Select>
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="min_stock_level">Min. Stock Level</Label>
-                            <Input id="min_stock_level" name="min_stock_level" type="number" min="0" value={formData.min_stock_level} onChange={handleChange} />
+                            <Label htmlFor="reorder_level">Min. Stock Level</Label>
+                            <Input id="reorder_level" name="reorder_level" type="number" min="0" value={formData.reorder_level} onChange={handleChange} />
                         </div>
                     </div>
                     

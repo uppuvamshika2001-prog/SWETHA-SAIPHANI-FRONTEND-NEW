@@ -18,7 +18,7 @@ const LabPendingTests = () => {
     const { user } = useAuth();
     const [searchTerm, setSearchTerm] = useState("");
     const [updatingId, setUpdatingId] = useState<string | null>(null);
-    const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
+    const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
     const navigate = useNavigate();
 
     const { labOrders, loading, fetchLabOrders, updateOrderStatus, deleteLabOrder } = useLab();
@@ -26,15 +26,15 @@ const LabPendingTests = () => {
     // Pagination state
     const [currentPage, setCurrentPage] = useState(1);
     const [completedPage, setCompletedPage] = useState(1);
-    const ITEMS_PER_PAGE = 5;
+    // Increased to 10 to show more by default, or they can use pagination
+    const ITEMS_PER_PAGE = 10;
 
-    // Auto-refresh removed to prevent flickering. Manual refresh via the RotateCcw button is preferred.
     // Fetch whenever the selected date changes
     useEffect(() => {
         fetchLabOrders(undefined, selectedDate);
     }, [fetchLabOrders, selectedDate]);
 
-    // Filter for pending orders (excluding payment pending orders as per requirement)
+    // Filter for pending orders
     const pendingOrders = labOrders.filter(order =>
         (order.status === 'ORDERED' || order.status === 'READY_FOR_SAMPLE_COLLECTION' || order.status === 'SAMPLE_COLLECTED' || order.status === 'IN_PROGRESS')
     ).filter(order =>
@@ -111,6 +111,8 @@ const LabPendingTests = () => {
         try {
             await updateOrderStatus(order.id, nextStatus);
             toast.success(`Order status updated to ${nextStatus.replace('_', ' ')}`);
+            // Refetch with current date filter to prevent showing all orders if filtered
+            fetchLabOrders(undefined, selectedDate);
         } catch (error: any) {
             toast.error(error.message || "Failed to update status");
         } finally {
@@ -124,6 +126,7 @@ const LabPendingTests = () => {
         try {
             await deleteLabOrder(orderId);
             toast.success("Lab order deleted successfully");
+            fetchLabOrders(undefined, selectedDate);
         } catch (error: any) {
             toast.error(error.message || "Failed to delete lab order");
         }
@@ -152,6 +155,14 @@ const LabPendingTests = () => {
 
                     <div className="flex flex-wrap items-center gap-2">
                         <div className="flex bg-slate-100 p-1 rounded-md">
+                            <Button 
+                                variant={selectedDate === undefined ? "secondary" : "ghost"}
+                                size="sm" 
+                                className="text-xs h-8 px-3"
+                                onClick={() => setSelectedDate(undefined)}
+                            >
+                                All Time
+                            </Button>
                             <Button 
                                 variant={selectedDate && format(selectedDate, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd') ? "secondary" : "ghost"}
                                 size="sm" 

@@ -18,7 +18,8 @@ const PharmacyAlerts = () => {
         const fetchMedicines = async () => {
             try {
                 setLoading(true);
-                const data = await pharmacyService.getMedicines();
+                // Fetch up to 1000 medicines to ensure we don't miss low stock items due to pagination limits
+                const data = await pharmacyService.getMedicines({ limit: 1000 });
                 setMedicineList(data || []);
             } catch (error) {
                 console.error("Failed to fetch medicines for alerts:", error);

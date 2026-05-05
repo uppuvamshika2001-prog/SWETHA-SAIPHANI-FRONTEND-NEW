@@ -253,6 +253,17 @@ export function PatientRegistrationDialog({ children, onRegister, patientToEdit 
 
                 // Map other potential fields if they exist in patient object
                 gender: patientToEdit.gender ? patientToEdit.gender.charAt(0).toUpperCase() + patientToEdit.gender.slice(1) : '',
+                emergencyPhone: patientToEdit.emergency_contact_phone || '',
+                emergencyName: patientToEdit.emergency_contact_name !== 'Not Provided' ? (patientToEdit.emergency_contact_name || '') : '',
+                relation: patientToEdit.emergencyRelation || patientToEdit.relation || '',
+                consultingDoctor: patientToEdit.consulting_doctor || '',
+                department: patientToEdit.department || '',
+                idType: patientToEdit.idType || '',
+                idNumber: patientToEdit.idNumber || '',
+                referredBy: patientToEdit.referredBy || '',
+                referredPerson: patientToEdit.referredPerson || '',
+                paymentMode: patientToEdit.paymentMode || '',
+                registrationFee: patientToEdit.registrationFee ? String(patientToEdit.registrationFee) : '500',
             });
         }
     }, [open, patientToEdit]);
@@ -517,7 +528,7 @@ export function PatientRegistrationDialog({ children, onRegister, patientToEdit 
                 });
                 setOpen(false); // Close dialog after update
                 if (onRegister) {
-                    onRegister(submissionData);
+                    onRegister(submissionData, true);
                 }
             } else {
                 await addPatient(submissionData);
@@ -1232,9 +1243,20 @@ export function PatientRegistrationDialog({ children, onRegister, patientToEdit 
                                                     const deptMatched = formData.department
                                                         ? doctorsList.filter(d => d.department?.toLowerCase() === formData.department?.toLowerCase())
                                                         : [];
-                                                    const doctorsToShow = deptMatched.length > 0 ? deptMatched : doctorsList;
-                                                    return doctorsToShow.map((doctor) => (
-                                                        <SelectItem key={doctor.id} value={doctor.full_name}>
+                                                    const rawDoctors = deptMatched.length > 0 ? deptMatched : doctorsList;
+                                                    
+                                                    // Deduplicate by full_name
+                                                    const uniqueDoctors = [];
+                                                    const seenNames = new Set();
+                                                    for (const d of rawDoctors) {
+                                                        if (!seenNames.has(d.full_name)) {
+                                                            seenNames.add(d.full_name);
+                                                            uniqueDoctors.push(d);
+                                                        }
+                                                    }
+                                                    
+                                                    return uniqueDoctors.map((doctor) => (
+                                                        <SelectItem key={doctor.id || doctor.full_name} value={doctor.full_name}>
                                                             {doctor.full_name} ({doctor.specialization || doctor.department})
                                                         </SelectItem>
                                                     ));

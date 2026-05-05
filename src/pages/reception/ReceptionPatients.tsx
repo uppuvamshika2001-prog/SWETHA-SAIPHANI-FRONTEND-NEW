@@ -87,14 +87,21 @@ export default function ReceptionPatients() {
     }, [doFetchPatients]);
 
     // Immediate refresh after patient registration
-    const handlePatientRegistered = useCallback(() => {
-        setSearchQuery('');
-        setPage(1);
-        setSelectedDate(new Date());
-        // Immediately fetch with today's date (don't wait for state to propagate)
-        setTimeout(() => {
-            doFetchPatients(new Date());
-        }, 100);
+    const handlePatientRegistered = useCallback((patientData?: any, isEdit?: boolean) => {
+        if (isEdit) {
+            // Just refresh current view, don't reset filters/pagination
+            setTimeout(() => {
+                doFetchPatients();
+            }, 100);
+        } else {
+            setSearchQuery('');
+            setPage(1);
+            setSelectedDate(new Date());
+            // Immediately fetch with today's date (don't wait for state to propagate)
+            setTimeout(() => {
+                doFetchPatients(new Date());
+            }, 100);
+        }
     }, [doFetchPatients]);
 
     const handlePageChange = (newPage: number) => {

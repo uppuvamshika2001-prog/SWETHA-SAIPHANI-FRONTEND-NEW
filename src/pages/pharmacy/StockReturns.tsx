@@ -214,7 +214,8 @@ export default function StockReturns() {
             expiryDate: item.expiry,
             returnQty: 1,
             returnReason: isBefore(new Date(item.expiry), addDays(new Date(), 30)) ? "Expired" : "Near Expiry",
-            unitPrice: item.purchasePrice || 0
+            unitPrice: item.purchasePrice || 0,
+            gstPercent: item.gstPercent || 0
         }]);
     };
 
@@ -229,7 +230,11 @@ export default function StockReturns() {
     };
 
     const calculateTotal = () => {
-        return returnItems.reduce((sum, item) => sum + (item.returnQty * item.unitPrice), 0);
+        return returnItems.reduce((sum, item) => {
+            const baseAmount = item.returnQty * item.unitPrice;
+            const gstAmount = baseAmount * (item.gstPercent / 100);
+            return sum + baseAmount + gstAmount;
+        }, 0);
     };
 
     const handleProcessReturn = async () => {
@@ -257,7 +262,8 @@ export default function StockReturns() {
                     batch_number: item.batchNumber,
                     return_qty: item.returnQty,
                     return_reason: item.returnReason,
-                    unit_price: item.unitPrice
+                    unit_price: item.unitPrice,
+                    gst_percent: item.gstPercent
                 }))
             };
 
@@ -457,7 +463,7 @@ export default function StockReturns() {
                                                             </Button>
                                                         </div>
                                                         
-                                                        <div className="grid grid-cols-2 gap-2">
+                                                        <div className="grid grid-cols-3 gap-2">
                                                             <div className="space-y-1">
                                                                 <Label className="text-[10px] uppercase font-bold text-muted-foreground">Qty (Max: {item.availableStock})</Label>
                                                                 <Input 
@@ -466,9 +472,24 @@ export default function StockReturns() {
                                                                     value={item.returnQty} 
                                                                     onChange={(e) => {
                                                                         let val = parseInt(e.target.value);
+                                                                        if (isNaN(val)) val = 1;
                                                                         if (val < 1) val = 1;
                                                                         if (val > item.availableStock) val = item.availableStock;
                                                                         updateItem(item.batchId, "returnQty", val);
+                                                                    }}
+                                                                />
+                                                            </div>
+                                                            <div className="space-y-1">
+                                                                <Label className="text-[10px] uppercase font-bold text-muted-foreground">GST %</Label>
+                                                                <Input 
+                                                                    type="number" 
+                                                                    className="h-8 text-xs font-bold border-primary/10" 
+                                                                    value={item.gstPercent} 
+                                                                    onChange={(e) => {
+                                                                        let val = parseFloat(e.target.value);
+                                                                        if (isNaN(val)) val = 0;
+                                                                        if (val < 0) val = 0;
+                                                                        updateItem(item.batchId, "gstPercent", val);
                                                                     }}
                                                                 />
                                                             </div>
