@@ -47,17 +47,21 @@ export function EditStockDialog({
         try {
             setLoading(true);
             
-            const payload = {
+            const payload: any = {
                 ...formData,
                 expiry_date: formData.expiry_date ? new Date(formData.expiry_date).toISOString() : undefined,
                 manufacturing_date: formData.manufacturing_date ? new Date(formData.manufacturing_date).toISOString() : undefined,
-                purchase_price: parseFloat(formData.purchase_price),
-                selling_price: parseFloat(formData.selling_price),
-                mrp: parseFloat(formData.mrp),
-                gst_percent: parseFloat(formData.gst_percent),
-                stock_quantity: parseInt(formData.stock_quantity),
-                free_quantity: parseInt(formData.free_quantity)
+                purchase_price: parseFloat(formData.purchase_price) || 0,
+                selling_price: parseFloat(formData.selling_price) || 0,
+                mrp: parseFloat(formData.mrp) || 0,
+                gst_percent: parseFloat(formData.gst_percent) || 0,
+                stock_quantity: parseInt(formData.stock_quantity) || 0,
+                free_quantity: parseInt(formData.free_quantity) || 0
             };
+
+            // Clean up empty strings for optional fields to avoid validation issues
+            if (!payload.batch_number) delete payload.batch_number;
+            if (!payload.distributor_name) delete payload.distributor_name;
 
             // Use the batch ID (which is batch.id in the new allBatches mode)
             await pharmacyService.updateBatch(batch.id, payload);
