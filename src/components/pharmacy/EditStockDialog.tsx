@@ -31,8 +31,8 @@ export function EditStockDialog({
                 selling_price: batch.unit_price || batch.selling_price || batch.salePrice || 0,
                 mrp: batch.mrp || 0,
                 gst_percent: batch.gst_percent || batch.gst || 0,
-                stock_quantity: batch.stock_quantity || batch.stockQuantity || 0,
-                free_quantity: batch.free_quantity || batch.freeQuantity || 0
+                stock_quantity: (batch.stock_quantity || batch.stockQuantity || 0) / (batch.pack_quantity || batch.packQuantity || 1),
+                free_quantity: (batch.free_quantity || batch.freeQuantity || 0) / (batch.pack_quantity || batch.packQuantity || 1)
             });
         }
     }, [batch, open]);
@@ -55,8 +55,8 @@ export function EditStockDialog({
                 selling_price: parseFloat(formData.selling_price) || 0,
                 mrp: parseFloat(formData.mrp) || 0,
                 gst_percent: parseFloat(formData.gst_percent) || 0,
-                stock_quantity: parseInt(formData.stock_quantity) || 0,
-                free_quantity: parseInt(formData.free_quantity) || 0
+                stock_quantity: (parseInt(formData.stock_quantity) || 0) * (batch.pack_quantity || batch.packQuantity || 1),
+                free_quantity: (parseInt(formData.free_quantity) || 0) * (batch.pack_quantity || batch.packQuantity || 1)
             };
 
             // Clean up empty strings for optional fields to avoid validation issues

@@ -132,25 +132,6 @@ export function EditMedicineDialog({
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
-                            <Label htmlFor="unit">Unit</Label>
-                            <Select 
-                                value={formData.unit} 
-                                onValueChange={(v) => setFormData((prev: any) => ({ ...prev, unit: v }))}
-                            >
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Select Unit" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="tablet">Tablet</SelectItem>
-                                    <SelectItem value="capsule">Capsule</SelectItem>
-                                    <SelectItem value="bottle">Bottle</SelectItem>
-                                    <SelectItem value="injection">Injection</SelectItem>
-                                    <SelectItem value="tube">Tube</SelectItem>
-                                    <SelectItem value="piece">Piece</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <div className="space-y-2">
                             <Label htmlFor="reorder_level">Min. Stock Level</Label>
                             <Input id="reorder_level" name="reorder_level" type="number" min="0" value={formData.reorder_level} onChange={handleChange} />
                         </div>

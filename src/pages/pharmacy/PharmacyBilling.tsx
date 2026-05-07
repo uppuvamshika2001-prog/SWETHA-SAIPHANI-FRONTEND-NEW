@@ -676,7 +676,7 @@ export default function PharmacyBilling() {
                                                     <TableHead className="w-[120px]">Qty (Tablets)</TableHead>
                                                     <TableHead className="w-[110px]">Total Qty</TableHead>
                                                     <TableHead className="text-right">Price (₹)</TableHead>
-                                                    <TableHead className="w-[90px] text-right">Disc %</TableHead>
+                                                    <TableHead className="w-[110px] text-right">Disc %</TableHead>
                                                     <TableHead className="text-right pr-6">Total (₹)</TableHead>
                                                     <TableHead className="w-[50px]"></TableHead>
                                                 </TableRow>
@@ -702,7 +702,7 @@ export default function PharmacyBilling() {
                                                                         type="number"
                                                                         value={item.strips || 0}
                                                                         onChange={(e) => updateItem(item.id, 'strips', e.target.value)}
-                                                                        className="h-8 text-center"
+                                                                        className="h-8 text-center [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                                                     />
                                                                 </div>
                                                             </TableCell>
@@ -712,7 +712,7 @@ export default function PharmacyBilling() {
                                                                         type="number"
                                                                         value={item.tablets || 0}
                                                                         onChange={(e) => updateItem(item.id, 'tablets', e.target.value)}
-                                                                        className="h-8 text-center"
+                                                                        className="h-8 text-center [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                                                     />
                                                                 </div>
                                                             </TableCell>
@@ -722,7 +722,7 @@ export default function PharmacyBilling() {
                                                                         {item.quantity}
                                                                     </div>
                                                                     <p className="text-[9px] text-center text-muted-foreground">
-                                                                        Stock: {item.available_stock}
+                                                                        Stock: {item.available_stock} Tab ({(item.available_stock / (item.pack_quantity || 1)).toFixed(1)} Str)
                                                                     </p>
                                                                 </div>
                                                             </TableCell>
@@ -741,7 +741,7 @@ export default function PharmacyBilling() {
                                                                     type="number"
                                                                     value={item.discount}
                                                                     onChange={(e) => updateItem(item.id, 'discount', e.target.value)}
-                                                                    className="h-8 text-right"
+                                                                    className="h-8 text-right [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                                                 />
                                                             </TableCell>
                                                             <TableCell className="text-right pr-6 font-bold">₹{item.total.toFixed(2)}</TableCell>

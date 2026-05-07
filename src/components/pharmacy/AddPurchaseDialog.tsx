@@ -305,8 +305,8 @@ export function AddPurchaseDialog({ open, onOpenChange, onSuccess, purchase }: A
                 selling_price: parseFloat(item.salePrice) || 0,
                 mrp: item.mrp ? parseFloat(item.mrp) : undefined,
                 gst_percent: gstPercent,
-                stock_quantity: qty,
-                free_quantity: parseInt(item.freeQuantity, 10) || 0,
+                stock_quantity: qty * (item.packQuantity || 1),
+                free_quantity: (parseInt(item.freeQuantity, 10) || 0) * (item.packQuantity || 1),
                 pack_quantity: item.packQuantity || 1,
                 gst_amount: gstAmount
             });

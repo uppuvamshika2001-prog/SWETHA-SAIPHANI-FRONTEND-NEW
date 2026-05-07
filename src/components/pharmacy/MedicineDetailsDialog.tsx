@@ -93,7 +93,11 @@ export function MedicineDetailsDialog({ children, medicine, onEdit, onDelete, op
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-1 p-3 bg-muted/40 rounded-lg">
                             <span className="text-xs text-muted-foreground">Category</span>
-                            <p className="font-medium">{medicine.category}</p>
+                            <p className="font-medium">
+                                {(medicine?.category && typeof medicine.category === 'object') 
+                                    ? (medicine.category.name as string) || '-'
+                                    : (typeof medicine?.category === 'string' ? medicine.category : '-')}
+                            </p>
                         </div>
                         <div className="space-y-1 p-3 bg-muted/40 rounded-lg">
                             <span className="text-xs text-muted-foreground">Manufacturer</span>
@@ -101,11 +105,11 @@ export function MedicineDetailsDialog({ children, medicine, onEdit, onDelete, op
                         </div>
                          <div className="space-y-1 p-3 bg-muted/40 rounded-lg">
                             <span className="text-xs text-muted-foreground">Distributor</span>
-                            <p className="font-medium">{medicine.batch?.distributor || medicine.distributor || '-'}</p>
+                            <p className="font-medium">{medicine.batch?.distributor || medicine.distributor || medicine.distributor_name || '-'}</p>
                         </div>
                          <div className="space-y-1 p-3 bg-muted/40 rounded-lg">
                             <span className="text-xs text-muted-foreground">HSN Code</span>
-                            <p className="font-medium">{medicine.hsn_code}</p>
+                            <p className="font-medium">{medicine.hsn_code || medicine.hsnCode || '-'}</p>
                         </div>
                         
                     </div>
@@ -127,13 +131,21 @@ export function MedicineDetailsDialog({ children, medicine, onEdit, onDelete, op
                             <span className="text-xs text-muted-foreground flex items-center gap-1">
                                 <Calendar className="h-3 w-3" /> Manufracture Date
                             </span>
-                            <p className="font-medium">{medicine.batch?.manufacturing_date || medicine.manufacturing_date ? new Date(medicine.batch?.manufacturing_date || medicine.manufacturing_date).toLocaleDateString() : '-'}</p>
+                            <p className="font-medium">
+                                {(medicine.batch?.manufacturing_date || medicine.manufacturing_date) 
+                                    ? new Date(medicine.batch?.manufacturing_date || medicine.manufacturing_date).toLocaleDateString() 
+                                    : '-'}
+                            </p>
                         </div>
                         <div className="space-y-1 p-3 bg-muted/40 rounded-lg">
                             <span className="text-xs text-muted-foreground flex items-center gap-1">
                                 <Calendar className="h-3 w-3" /> Expiry Date
                             </span>
-                            <p className="font-medium">{medicine.batch?.expiry_date || medicine.expiry_date ? new Date(medicine.batch?.expiry_date || medicine.expiry_date).toLocaleDateString() : '-'}</p>
+                            <p className="font-medium">
+                                {(medicine.batch?.expiry_date || medicine.expiry_date) 
+                                    ? new Date(medicine.batch?.expiry_date || medicine.expiry_date).toLocaleDateString() 
+                                    : '-'}
+                            </p>
                         </div>
                         <div className="space-y-1 p-3 bg-muted/40 rounded-lg">
                             <span className="text-xs text-muted-foreground flex items-center gap-1">

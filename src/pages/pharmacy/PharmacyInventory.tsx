@@ -225,8 +225,8 @@ const PharmacyInventory = () => {
                                         <TableHead>Category</TableHead>
                                         <TableHead>Batch No.</TableHead>
                                         <TableHead>Distributor</TableHead>
-                                        <TableHead>Available Stock</TableHead>
-                                        <TableHead>Available Pack</TableHead>
+                                        <TableHead>Available (Strips)</TableHead>
+                                        <TableHead>Available (Tablets)</TableHead>
                                         <TableHead>Stock Status</TableHead>
                                         <TableHead>Expiry Status</TableHead>
                                         <TableHead className="text-right">M.R.P</TableHead>
@@ -310,14 +310,12 @@ const PharmacyInventory = () => {
                                                 <TableCell className="text-xs">{distributor}</TableCell>
                                                 <TableCell>
                                                     <div className="flex items-center gap-2">
-                                                        <span className="font-medium text-purple-700">{stockQty}</span>
-                                                        <span className="text-[10px] text-muted-foreground uppercase">{med.unit || 'units'}</span>
+                                                        <span className="font-medium text-purple-700">{availableStock}</span>
                                                     </div>
                                                 </TableCell>
                                                 <TableCell>
                                                     <div className="flex items-center gap-2">
-                                                        <span className="font-medium text-purple-700">{availableStock}</span>
-                                                       {/* <span className="text-[10px] text-muted-foreground uppercase">{med.unit || 'units'}</span> */}
+                                                        <span className="font-medium text-purple-700">{stockQty}</span>
                                                     </div>
                                                 </TableCell>
                                                 <TableCell>
