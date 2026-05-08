@@ -151,19 +151,26 @@ export function MedicineDetailsDialog({ children, medicine, onEdit, onDelete, op
                             <span className="text-xs text-muted-foreground flex items-center gap-1">
                                 <Package className="h-3 w-3" /> Current Stock
                             </span>
-                            <p className="font-mono font-medium">{medicine.stock_quantity}</p>
+                            <p className="font-mono font-medium">
+                                {(medicine.stock_quantity / (medicine.pack_quantity || 1)).toFixed(1)} Strips ({medicine.stock_quantity} Tablets)
+                            </p>
                         </div>
                         <div className="space-y-1 p-3 bg-muted/40 rounded-lg">
                             <span className="text-xs text-muted-foreground flex items-center gap-1">
                                 <Plus className="h-3 w-3" /> Free Quantity
                             </span>
-                            <p className="font-mono font-medium">{medicine.free_quantity ?? 0}</p>
+                            <p className="font-mono font-medium">
+                                {((medicine.free_quantity ?? 0) / (medicine.pack_quantity || 1)).toFixed(1)} Strips ({medicine.free_quantity ?? 0} Tablets)
+                            </p>
                         </div>
 
                         
                         <div className="space-y-1 p-3 bg-muted/40 rounded-lg text-center">
                             <span className="text-xs text-muted-foreground">Min. Level</span>
-                            <p className="font-bold text-lg">{medicine.min_stock_level}</p>
+                            <p className="font-bold text-lg">
+                                {(medicine.min_stock_level / (medicine.pack_quantity || 1)).toFixed(1)} Strips
+                                <span className="block text-[10px] text-muted-foreground font-normal">({medicine.min_stock_level} Tablets)</span>
+                            </p>
                         </div>
                     </div>
 
@@ -180,8 +187,8 @@ export function MedicineDetailsDialog({ children, medicine, onEdit, onDelete, op
                             <p className="font-bold text-lg text-purple-600">{formatCurrency(medicine.unit_price)}</p>
                         </div>
                         <div className="space-y-1 p-3 bg-muted/40 rounded-lg text-center">
-                            <span className="text-xs text-muted-foreground">Available Pack</span>
-                            <p className="font-bold text-lg text-purple-600">{formatCurrency(medicine.pack_quantity)}</p>
+                            <span className="text-xs text-muted-foreground">Units per Pack/Strip</span>
+                            <p className="font-bold text-lg text-purple-600">{medicine.pack_quantity || 1}</p>
                         </div>
                     
 

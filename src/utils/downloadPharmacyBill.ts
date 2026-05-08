@@ -132,7 +132,6 @@ export const downloadPharmacyBillPDF = async (bill: Bill) => {
                 expiryStr,
                 String(item.quantity || 0),
                 unitPrice.toFixed(2),
-                discountPercent ? `${discountPercent}%` : '-',
                 totalAmount.toFixed(2)
             ];
         });
@@ -144,14 +143,14 @@ export const downloadPharmacyBillPDF = async (bill: Bill) => {
 
         autoTable(doc, {
             startY: tableY,
-            head: [['Medicine', 'HSN', 'Batch', 'Expiry', 'Qty', 'Unit Price', 'Disc.', 'Total (Rs)']],
+            head: [['Medicine', 'HSN', 'Batch', 'Expiry', 'Qty', 'Unit Price', 'Total (Rs)']],
             body: tableData,
             ...tableStyles,
             styles: { fontSize: 8, cellPadding: 2 },
             headStyles: { fillColor: [240, 240, 240], textColor: 20 },
             columnStyles: {
                 0: { cellWidth: 55 },
-                7: { halign: 'right' }
+                6: { halign: 'right' }
             }
         });
 
