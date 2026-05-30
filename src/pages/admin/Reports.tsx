@@ -36,7 +36,7 @@ export default function Reports() {
     const fetchSystemStats = async () => {
         setLoading(true);
         try {
-            const queryParams: any = {};
+            const queryParams: any = { limit: 10000 };
             if (dateRange.from) queryParams.startDate = format(dateRange.from, 'yyyy-MM-dd');
             if (dateRange.to) queryParams.endDate = format(dateRange.to, 'yyyy-MM-dd');
 
@@ -82,7 +82,7 @@ export default function Reports() {
         });
 
         try {
-            const queryParams: any = {};
+            const queryParams: any = { limit: 10000 };
             if (dateRange.from) queryParams.startDate = format(dateRange.from, 'yyyy-MM-dd');
             if (dateRange.to) queryParams.endDate = format(dateRange.to, 'yyyy-MM-dd');
 
@@ -162,6 +162,7 @@ export default function Reports() {
                                 placeholder="From Date"
                                 className="w-[160px]"
                                 formatStr="dd MMM yyyy"
+                                disabled={dateRange.to ? { after: dateRange.to } : undefined}
                             />
                             <span className="text-muted-foreground">-</span>
                             <DatePicker
@@ -170,6 +171,7 @@ export default function Reports() {
                                 placeholder="To Date"
                                 className="w-[160px]"
                                 formatStr="dd MMM yyyy"
+                                disabled={dateRange.from ? { before: dateRange.from } : undefined}
                             />
                         </div>
                         {(dateRange.from || dateRange.to) && (

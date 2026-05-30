@@ -236,6 +236,7 @@ const App = () => {
                         <Route path="/pharmacy/returns" element={<PharmacyReturns />} />
                         <Route path="/pharmacy/stock-returns" element={<PharmacyStockReturns />} />
                         <Route path="/pharmacy/reports" element={<PharmacyReports />} />
+                        <Route path="/pharmacy/margin-reports" element={<MarginReports />} />
                         <Route path="/pharmacy/purchases" element={<DistributorPayments />} />
                         <Route path="/pharmacy/categories" element={<PharmacyCategories />} />
                         <Route path="/pharmacy/profile" element={<PharmacySettings />} />

@@ -19,9 +19,10 @@ interface DatePickerProps {
     className?: string
     placeholder?: string
     formatStr?: string
+    disabled?: any
 }
 
-export function DatePicker({ date, setDate, className, placeholder = "Pick a date", formatStr = "PPP" }: DatePickerProps) {
+export function DatePicker({ date, setDate, className, placeholder = "Pick a date", formatStr = "PPP", disabled }: DatePickerProps) {
     return (
         <Popover>
             <PopoverTrigger asChild>
@@ -43,6 +44,7 @@ export function DatePicker({ date, setDate, className, placeholder = "Pick a dat
                     selected={date}
                     onSelect={setDate}
                     initialFocus
+                    disabled={disabled}
                 />
             </PopoverContent>
         </Popover>

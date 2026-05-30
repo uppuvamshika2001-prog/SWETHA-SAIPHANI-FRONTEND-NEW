@@ -77,6 +77,39 @@ export default function MarginReports() {
     fetchReport();
   }, []);
 
+  const handleExportCSV = () => {
+    if (!data?.medicineWiseProfit || data.medicineWiseProfit.length === 0) {
+      toast.error("No margin data available to export");
+      return;
+    }
+    
+    const csvHeaders = ["Medicine Name", "Quantity Sold", "Total Profit", "Sales Revenue", "Purchase Price", "Patients"];
+    const csvRows = [csvHeaders.join(",")];
+    
+    data.medicineWiseProfit.forEach((m: any) => {
+      const row = [
+        `"${m.name || ''}"`,
+        m.quantity || 0,
+        m.profit || 0,
+        m.sales || 0,
+        m.purchase_price || 0,
+        `"${m.patientNames || ''}"`
+      ];
+      csvRows.push(row.join(","));
+    });
+    
+    const blob = new Blob([csvRows.join("\n")], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `Margin_Report_${dateRange.startDate}_to_${dateRange.endDate}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    toast.success("CSV exported successfully");
+  };
+
   const columns = [
     { key: 'name', header: 'Medicine Name' },
     { key: 'quantity', header: 'Quantity Sold' },
@@ -100,7 +133,7 @@ export default function MarginReports() {
             <p className="text-muted-foreground">Track pharmacy profit and sales performance</p>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" size="sm">
+            <Button variant="outline" size="sm" onClick={handleExportCSV}>
               <Download className="h-4 w-4 mr-2" />
               Export CSV
             </Button>
